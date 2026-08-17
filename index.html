@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasury Payment Control Tower - Web Draft v0.4 Gray</title>
+<style>
+:root{
+  --navy:#4b5563;
+  --navy-2:#6b7280;
+  --navy-3:#374151;
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --text:#17212b;
+  --muted:#6b7280;
+  --border:#d8dee6;
+  --green:#64748b;
+  --green-bg:#eef2f7;
+  --red:#c43b35;
+  --red-bg:#fdeeed;
+  --amber:#a16207;
+  --amber-bg:#fff7e6;
+  --blue:#475569;
+  --blue-bg:#eef2f7;
+  --purple:#64748b;
+  --purple-bg:#f4f5f7;
+  --gray:#7d8791;
+  --shadow:0 4px 18px rgba(15,47,74,.07);
+  --radius:12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit}
+.hidden{display:none !important;}
+header{
+  background:linear-gradient(135deg,var(--navy),var(--navy-2));
+  color:#fff;padding:22px 30px 18px;box-shadow:0 2px 8px rgba(0,0,0,.12)
+}
+.header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;max-width:1600px;margin:auto}
+.brand h1{margin:0;font-size:23px;font-weight:650;letter-spacing:.2px}
+.brand p{margin:7px 0 0;font-size:13px;opacity:.87}
+.header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.batch-box{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);border-radius:9px;padding:8px 12px;min-width:160px}
+.batch-box small{display:block;opacity:.75;font-size:10px;text-transform:uppercase;letter-spacing:.7px}
+.batch-box strong{display:block;margin-top:2px;font-size:14px}
+.header-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.13);color:white;border-radius:8px;padding:9px 12px;cursor:pointer;font-size:12px;font-weight:600}
+.header-btn:hover{background:rgba(255,255,255,.22)}
+.demo-ribbon{background:#e8f6ed;color:#2f6f4e;border-bottom:1px solid #cfe8d7;padding:8px 30px;font-size:12px;text-align:center}
+.upload-help-strip{background:#eef9f2;color:#2f6f4e;border-bottom:1px solid #cfe8d7;padding:8px 30px;font-size:11.5px;text-align:center;}
+
+.tabbar{display:flex;gap:2px;background:var(--navy-3);padding:0 20px;position:sticky;top:0;z-index:50;overflow-x:auto;box-shadow:0 2px 6px rgba(0,0,0,.11)}
+.tabbtn{border:0;background:transparent;color:#cbdbe8;padding:12px 15px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;font-size:12.5px;font-weight:650}
+.tabbtn:hover{color:#fff;background:rgba(255,255,255,.05)}
+.tabbtn.active{color:#fff;border-bottom-color:#8bd1a5;background:rgba(255,255,255,.06)}
+.container{max-width:1600px;margin:0 auto;padding:22px 28px 60px}
+.tabpanel{display:none}.tabpanel.active{display:block}
+.page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:15px}
+.page-head h2{margin:0;color:var(--navy);font-size:19px}
+.page-head p{margin:5px 0 0;color:var(--muted);font-size:12.5px}
+.inline-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--border);background:white;color:var(--navy);padding:8px 11px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:650}
+.btn:hover{border-color:#aac2d4;background:#f8fbfd}
+.btn.primary{background:var(--navy-2);color:#fff;border-color:var(--navy-2)}
+.btn.primary:hover{background:var(--navy)}
+.btn.success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.warning{background:#c48720;color:#fff;border-color:#c48720}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.section-title{font-size:15px;font-weight:750;color:var(--navy);margin:24px 0 11px;padding-bottom:7px;border-bottom:2px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.section-title small{font-weight:400;color:var(--muted);font-size:11.5px}
+.kpi-grid{display:grid;grid-template-columns:repeat(8,minmax(130px,1fr));gap:11px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:15px 14px;box-shadow:var(--shadow);min-height:112px;position:relative;overflow:hidden}
+.kpi-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
+.kpi-card.good:before{background:var(--green)}.kpi-card.warn:before{background:#d4962a}.kpi-card.bad:before{background:var(--red)}.kpi-card.purple:before{background:var(--purple)}
+.kpi-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.55px;font-weight:700}
+.kpi-value{font-size:25px;margin-top:8px;font-weight:760;color:var(--navy);font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.3}
+.grid-2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.card h3{margin:0 0 4px;font-size:14.5px;color:var(--navy)}
+.card-sub{font-size:11.5px;color:var(--muted);margin-bottom:13px}
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;align-items:stretch}
+.stage{border:1px solid var(--border);border-radius:10px;padding:13px 12px;position:relative;background:#fbfcfd}
+.stage:not(:last-child):after{content:"›";position:absolute;right:-9px;top:35%;font-size:24px;color:#a6b2bc;z-index:2}
+.stage-name{font-size:10.5px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.stage-num{font-size:22px;color:var(--navy);font-weight:760;margin-top:7px}
+.stage-rate{font-size:11px;color:var(--muted);margin-top:3px}
+.mini-progress{height:5px;background:#e6edf2;border-radius:10px;margin-top:10px;overflow:hidden}
+.mini-progress span{display:block;height:100%;background:var(--green);border-radius:10px}
+.donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center;min-height:205px}
+.donut{--p:60;--c:var(--green);width:144px;height:144px;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),#e7edf2 0);position:relative;display:grid;place-items:center}
+.donut:after{content:"";position:absolute;width:103px;height:103px;background:white;border-radius:50%}
+.donut span{position:relative;z-index:1;text-align:center;font-weight:760;color:var(--navy);font-size:22px}
+.donut span small{display:block;font-size:10px;color:var(--muted);font-weight:650;margin-top:2px}
+.legend{display:grid;gap:8px;font-size:11.5px}
+.legend-row{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.legend-label{display:flex;align-items:center;gap:7px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.table-wrap{border:1px solid var(--border);border-radius:10px;overflow:auto;background:white;max-height:570px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th{background:var(--navy);color:#fff;text-align:left;padding:8px 9px;position:sticky;top:0;z-index:2;white-space:nowrap;font-size:10.7px;letter-spacing:.15px}
+td{padding:7px 9px;border-bottom:1px solid #e7ebef;vertical-align:middle;white-space:nowrap}
+tbody tr:hover td{background:#f7fafc}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.center,th.center{text-align:center}
+.entity-name{font-weight:700;color:var(--navy)}
+.muted{color:var(--muted)}
+.small{font-size:10.5px}
+.status{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:3px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.status.good{background:var(--green-bg);color:var(--green)}
+.status.bad{background:var(--red-bg);color:var(--red)}
+.status.warn{background:var(--amber-bg);color:var(--amber)}
+.status.info{background:var(--blue-bg);color:var(--blue)}
+.status.purple{background:var(--purple-bg);color:var(--purple)}
+.status.gray{background:#eef1f3;color:#66727c}
+.toolbar{background:white;border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:9px;align-items:end;flex-wrap:wrap;box-shadow:var(--shadow);margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:130px}
+.field label{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:750;letter-spacing:.4px}
+.field input,.field select,.cell-select{border:1px solid #cfd9e0;border-radius:7px;padding:7px 8px;background:#fff;color:var(--text);font-size:11.5px}
+.field input:focus,.field select:focus,.cell-select:focus{outline:2px solid #b9d7eb;border-color:#83b6d7}
+.field.search{min-width:225px;flex:1}
+.bulk-panel{background:#eef5fa;border:1px solid #c8ddea;border-radius:10px;padding:12px;margin-bottom:12px}
+.bulk-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:10px}
+.bulk-head strong{color:var(--navy);font-size:12.5px}
+.bulk-fields{display:grid;grid-template-columns:2.3fr 1fr 1.5fr 1fr 1fr auto auto;gap:8px;align-items:end}
+.checkbox{width:15px;height:15px;accent-color:var(--navy-2)}
+.editable{background:#f7fbff}
+.row-alert td{background:#fff9f1}
+.row-error td{background:#fff5f4}
+.currency-chip{display:inline-block;padding:2px 6px;border-radius:4px;background:#edf3f7;color:var(--navy);font-size:10px;font-weight:700}
+.amount{font-weight:700;font-variant-numeric:tabular-nums}
+.mapping-badge{font-size:9px;border:1px solid #a9cde3;color:#2e6e96;border-radius:3px;padding:1px 4px;margin-left:4px}
+.entity-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.entity-card{background:white;border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:var(--shadow)}
+.entity-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.entity-card h4{margin:0;color:var(--navy);font-size:13px}
+.entity-card .metric{font-size:11px;color:var(--muted);margin-top:10px;display:flex;justify-content:space-between}
+.entity-card .metric strong{color:var(--text)}
+.entity-card-actions{display:flex;gap:7px;margin-top:12px}
+.validation-list{display:grid;gap:7px}
+.validation-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:11.5px}
+.upload-zone{border:2px dashed #b9cad6;border-radius:12px;padding:27px;text-align:center;color:var(--muted);background:#fafcfd;cursor:pointer}
+.upload-zone.drag-over{border-color:var(--navy-2);background:#eef6fb}
+.upload-zone:hover{border-color:#7faecb;background:#f6fbfe}
+.upload-zone strong{display:block;color:var(--navy);margin-bottom:5px}
+.exception-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
+.exception-card{background:white;border:1px solid var(--border);border-radius:10px;padding:13px;box-shadow:var(--shadow);cursor:pointer}
+.exception-card:hover{border-color:#9ebed1}
+.exception-card strong{display:block;font-size:20px;color:var(--navy);margin-top:5px}
+.bar-list{display:grid;gap:11px}
+.bar-row{display:grid;grid-template-columns:80px 1fr 110px;gap:10px;align-items:center;font-size:11.5px}
+.bar-track{height:10px;background:#e8edf1;border-radius:12px;overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--navy-2),#54a2d1);border-radius:12px}
+.cash-amount{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+.payment-ref{display:inline-block;font-weight:780;background:#edf5fa;border:1px solid #cfe1ed;border-radius:5px;padding:3px 7px;letter-spacing:.1px}.payment-ref.good{color:#2f7d4e;background:#eef8f0;border-color:#c7e6cf}.payment-ref.bad{color:#c43b35;background:#fdeeed;border-color:#efc4c1}.eform-cell{display:grid;gap:5px;min-width:210px}.eform-cell .ref-meta{margin-top:0}.eform-override{width:100%;border:1px solid #cfd9e0;border-radius:6px;padding:5px 7px;font-size:10.5px;background:#fff;color:var(--text)}.eform-override:focus{outline:2px solid #b9d7eb;border-color:#83b6d7}
+.vendor-main{font-weight:700;color:var(--text)}
+.vendor-sub{display:block;color:var(--muted);font-size:10.5px;margin-top:2px}
+.cash-toolbar{background:white;border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:end;flex-wrap:wrap;box-shadow:var(--shadow);margin-bottom:14px}
+.cash-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(165px,1fr));gap:11px;margin-bottom:14px}
+.cash-kpi{background:white;border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.cash-kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--blue)}
+.cash-kpi.good:before{background:var(--green)}.cash-kpi.bad:before{background:var(--red)}.cash-kpi.warn:before{background:#d4962a}
+.cash-kpi .label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:750}
+.cash-kpi .value{font-size:22px;color:var(--navy);font-weight:780;margin-top:8px;font-variant-numeric:tabular-nums}
+.cash-kpi .sub{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.35}
+.cash-entity-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.cash-entity-card{background:white;border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:var(--shadow);cursor:pointer;transition:.15s}
+.cash-entity-card:hover{border-color:#9abbd0;transform:translateY(-1px)}
+.cash-entity-card.active{border:2px solid var(--navy-2);background:#f6fbfe}
+.cash-entity-card h4{margin:0;color:var(--navy);font-size:12.5px}
+.cash-entity-card .line{display:flex;justify-content:space-between;gap:10px;margin-top:7px;font-size:10.5px;color:var(--muted)}
+.cash-entity-card .line strong{color:var(--text)}
+.cash-status-banner{border-radius:9px;padding:10px 12px;margin:0 0 14px;font-size:11.5px;font-weight:650;display:flex;justify-content:space-between;gap:15px;align-items:center}
+.cash-status-banner.good{background:var(--green-bg);color:var(--green);border:1px solid #bfe7d3}
+.cash-status-banner.bad{background:var(--red-bg);color:var(--red);border:1px solid #efc4c1}
+.cash-status-banner.warn{background:var(--amber-bg);color:var(--amber);border:1px solid #f1d69b}
+.cash-status-banner.info{background:var(--blue-bg);color:var(--blue);border:1px solid #c4ddec}
+.cash-row-selected td{background:#eef7fc!important}
+.cash-row-shortfall td{background:#fff2f1}
+.cash-row-nodata td{background:#fff9ed}
+.entity-currency-table{width:100%;font-size:11.5px}
+.entity-currency-table td{padding:7px 4px;border-bottom:1px dashed var(--border)}
+.entity-currency-table td:last-child{text-align:right;font-weight:700}
+.ref-note{background:#eef6fb;border:1px solid #c5deed;color:#245f83;border-radius:9px;padding:10px 12px;font-size:11.5px;margin:12px 0}
+@media(max-width:1250px){.cash-entity-cards{grid-template-columns:repeat(2,1fr)}.cash-kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:850px){.cash-entity-cards,.cash-kpi-grid{grid-template-columns:1fr}}
+
+.audit-timeline{display:grid;gap:0}
+.audit-item{display:grid;grid-template-columns:110px 18px 1fr;gap:9px;min-height:62px}
+.audit-dot{width:10px;height:10px;background:var(--navy-2);border-radius:50%;margin-top:4px;position:relative}
+.audit-dot:after{content:"";position:absolute;width:2px;background:#cbd8e1;top:10px;bottom:-52px;left:4px}
+.audit-item:last-child .audit-dot:after{display:none}
+.audit-time{font-size:10.5px;color:var(--muted)}
+.audit-body{font-size:11.5px}.audit-body strong{color:var(--navy)}
+.note{background:#fff8e8;border:1px solid #ecd796;border-radius:9px;padding:10px 12px;color:#735910;font-size:11.5px;line-height:1.45}
+.toast{position:fixed;right:22px;bottom:22px;background:#173b58;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 8px 25px rgba(0,0,0,.22);font-size:12px;z-index:999;opacity:0;transform:translateY(15px);pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateY(0)}
+footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
+@media(max-width:1250px){
+  .kpi-grid{grid-template-columns:repeat(4,1fr)}
+  .entity-cards{grid-template-columns:repeat(2,1fr)}
+  .bulk-fields{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:850px){
+  .container{padding:17px 14px 45px}
+  header{padding:18px 16px}
+  .header-row,.page-head{flex-direction:column}
+  .header-actions{justify-content:flex-start}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:1fr}
+  .stage:not(:last-child):after{display:none}
+  .entity-cards,.exception-grid{grid-template-columns:1fr}
+  .bulk-fields{grid-template-columns:1fr}
+}
+
+.reference-kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:11px;margin-bottom:13px}
+.reference-kpi{background:white;border:1px solid var(--border);border-radius:10px;padding:12px 13px;box-shadow:var(--shadow)}
+.reference-kpi .label{font-size:9.8px;text-transform:uppercase;letter-spacing:.45px;color:var(--muted);font-weight:750}
+.reference-kpi .value{font-size:21px;color:var(--navy);font-weight:780;margin-top:6px}
+.reference-kpi .sub{font-size:10.3px;color:var(--muted);margin-top:4px;line-height:1.35}
+.rule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:13px}
+.rule-step{background:#fbfcfd;border:1px solid var(--border);border-radius:9px;padding:11px 12px;position:relative}
+.rule-step .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--navy-2);color:#fff;font-size:10px;font-weight:800;margin-bottom:7px}
+.rule-step strong{display:block;color:var(--navy);font-size:11.5px;margin-bottom:4px}.rule-step span{font-size:10.5px;color:var(--muted);line-height:1.4}
+.expand-btn{border:1px solid #c9d7e0;background:#fff;color:var(--navy);width:25px;height:25px;border-radius:6px;cursor:pointer;font-weight:800;line-height:1}
+.expand-btn:hover{background:#eef6fb}
+.invoice-detail-row td{background:#f5f8fb!important;padding:0!important;white-space:normal}
+.invoice-detail-box{padding:12px 18px 15px 54px;border-bottom:1px solid var(--border)}
+.invoice-detail-title{font-size:11px;font-weight:750;color:var(--navy);margin-bottom:8px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.invoice-lines-table{font-size:10.8px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.invoice-lines-table th{position:static;background:#355f7f;padding:6px 8px}.invoice-lines-table td{padding:6px 8px;background:white!important;white-space:nowrap}
+.ref-input{width:100%;min-width:180px;border:1px solid #cfd9e0;border-radius:6px;padding:5px 7px;margin-top:5px;font-size:10.5px;background:#fff}
+.ref-input.blocked{border-color:#df8b85;background:#fff8f7}
+.ref-meta{display:block;color:var(--muted);font-size:9.8px;margin-top:4px;line-height:1.35;white-space:normal}
+.source-ref-list{display:flex;flex-wrap:wrap;gap:4px;max-width:245px;white-space:normal}
+.source-ref-chip{font-size:9px;color:#4b6578;background:#edf3f7;border:1px solid #d5e1e9;border-radius:4px;padding:2px 5px}
+.reference-callout{background:#eef6fb;border:1px solid #c5deed;color:#245f83;border-radius:9px;padding:10px 12px;font-size:11.2px;margin:12px 0;line-height:1.45}
+.reference-block-callout{background:var(--red-bg);border:1px solid #efc4c1;color:var(--red);border-radius:9px;padding:10px 12px;font-size:11.2px;margin:12px 0;line-height:1.45}
+.detail-count{font-size:9px;color:var(--purple);background:var(--purple-bg);border:1px solid #ddd3ef;border-radius:4px;padding:2px 5px;margin-left:4px}
+@media(max-width:1250px){.reference-kpi-grid{grid-template-columns:repeat(3,1fr)}.rule-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:850px){.reference-kpi-grid,.rule-grid{grid-template-columns:1fr}}
+
+/* v0.4 settlement, multi-bank and funding extensions */
+.primary-bank-note{background:#eef6fb;border:1px solid #c5deed;border-left:4px solid var(--navy-2);border-radius:9px;padding:10px 12px;font-size:11.4px;color:#245f83;line-height:1.45;margin:12px 0}
+.primary-bank-note strong{color:var(--navy)}
+.processing-cell{min-width:185px;white-space:normal;line-height:1.35}
+.processing-cell strong{display:block;color:var(--navy);font-size:10.8px}
+.processing-cell span{display:block;color:var(--muted);font-size:9.8px;margin-top:2px}
+.timing-stack{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:126px}
+.date-input{border:1px solid #cfd9e0;border-radius:6px;padding:5px 7px;background:#fff;font-size:10.8px;color:var(--text);min-width:124px}
+.calendar-kpis{display:grid;grid-template-columns:repeat(5,minmax(145px,1fr));gap:11px;margin-bottom:14px}
+.calendar-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}
+.calendar-day{background:white;border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);overflow:hidden}
+.calendar-day-head{padding:10px 12px;background:#eef4f8;color:var(--navy);display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px;font-weight:750}
+.calendar-day-body{padding:9px 10px;display:grid;gap:7px}
+.calendar-payment{border:1px solid var(--border);border-radius:8px;padding:8px 9px;background:#fff;font-size:10.5px;line-height:1.35}
+.calendar-payment strong{color:var(--navy)}
+.calendar-payment .meta{color:var(--muted);margin-top:3px}
+.calendar-payment.holiday{border-left:4px solid #d4962a;background:#fffaf0}
+.calendar-payment.overdue{border-left:4px solid var(--red);background:#fff6f5}
+.calendar-payment.complete{border-left:4px solid var(--green);background:#f3fbf7}
+.alert-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.alert-box{background:white;border:1px solid var(--border);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow);font-size:11px;line-height:1.4}
+.alert-box strong{display:block;color:var(--navy);font-size:12px;margin-bottom:4px}
+.alert-box.bad{border-left:4px solid var(--red)}.alert-box.warn{border-left:4px solid #d4962a}.alert-box.good{border-left:4px solid var(--green)}
+.bank-master-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
+.bank-tile{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:#fbfcfd}
+.bank-tile strong{display:block;color:var(--navy);font-size:11.5px}.bank-tile span{display:block;color:var(--muted);font-size:9.8px;margin-top:4px;line-height:1.35}
+.forecast-bar{height:8px;background:#e7edf2;border-radius:10px;overflow:hidden;margin-top:7px}.forecast-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--navy-2),#57a5d1)}
+.buffer-note{font-size:9.7px;color:var(--muted);display:block;margin-top:3px}
+.cash-kpi-grid{grid-template-columns:repeat(5,minmax(150px,1fr))}
+@media(max-width:1250px){.calendar-kpis{grid-template-columns:repeat(3,1fr)}.alert-strip{grid-template-columns:1fr}.bank-master-grid{grid-template-columns:repeat(3,1fr)}.cash-kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:850px){.calendar-kpis,.bank-master-grid,.cash-kpi-grid{grid-template-columns:1fr}}
+
+</style>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <div class="brand">
+      <h1>Treasury Payment Control Tower</h1>
+      <p>AP submission → Treasury enrichment → ERP CSV → bank creation → settlement and debit control</p>
+    </div>
+    <div class="header-actions">
+      <div class="batch-box"><small>Payment Batch</small><strong>22 Jul 2026</strong></div>
+      <div class="batch-box"><small>Last Refresh</small><strong>22 Jul 2026 · 09:18</strong></div>
+      <button class="header-btn" onclick="openApImport()">＋ Import AP Summary</button>
+      <button class="header-btn" onclick="activateTab('erp')">⇩ Export ERP</button>
+    </div>
+  </div>
+</header>
+<div class="upload-help-strip">Upload guide: AP Summary = the consolidated payment-list workbook exported by the parser · Bank Result = normalized bank creation workbook · Statement = transaction-level debit detail file.</div>
+<div class="demo-ribbon">INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation / payment result workbook · Statement = upload the transaction-level bank statement detail file.</div>
+<nav class="tabbar" id="tabbar">
+  <button class="tabbtn active" data-tab="overview">Overview</button>
+  <button class="tabbtn" data-tab="workbench">Payment List</button>
+  <button class="tabbtn" data-tab="erp">ERP Export</button>
+  <button class="tabbtn" data-tab="citi">Bank Reconcile</button>
+  <button class="tabbtn" data-tab="statement">Bank Debit</button>
+  <button class="tabbtn" data-tab="calendar">Processing Calendar</button>
+  <button class="tabbtn" data-tab="exceptions">Exceptions</button>
+  <button class="tabbtn" data-tab="cash">Cash Position</button>
+  <button class="tabbtn" data-tab="master">Master Data & Audit</button>
+</nav>
+
+<main class="container">
+<section id="overview" class="tabpanel active">
+  <div class="page-head">
+    <div><h2>Payment Batch Overview</h2><p>End-to-end monitoring from parsed AP submissions until the payment is confirmed as debited on the bank statement.</p></div>
+    <div class="inline-actions"><button class="btn" onclick="demoAction('Refresh dashboard')">↻ Refresh</button><button class="btn primary" onclick="activateTab('workbench')">Open Payment List →</button></div>
+  </div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div class="section-title">Payment lifecycle <small>Conversion rate between each processing stage</small></div>
+  <div class="card"><div class="pipeline" id="pipeline"></div></div>
+  <div class="section-title">Management view <small>Status by entity, including payment-reference controls</small></div>
+  <div class="grid-2">
+    <div class="card"><h3>Entity status</h3><div class="card-sub">Payment-group status for the current batch.</div><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
+    <div class="card">
+      <h3>Batch completion</h3><div class="card-sub">A payment is complete only after ERP export, bank creation and statement debit confirmation.</div>
+      <div class="donut-wrap"><div class="donut" id="completionDonut"><span id="completionPct">0%<small>Fully completed</small></span></div><div class="legend" id="completionLegend"></div></div>
+      <div class="note">Balance movement alone is never used to confirm a specific payment. Debit confirmation requires transaction-level statement data.</div>
+    </div>
+  </div>
+  <div class="section-title">Outstanding actions <small>Reference blocks and bank creation issues receive the highest priority</small></div>
+  <div class="table-wrap"><table id="topExceptions"></table></div>
+</section>
+
+
+<section id="workbench" class="tabpanel">
+  <div class="page-head">
+    <div><h2>Payment List</h2><p>Imported AP rows are shown here. E-form No. is checked for duplicates, can be overridden inline, and PAYMENT_METHOD / CHARGES_INDICATOR can be selected directly on the dashboard.</p></div>
+    <div class="inline-actions"><button class="btn" onclick="clearFilters()">Clear Filters</button><button class="btn primary" onclick="activateTab('erp')">Review ERP Export →</button></div>
+  </div>
+
+  <div class="reference-kpi-grid" id="referenceKpis"></div>
+  <div class="rule-grid">
+    <div class="rule-step"><div class="num">1</div><strong>Keep invoice lines only</strong><span>The AP parser removes subtotal / control / summary lines and keeps real invoice rows only.</span></div>
+    <div class="rule-step"><div class="num">2</div><strong>Check E-form duplicates</strong><span>Unique E-form numbers are shown in green; duplicates and blocked references are shown in red.</span></div>
+    <div class="rule-step"><div class="num">3</div><strong>Manual E-form override</strong><span>Use the blank field below the E-form No. to replace the representative E-form on the dashboard.</span></div>
+    <div class="rule-step"><div class="num">4</div><strong>Export-ready mapping</strong><span>Payment Method and Charges Indicator feed the ERP CSV export directly.</span></div>
+  </div>
+
+  <div class="primary-bank-note"><strong>Multi-bank design:</strong> Citi Singapore is the current primary payment bank and therefore drives the first production rule set. The data model keeps Payment Bank, Bank Account, Processing Rule and Holiday Calendar as configurable master data so HSBC, Deutsche Bank, Standard Chartered, Bangkok Bank or another bank can be added without redesigning the dashboard.</div>
+
+  <div class="toolbar">
+    <div class="field"><label>Entity</label><select id="filterEntity" onchange="renderWorkbench()"><option value="">All</option></select></div>
+    <div class="field"><label>Payment Bank</label><select id="filterBank" onchange="renderWorkbench()"><option value="">All</option></select></div>
+    <div class="field"><label>Currency</label><select id="filterCurrency" onchange="renderWorkbench()"><option value="">All</option></select></div>
+    <div class="field"><label>Payment Date</label><input type="date" id="filterPaymentDate" onchange="renderWorkbench()"></div>
+    <div class="field"><label>Value Date</label><input type="date" id="filterValueDate" onchange="renderWorkbench()"></div>
+    <div class="field"><label>Timing Status</label><select id="filterTiming" onchange="renderWorkbench()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option></select></div>
+    <div class="field"><label>Bank Status</label><select id="filterCiti" onchange="renderWorkbench()"><option value="">All</option><option>CREATED</option><option>NOT_CREATED</option><option>DIFF</option><option>NOT_CHECKED</option></select></div>
+    <div class="field search"><label>Search supplier / invoice / reference</label><input id="filterSearch" placeholder="Example: FA-PM260708106" oninput="renderWorkbench()"></div>
+  </div>
+
+  <div class="bulk-panel">
+    <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong><span class="small muted">Apply Selected affects checked rows. Apply Filtered affects every visible row.</span></div>
+    <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr 1fr 1fr auto auto">
+      <div class="field"><label>Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
+      <div class="field"><label>Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
+      <div class="field"><label>Value Date</label><input type="date" id="bulkValueDate"></div>
+      <div class="field"><label>CM Approved</label><select id="bulkApproved"><option value="">--</option><option value="Y">Y</option><option value="N">N</option></select></div>
+      <div class="field"><label>Include ERP</label><select id="bulkInclude"><option value="">--</option><option value="Y">Y</option><option value="N">N</option></select></div>
+      <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
+    </div>
+  </div>
+
+  <div class="reference-callout"><strong>Representative reference example:</strong> supplier 36480 has two invoices with source E-forms FA-PM260703076 and FA-AV260706016. The dashboard uses <strong>FA-AV260706016</strong>, the last E-form in source-row order, as the bank payment reference and repeats it on both ERP invoice lines.</div>
+  <div class="table-wrap" style="max-height:690px"><table>
+    <thead><tr>
+      <th>Due Date(Payment date)</th><th>Supplier Number</th><th>Invoice Number</th><th>Due Date(Value date)</th><th>Bene name</th><th class="num">Amount</th>
+      <th>Currency</th><th>E-form No.</th><th>Payment Bank</th><th>Payment Method</th><th>Charges Indicator</th><th>Bank charge</th><th>Detail</th><th>Account number</th><th>Swiftcode</th>
+    </tr></thead><tbody id="workbenchBody"></tbody>
+  </table></div>
+</section>
+
+
+<section id="erp" class="tabpanel">
+  <div class="page-head"><div><h2>ERP CSV Export</h2><p>Entity-level validation. Any selected group with an invalid payment reference, missing Payment Method, Bank Charge, Bank Account or Value Date, or pending approval blocks that entity.</p></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
+  <div class="entity-cards" id="entityExportCards"></div>
+  <div class="section-title">Validation report <small>Reference checks run before ERP output is generated</small></div>
+  <div class="grid-2">
+    <div class="card"><div class="validation-list" id="validationList"></div></div>
+    <div class="card"><h3>ERP output schema</h3><div class="card-sub">The output keeps the existing 13-column ERP template.</div><div class="table-wrap" style="max-height:350px"><table><thead><tr><th>#</th><th>Column</th><th>Source</th></tr></thead><tbody>
+      <tr><td>1</td><td>ORG_ID</td><td>Entity master</td></tr><tr><td>2</td><td>SUPPLIER_NUM</td><td>AP file</td></tr><tr><td>3</td><td>AP_INVOICE_NUMBER</td><td>AP invoice line</td></tr>
+      <tr><td>4</td><td>EFORM_NUMBER</td><td>Final group payment reference: last E-form / auto suffix / manual override</td></tr><tr><td>5</td><td>PAYMENT_AMOUNT</td><td>AP invoice-line amount</td></tr><tr><td>6</td><td>DESCRIPTION</td><td>AP invoice-line description</td></tr>
+      <tr><td>7</td><td>PAYMENT_METHOD</td><td>Treasury selection / bank master mapping</td></tr><tr><td>8</td><td>CHARGES_INDICATOR</td><td>Treasury selection / AP charge mapping</td></tr><tr><td>9</td><td>ORDERING_PARTY</td><td>Company's own paying account (entity + currency, from the account master) — not the vendor's account</td></tr>
+      <tr><td>10</td><td>PURPOSE_CODE</td><td>Blank unless a purpose-code master rule is supplied</td></tr><tr><td>11</td><td>(unlabeled column)</td><td>Vendor bank account, when available from the AP file</td></tr><tr><td>12–13</td><td>Value date (DD/MM/YYYY) · CREATED_BY</td><td>AP + Tultc4 default</td></tr>
+    </tbody></table></div></div>
+  </div>
+</section>
+
+
+<section id="citi" class="tabpanel">
+  <div class="page-head"><div><h2>Bank Creation Reconciliation</h2><p>The final Payment Reference is the primary key across AP, ERP, the payment bank and transaction-level statements. Bank-internal references are not required in the management view.</p></div><div class="inline-actions"><div class="field"><label>Payment Bank</label><select id="reconBank" onchange="renderCiti()"></select></div></div></div>
+  <div class="primary-bank-note"><strong>Current operating model:</strong> Citi Singapore is the primary payment bank. The reconciliation screen is intentionally bank-neutral; each future bank will supply its own normalized result parser and matching configuration while retaining Payment Reference as the shared control key.</div>
+  <div class="grid-3">
+    <div class="card"><h3>Import payment-bank result and history</h3><div class="card-sub">The parsed layer retains prior payment references so uniqueness can be validated before export. Upload the bank result workbook to check Amount, Beneficiary Name, Bank Account and SWIFT.</div><div class="upload-zone" id="citiDropZone" onclick="openBankImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCitiDrop(event)"><strong>Drop bank result workbook here</strong>Upload the bank creation / payment result workbook (.xlsx, .xls or .csv). This file is used to reconcile Amount, Beneficiary Name, Bank Account and SWIFT against the Payment List.</div></div>
+    <div class="card"><h3>Reconcile logic</h3><div class="validation-list"><div class="validation-item"><span>1. Final Payment Reference</span><span class="status good">Primary key</span></div><div class="validation-item"><span>2. Amount</span><span class="status info">Checked</span></div><div class="validation-item"><span>3. Beneficiary Name</span><span class="status info">Checked</span></div><div class="validation-item"><span>4. Bank Account</span><span class="status info">Checked</span></div><div class="validation-item"><span>5. SWIFT</span><span class="status info">Checked</span></div><div class="validation-item"><span>Match = TRUE</span><span class="status good">All 4 checks pass</span></div></div></div>
+    <div class="card"><h3>Bank and reference summary</h3><div id="citiSummary" class="validation-list"></div></div>
+  </div>
+  <div class="ref-note"><strong>Payment Reference = final E-form reference.</strong> It is searched in Customer Reference, Payment Details, Transaction Description and End-to-End Reference. A reference already found in prior bank history is blocked before ERP export and requires a unique manual override.</div>
+  <div class="section-title">Transaction-level result <small>Amount, Beneficiary Name, Bank Account and SWIFT are checked against the Payment List — tick rows below and download the reconciliation result</small></div>
+  <div class="inline-actions" style="margin-bottom:10px"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><button class="btn primary" onclick="downloadCitiSelection()">⇩ Download Selected</button></div>
+  <div class="table-wrap"><table id="citiTable"></table></div>
+</section>
+
+
+<section id="statement" class="tabpanel">
+  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2><p>The final Payment Reference is searched in transaction-level statement fields to confirm whether the payment has been debited.</p></div></div>
+  <div class="grid-3">
+    <div class="card"><h3>Transaction detail</h3><div class="card-sub">Upload the statement detail file used to confirm actual debit / credit transactions.</div><div class="upload-zone" id="statementDropZone" onclick="openStatementImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleStatementDrop(event)"><strong>Drop transaction-level statement here</strong>Upload the bank statement detail file (.csv or .xlsx) used to confirm debits by reference and amount.</div></div>
+    <div class="card"><h3>Match confidence</h3><div class="validation-list"><div class="validation-item"><span>Exact reference + amount</span><span class="status good">Confirmed</span></div><div class="validation-item"><span>Account + currency + amount + date</span><span class="status warn">Probable</span></div><div class="validation-item"><span>Multiple candidate debits</span><span class="status bad">Manual review</span></div></div></div>
+    <div class="card"><h3>Debit status summary</h3><div id="debitSummary" class="validation-list"></div></div>
+  </div>
+  <div class="section-title">Payment debit follow-up <small>Debit follow-up starts only after Bank Status = CREATED</small></div><div class="table-wrap"><table id="debitTable"></table></div>
+</section>
+
+
+<section id="calendar" class="tabpanel">
+  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Expected Completion = Value Date + configured bank processing business days, adjusted for weekends and the applicable destination-country holiday calendar.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
+  <div class="primary-bank-note"><strong>Control principle:</strong> Value Date is the date the bank starts processing. Processing days and holiday calendars are master data by Payment Bank, bank location, payment currency, destination country and payment method. The rule values shown in this draft are UAT examples only and must be replaced by the approved bank SLA and official holiday calendars in production.</div>
+  <div class="alert-strip" id="settlementAlerts"></div>
+  <div class="calendar-kpis" id="calendarKpis"></div>
+  <div class="toolbar">
+    <div class="field"><label>Entity</label><select id="calendarEntity" onchange="renderCalendar()"><option value="">All</option></select></div>
+    <div class="field"><label>Payment Bank</label><select id="calendarBank" onchange="renderCalendar()"><option value="">All</option></select></div>
+    <div class="field"><label>Currency</label><select id="calendarCurrency" onchange="renderCalendar()"><option value="">All</option></select></div>
+    <div class="field"><label>Timing Status</label><select id="calendarStatus" onchange="renderCalendar()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option></select></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><h3>Illustrative IDR case</h3><div class="card-sub">This example shows the user note requested for Value Date 03 Jul. It is not a statement of the actual 2026 Citi SLA or Indonesia holiday calendar.</div><div id="idrExample"></div></div>
+  <div class="section-title">Expected completion calendar <small>Payments are grouped by calculated settlement date</small></div><div class="calendar-grid" id="processingCalendar"></div>
+  <div class="section-title">Settlement control detail <small>Holiday and weekend adjustments remain visible in the audit trail</small></div><div class="table-wrap"><table id="processingTable"></table></div>
+</section>
+
+<section id="exceptions" class="tabpanel">
+  <div class="page-head"><div><h2>Exception Center</h2><p>Reference, AP/CM, ERP, bank creation, settlement and bank-statement issues are consolidated into one action queue.</p></div><button class="btn" onclick="demoAction('Export exception list')">⇩ Export Exceptions</button></div>
+  <div class="exception-grid" id="exceptionCards"></div>
+  <div class="toolbar"><div class="field"><label>Stage</label><select id="exStage" onchange="renderExceptions()"><option value="">All</option><option>REFERENCE</option><option>AP / CM</option><option>ERP</option><option>BANK CREATE</option><option>BANK DEBIT</option><option>SETTLEMENT</option></select></div><div class="field"><label>Severity</label><select id="exSeverity" onchange="renderExceptions()"><option value="">All</option><option>BLOCKER</option><option>HIGH</option><option>MEDIUM</option></select></div><div class="field search"><label>Search</label><input id="exSearch" oninput="renderExceptions()" placeholder="Reference, entity or issue"></div></div>
+  <div class="table-wrap"><table id="exceptionTable"></table></div>
+</section>
+
+
+<section id="cash" class="tabpanel">
+  <div class="page-head"><div><h2>Cash Sufficiency & Funding Forecast</h2><p>Liquidity is controlled by Entity → Bank Account → Account Currency. Selected payment groups, minimum buffer and expected debit dates are assessed without netting unrelated entities or currencies.</p></div><button class="btn" onclick="demoAction('Refresh balance summary')">↻ Refresh Balance</button></div>
+  <div class="cash-toolbar"><div class="field"><label>Entity</label><select id="cashEntity" onchange="cashEntityChanged()"></select></div><div class="field"><label>Currency</label><select id="cashCurrency" onchange="cashCurrencyChanged()"></select></div><div class="field" style="min-width:280px"><label>Bank Account</label><select id="cashAccount" onchange="cashAccountChanged()"></select></div><div class="small muted" style="margin-left:auto;padding-bottom:8px">Selected Payments = payment groups with INCLUDE_ERP = Y</div></div>
+  <div class="cash-entity-cards" id="cashEntityCards"></div><div id="cashStatusBanner"></div><div class="cash-kpi-grid" id="cashKpiGrid"></div>
+  <div class="grid-2"><div class="card"><h3>Entity funding by currency</h3><div class="card-sub">Balances and payments are aggregated only when the entity and account currency are the same.</div><table class="entity-currency-table"><tbody id="entityCurrencySummary"></tbody></table></div><div class="card"><h3>Statement coverage</h3><div class="card-sub">Freshness and continuity for the selected entity.</div><div class="validation-list" id="coverageSummary"></div><div class="note" style="margin-top:10px">A balance summary supports liquidity planning but does not prove that a specific payment was debited.</div></div></div>
+  <div class="section-title">Bank account funding control <small>Example focus: VNGSING · 0863645018 · USD</small></div><div class="table-wrap"><table id="cashTable"></table></div>
+  <div class="section-title">Expected debit schedule for the selected account <small>Projected balance is shown after each expected settlement date and minimum buffer</small></div><div class="table-wrap"><table id="cashForecastTable"></table></div>
+  <div class="section-title">Payments allocated to the selected account <small>Group totals are counted once; invoice lines can share the same representative reference</small></div><div class="table-wrap"><table id="cashPaymentTable"></table></div>
+</section>
+
+
+
+<section id="master" class="tabpanel">
+  <div class="page-head"><div><h2>Master Data & Audit</h2><p>Bank accounts, multi-bank configuration, processing SLA, holiday calendars, parsed-data pipeline and user actions.</p></div><button class="btn" onclick="demoAction('Open settings')">⚙ Settings</button></div>
+  <div class="grid-3">
+    <div class="card"><h3>Account master</h3><div class="card-sub">Coverage from the full bank-account master.</div><div class="validation-list"><div class="validation-item"><span>Active bank accounts</span><strong>49</strong></div><div class="validation-item"><span>Entity coverage</span><strong>8</strong></div><div class="validation-item"><span>Unmapped statement accounts</span><strong>0</strong></div></div></div>
+    <div class="card"><h3>Payment-reference control</h3><div class="card-sub">Fields retained in the parsed layer.</div><div class="validation-list"><div class="validation-item"><span>PAYMENT_GROUP_ID</span><span class="status good">Required</span></div><div class="validation-item"><span>SOURCE_FILE / SOURCE_ROW</span><span class="status good">Required</span></div><div class="validation-item"><span>ORIGINAL_EFORM</span><span class="status good">Required</span></div><div class="validation-item"><span>MANUAL_REFERENCE_OVERRIDE</span><span class="status info">Optional</span></div></div></div>
+    <div class="card"><h3>Parsed data pipeline</h3><div class="card-sub">Normalized inputs from the lower parser layer.</div><div class="validation-list"><div class="validation-item"><span>AP_PAYMENT_DETAIL</span><span class="status good">PASS</span></div><div class="validation-item"><span>BANK_PAYMENT_RESULT</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_TRANSACTION_DETAIL</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_BALANCE_SUMMARY</span><span class="status good">PASS</span></div></div></div>
+  </div>
+  <div class="section-title">Multi-bank configuration <small>Citi is active now; additional banks are add-ins, not redesigns</small></div>
+  <div class="card"><div class="bank-master-grid">
+    <div class="bank-tile"><strong>Citi Singapore</strong><span>ACTIVE · Primary payment bank<br>ERP, bank-result and statement rules configured</span></div>
+    <div class="bank-tile"><strong>HSBC</strong><span>READY FOR ADD-IN<br>Account master exists; bank-result parser and SLA mapping to be activated</span></div>
+    <div class="bank-tile"><strong>Deutsche Bank</strong><span>READY FOR ADD-IN<br>Account master exists; payment-file connector remains configurable</span></div>
+    <div class="bank-tile"><strong>Standard Chartered</strong><span>READY FOR ADD-IN<br>Account master exists; result schema can be mapped to the same contract</span></div>
+    <div class="bank-tile"><strong>Bangkok Bank</strong><span>READY FOR ADD-IN<br>Account master exists; local payment and holiday rules can be added</span></div>
+  </div></div>
+  <div class="section-title">Processing SLA & Holiday Calendar <small>All values shown below are draft master-data examples</small></div>
+  <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="card-sub">Production must source official bank and destination-country calendars. UAT examples are clearly labelled.</div><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
+  <div class="section-title">Audit timeline <small>Production actions will be stored in SQLite</small></div>
+  <div class="grid-2"><div class="card"><div class="audit-timeline">
+    <div class="audit-item"><div class="audit-time">22 Jul · 09:18</div><div class="audit-dot"></div><div class="audit-body"><strong>AP batch refreshed</strong><br><span class="muted">7 entities · parser contract passed · user: CM01</span></div></div>
+    <div class="audit-item"><div class="audit-time">22 Jul · 09:19</div><div class="audit-dot"></div><div class="audit-body"><strong>Payment references derived</strong><br><span class="muted">Last-E-form rule applied · repeated bases suffixed · prior bank history checked</span></div></div>
+    <div class="audit-item"><div class="audit-time">22 Jul · 09:20</div><div class="audit-dot"></div><div class="audit-body"><strong>Settlement forecast calculated</strong><br><span class="muted">Value Date + SLA business days + weekend / holiday adjustments</span></div></div>
+    <div class="audit-item"><div class="audit-time">22 Jul · 09:34</div><div class="audit-dot"></div><div class="audit-body"><strong>Bulk payment setup applied</strong><br><span class="muted">ZPI · SGD · 3 payment groups · method, charge and bank account updated</span></div></div>
+    <div class="audit-item"><div class="audit-time">22 Jul · 10:05</div><div class="audit-dot"></div><div class="audit-body"><strong>ERP CSV exported</strong><br><span class="muted">6 entities · validation passed</span></div></div>
+  </div></div><div class="card"><h3>Production architecture</h3><div class="card-sub">Offline web application on a Windows laptop.</div><div class="validation-list"><div class="validation-item"><span>Frontend</span><strong>HTML / CSS / JavaScript</strong></div><div class="validation-item"><span>Backend engine</span><strong>Packaged local EXE</strong></div><div class="validation-item"><span>Database</span><strong>SQLite</strong></div><div class="validation-item"><span>Launcher</span><strong>Run_Dashboard.cmd</strong></div><div class="validation-item"><span>Browser</span><strong>Edge / Chrome</strong></div><div class="validation-item"><span>Bank connectors</span><strong>Configurable add-ins</strong></div></div></div></div>
+</section>
+
+</main>
+<div class="toast" id="toast"></div>
+<footer>Treasury Payment Control Tower · Interactive UI draft v0.4 Gray · Multi-bank local/offline concept</footer>
+
+<script>
+const methods = [
+  "CHINA-ACH - NURG - CITI400",
+  "CHINA-DFT - NURG - CITI391",
+  "CHINA-CBT - URGP - CITI392",
+  "HONGKONG-DFT - URGP - CITI391",
+  "HONGKONG-CBT - URGP - CITI392",
+  "HONGKONG-BKT - URGP - CITI393",
+  "PHP-ACH - NURG - CITI975",
+  "PHP-DFT - URGP - CITI391",
+  "PHP-CBT - URGP - CITI392",
+  "PHP-BKT - URNS - CITI393",
+  "SING-ACH - NURG - CITI421",
+  "SING-DFT - NURG - CITI391",
+  "SING-CBT - URGP - CITI392",
+  "SING-BKT - BKTR - CITI393",
+  "THAILAND-ACH - NURG",
+  "THAILAND-CBT - URGP - CITI392",
+  "THAILAND-DFT - URGP - CITI391",
+  "TAIWAN-CBT - URGP - CITI392",
+  "TAIWAN-ACH - NURG - CITI430",
+  "UK-BKT - BKTR",
+  "UK-CBT - URGP",
+  "UK-SEPA - SEPA",
+  "UK-FASTER - URNS",
+  "HK-DFT - URGP - CITI391",
+  "HK-CBT - URGP - CITI392",
+  "HK-BKT - URGP - CITI393"
+];
+const chargeOptions = ["CRED","DEBT","SHAR"];
+const orderings = ["0863645018","0863645026","0139143019","0139143027","0139143035","0001051008","0001051016","0000108006","5000108008","1817086221","0553241006","0553241103","068495008","068495016"];
+
+const BANK_OPTIONS = [
+  { value: "Citi Singapore", label: "Citi" },
+  { value: "Deutsche Bank", label: "DB" },
+  { value: "HSBC Singapore", label: "HSBC" },
+  { value: "Standard Chartered", label: "SC" }
+];
+
+function bankDisplay(v){
+  const s = String(v || "").trim();
+  const map = {
+    "Citi Singapore": "Citi",
+    "Citi": "Citi",
+    "Deutsche Bank": "DB",
+    "DB": "DB",
+    "HSBC Singapore": "HSBC",
+    "HSBC": "HSBC",
+    "Standard Chartered": "SC",
+    "Standard Chartered Bank": "SC",
+    "SC": "SC"
+  };
+  return map[s] || s || "Citi";
+}
+
+function optionHtmlPairs(items,current){
+  return items.map(({value,label}) => `<option value="${escapeHtml(value)}" ${value===current?"selected":""}>${escapeHtml(label)}</option>`).join("");
+}
+
+// Entities that settle through the Singapore Citi routing family.
+const SING_CITI_ENTITIES = ["VNGSING", "ZPI", "VNGGAMES Sing", "VNG I"];
+
+// Payment Method defaults when Payment Bank = Citi. Only meaningful for Citi —
+// HSBC / Standard Chartered / Deutsche Bank have no routing-code choice, so
+// Payment Method is locked to the bank itself for those (see methodOptionsForBank).
+// Still a DEFAULT only: the dropdown stays editable so treasury can override it.
+function computeDefaultCitiMethod(entity, ccy, swiftcode){
+  const swift = String(swiftcode || "").toUpperCase().replace(/\s+/g, "");
+  const currency = String(ccy || "").toUpperCase();
+  if (SING_CITI_ENTITIES.includes(entity)) {
+    if (swift === "CITISGSG") return "SING-BKT - BKTR - CITI393";
+    if (currency === "SGD") return "SING-ACH - NURG - CITI421";
+    return "SING-CBT - URGP - CITI392";
+  }
+  if (entity === "GAMECO") return "THAILAND-DFT - URGP - CITI391";
+  // Greennode TH pays out of two accounts, one per currency: the USD account
+  // (0553241103) uses CBT, the THB account (0553241006) uses DFT.
+  if (entity === "GN TH") {
+    if (currency === "USD") return "THAILAND-CBT - URGP - CITI392";
+    if (currency === "THB") return "THAILAND-DFT - URGP - CITI391";
+    return defaultMethod(ccy);
+  }
+  return defaultMethod(ccy);
+}
+
+function defaultMethodForBank(bank, ccy, entity, swiftcode){
+  return bankDisplay(bank) === "Citi" ? computeDefaultCitiMethod(entity, ccy, swiftcode) : bankDisplay(bank);
+}
+
+// Non-Citi banks have exactly one possible "method" (the bank itself) — the
+// Payment Method cell is rendered disabled for those so it reads as locked.
+function methodOptionsForBank(bank){
+  const current = bankDisplay(bank);
+  return current === "Citi" ? methods : [current];
+}
+
+// Maps the raw "Bank charge" text from the AP file (Our / Share / Ben) to the
+// ERP Charges Indicator code. Falls back to the currency-based default, and
+// stays editable afterwards either way.
+function chargeCodeFromRaw(raw){
+  const t = String(raw || "").trim().toLowerCase();
+  if (t === "our") return "DEBT";
+  if (t === "share" || t === "shared") return "SHAR";
+  if (t === "ben" || t === "bene" || t === "beneficiary") return "CRED";
+  return "";
+}
+let payments = [
+{id:1,entity:"VNGSING",org:"SG01",supplier:"S000184",invoice:"INV-SG-1407",eform:"FA-PM260722001",beneficiary:"ABC Cloud Pte Ltd",amount:12500,currency:"SGD",payFrom:"0863645026",method:"SING-ACH - NURG - CITI421",charge:"DEBT",ordering:"0863645026",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722001",vendorAccount:"7330198821",swift:"DBSSSGSGXXX",purpose:"SUPP",description:"Cloud service Jul-26"},
+{id:2,entity:"VNGSING",org:"SG01",supplier:"S000233",invoice:"INV-SG-2218",eform:"FA-PM260722002",beneficiary:"Media Partner Limited",amount:45800,currency:"USD",payFrom:"0863645018",method:"SING-CBT - URGP - CITI392",charge:"SHAR",ordering:"0863645018",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"PENDING_DEBIT",valueDate:"2026-07-22",bankRef:"CITI260722002",vendorAccount:"9983047710",swift:"BOFAUS3NXXX",purpose:"SERV",description:"Media fee"},
+{id:3,entity:"VNGSING",org:"SG01",supplier:"S000491",invoice:"INV-SG-2241",eform:"FA-PM260722003",beneficiary:"Local Vendor SG",amount:3250,currency:"SGD",payFrom:"0863645026",method:"SING-ACH - NURG - CITI421",charge:"SHAR",ordering:"0863645026",mapping:"SUGGESTED",approved:false,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"",vendorAccount:"0129384756",swift:"OCBCSGSGXXX",purpose:"SUPP",description:"Local service"},
+{id:4,entity:"VNGGAMES Sing",org:"GG01",supplier:"G000118",invoice:"GG-2026-071",eform:"FA-PM260722011",beneficiary:"Game Studio A",amount:28000,currency:"USD",payFrom:"0139143019",method:"SING-CBT - URGP - CITI392",charge:"DEBT",ordering:"0139143019",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722011",vendorAccount:"4900123400",swift:"CHASSGSGXXX",purpose:"SERV",description:"Game service fee"},
+{id:5,entity:"VNGGAMES Sing",org:"GG01",supplier:"G000205",invoice:"GG-2026-072",eform:"FA-PM260722012",beneficiary:"Singapore Office Vendor",amount:8200,currency:"SGD",payFrom:"0139143035",method:"SING-ACH - NURG - CITI421",charge:"SHAR",ordering:"0139143035",mapping:"AUTO",approved:true,include:true,exported:true,citi:"DIFF",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"CITI260722012",vendorAccount:"7733029011",swift:"UOVBSGSGXXX",purpose:"SUPP",description:"Office expense"},
+{id:6,entity:"ZPI",org:"ZP01",supplier:"Z000047",invoice:"ZPI-0722-01",eform:"FA-PM260722021",beneficiary:"Payment Gateway SG",amount:18000,currency:"SGD",payFrom:"0001051016",method:"SING-ACH - NURG - CITI421",charge:"SHAR",ordering:"0001051016",mapping:"CM",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722021",vendorAccount:"0101882920",swift:"DBSSSGSGXXX",purpose:"SERV",description:"Gateway fee"},
+{id:7,entity:"ZPI",org:"ZP01",supplier:"Z000052",invoice:"ZPI-0722-02",eform:"FA-PM260722022",beneficiary:"Regional Vendor USD",amount:15500,currency:"USD",payFrom:"0001051008",method:"SING-CBT - URGP - CITI392",charge:"DEBT",ordering:"0001051008",mapping:"CM",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722022",vendorAccount:"1194020051",swift:"HSBCHKHHXXX",purpose:"SUPP",description:"Regional service"},
+{id:8,entity:"ZPI",org:"ZP01",supplier:"Z000066",invoice:"ZPI-0722-03",eform:"FA-PM260722023",beneficiary:"Local Content Vendor",amount:9800,currency:"SGD",payFrom:"0001051016",method:"SING-ACH - NURG - CITI421",charge:"SHAR",ordering:"0001051016",mapping:"SUGGESTED",approved:false,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"",vendorAccount:"7801002201",swift:"OCBCSGSGXXX",purpose:"SERV",description:"Content fee"},
+{id:9,entity:"GAMECO",org:"TH01",supplier:"T000017",invoice:"TH-0722-001",eform:"FA-PM260722031",beneficiary:"Thailand Marketing Co Ltd",amount:2600000,currency:"THB",payFrom:"0000108006",method:"THAILAND-DFT - URGP - CITI391",charge:"DEBT",ordering:"0000108006",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722031",vendorAccount:"0098742210",swift:"KASITHBKXXX",purpose:"SERV",description:"Marketing campaign"},
+{id:10,entity:"GAMECO",org:"TH01",supplier:"T000022",invoice:"TH-0722-002",eform:"FA-PM260722032",beneficiary:"Overseas Technology Vendor",amount:12000,currency:"USD",payFrom:"5000108008",method:"THAILAND-CBT - URGP - CITI392",charge:"DEBT",ordering:"5000108008",mapping:"AUTO",approved:true,include:true,exported:true,citi:"NOT_CREATED",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"",vendorAccount:"2390001843",swift:"BOFAUS3NXXX",purpose:"SERV",description:"Technology fee"},
+{id:11,entity:"KMZ",org:"CN01",supplier:"C000031",invoice:"CN-260722-01",eform:"FA-PM260722041",beneficiary:"Shanghai Service Provider",amount:580000,currency:"CNY",payFrom:"1817086221",method:"CHINA-ACH - NURG - CITI400",charge:"SHAR",ordering:"1817086221",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722041",vendorAccount:"622202020001",swift:"ICBKCNBJXXX",purpose:"SERV",description:"Local service"},
+{id:12,entity:"KMZ",org:"CN01",supplier:"C000038",invoice:"CN-260722-02",eform:"FA-PM260722042",beneficiary:"China Office Vendor",amount:240000,currency:"CNY",payFrom:"1817086221",method:"CHINA-ACH - NURG - CITI400",charge:"SHAR",ordering:"1817086221",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_AMOUNT_DIFF",valueDate:"2026-07-22",bankRef:"CITI260722042",vendorAccount:"622202020099",swift:"CMBCCNBSXXX",purpose:"SUPP",description:"Office service"},
+{id:13,entity:"GN TH",org:"GNTH",supplier:"N000012",invoice:"GNTH-0722-01",eform:"FA-PM260722051",beneficiary:"Data Center Thailand",amount:1250000,currency:"THB",payFrom:"0553241006",method:"THAILAND-DFT - URGP - CITI391",charge:"DEBT",ordering:"0553241006",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"DEBIT_CONFIRMED",valueDate:"2026-07-22",bankRef:"CITI260722051",vendorAccount:"0987211430",swift:"BKKBTHBKXXX",purpose:"SERV",description:"Data center fee"},
+{id:14,entity:"GN TH",org:"GNTH",supplier:"N000019",invoice:"GNTH-0722-02",eform:"FA-PM260722052",beneficiary:"International Hardware Vendor",amount:7500,currency:"USD",payFrom:"0553241103",method:"THAILAND-CBT - URGP - CITI392",charge:"DEBT",ordering:"0553241103",mapping:"AUTO",approved:true,include:true,exported:true,citi:"CREATED",debit:"PENDING_DEBIT",valueDate:"2026-07-22",bankRef:"CITI260722052",vendorAccount:"3320105099",swift:"CHASUS33XXX",purpose:"SUPP",description:"Hardware purchase"},
+{id:15,entity:"VNG I",org:"ID01",supplier:"I000003",invoice:"ID-0722-001",eform:"FA-PM260622069",beneficiary:"Indonesia Operating Vendor",amount:5380,currency:"SGD",payFrom:"068495008",method:"",charge:"SHAR",ordering:"",mapping:"UNMAPPED",approved:false,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"",vendorAccount:"0001918821",swift:"BMRIIDJAXXX",purpose:"SERV",description:"Operating service"},
+{id:16,entity:"VNG I",org:"ID01",supplier:"I000009",invoice:"ID-0722-002",eform:"FA-PM260722062",beneficiary:"Indonesia Tech Vendor",amount:14200,currency:"USD",payFrom:"068495016",method:"THAILAND-CBT - URGP - CITI392",charge:"DEBT",ordering:"068495016",mapping:"SUGGESTED",approved:false,include:false,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",bankRef:"",vendorAccount:"0002918821",swift:"CENAIDJAXXX",purpose:"SERV",description:"Technology service"}
+];
+const accounts = [
+{entity:"VNGSING",bank:"Citi",account:"0863645018",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:1296054.27,date:"2026-07-29",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"Citi",account:"0863645026",accountName:"VNG Singapore PTE. LTD.",currency:"SGD",balance:87304.18,date:"2026-07-27",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"Citi",account:"0863645034",accountName:"HR VNG Singapore PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGSING",bank:"Citi",account:"0863645042",accountName:"VNG Singapore PTE. LTD. - ESOP",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGSING",bank:"HSBC",account:"047-023296-001",accountName:"VNG Singapore PTE. LTD.",currency:"SGD",balance:520095.36,date:"2026-07-30",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"HSBC",account:"260-503123-178",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:373370.15,date:"2026-07-30",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"Standard Chartered",account:"0102781397",accountName:"VNG Singapore PTE. LTD.",currency:"SGD",balance:615174.67,date:"2026-07-27",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"Standard Chartered",account:"0170725839",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:278045.99,date:"2026-07-15",fresh:"STALE",continuity:"PASS",source:"summary.xlsx"},
+{entity:"VNGSING",bank:"Deutsche Bank",account:"2050342050",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGSING",bank:"Deutsche Bank",account:"2050342000",accountName:"VNG Singapore PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGGAMES Sing",bank:"Citi",account:"0139143019",accountName:"VNGGAMES PTE LTD",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGGAMES Sing",bank:"Citi",account:"0139143027",accountName:"VNGGAMES PTE LTD",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGGAMES Sing",bank:"Citi",account:"0139143035",accountName:"VNGGAMES PTE LTD",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"ZPI",bank:"Citi",account:"0001051008",accountName:"Zingplay International PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"ZPI",bank:"Citi",account:"0001051016",accountName:"Zingplay International PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"ZPI",bank:"Citi",account:"0001051024",accountName:"HR Zingplay International PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GAMECO",bank:"Citi",account:"0000108006",accountName:"VNG GAMES CO., LTD.",currency:"THB",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GAMECO",bank:"Citi",account:"5000108008",accountName:"VNG GAMES CO., LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"KMZ",bank:"Citi",account:"1817086221",accountName:"KMZ INTERACTIVE ENTERTAINMENT",currency:"CNY",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"KMZ",bank:"Citi",account:"1817465249",accountName:"KMZ INTERACTIVE ENTERTAINMENT",currency:"CNY",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"KMZ",bank:"Citi",account:"1817459249",accountName:"KMZ INTERACTIVE ENTERTAINMENT",currency:"CNY",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"KMZ",bank:"Citi",account:"1817086922",accountName:"KMZ INTERACTIVE ENTERTAINMENT",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GN TH",bank:"Citi",account:"0553241006",accountName:"Greennode Co., Ltd.",currency:"THB",balance:645344.12,date:"2026-07-24",fresh:"STALE",continuity:"PASS",source:"summary.xlsx"},
+{entity:"GN TH",bank:"Citi",account:"0553241103",accountName:"Greennode Co., Ltd.",currency:"USD",balance:87117.07,date:"2026-07-27",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"GN TH",bank:"Bangkok Bank",account:"0083054494",accountName:"Greennode Co., Ltd.",currency:"THB",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GN TH",bank:"Bangkok Bank",account:"0087586210",accountName:"Greennode Co., Ltd.",currency:"THB",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GN TH",bank:"Deutsche Bank",account:"0039198000",accountName:"Greennode Thailand",currency:"THB",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GN TH",bank:"Deutsche Bank",account:"0039198050",accountName:"Greennode Thailand",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNG I",bank:"Citi",account:"068495008",accountName:"VNG Investment PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNG I",bank:"Citi",account:"068495016",accountName:"VNG Investment PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNG I",bank:"HSBC",account:"142-660323-001",accountName:"VNG Investment PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNG I",bank:"HSBC",account:"260-521117-178",accountName:"VNG Investment PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"GREENNODE SG",bank:"Deutsche Bank",account:"2050284000",accountName:"Greennode PTE. LTD.",currency:"SGD",balance:353.70,date:"2026-07-20",fresh:"STALE",continuity:"PASS",source:"summary.xlsx"},
+{entity:"GREENNODE SG",bank:"Deutsche Bank",account:"2050284050",accountName:"Greennode PTE. LTD.",currency:"USD",balance:391687.91,date:"2026-07-23",fresh:"STALE",continuity:"PASS",source:"summary.xlsx"},
+{entity:"GREENNODE SG",bank:"HSBC",account:"147-127435-001",accountName:"Greennode PTE. LTD.",currency:"SGD",balance:105731.76,date:"2026-07-27",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"},
+{entity:"GREENNODE SG",bank:"HSBC",account:"260-875968-178",accountName:"Greennode PTE. LTD.",currency:"USD",balance:87194.92,date:"2026-07-27",fresh:"FRESH",continuity:"PASS",source:"summary.xlsx"}
+];
+
+
+
+const AS_OF_DATE = "2026-07-22";
+const bankProcessingRules = [
+  {bank:"Citi Singapore",currency:"SGD",destination:"Singapore",days:1,calendar:"Singapore",methodFamily:"Local / ACH",status:"ACTIVE",source:"UAT SLA master"},
+  {bank:"Citi Singapore",currency:"USD",destination:"Any",days:2,calendar:"Destination country",methodFamily:"Cross-border",status:"ACTIVE",source:"UAT SLA master"},
+  {bank:"Citi Singapore",currency:"THB",destination:"Thailand",days:1,calendar:"Thailand",methodFamily:"Local / DFT",status:"ACTIVE",source:"UAT SLA master"},
+  {bank:"Citi Singapore",currency:"CNY",destination:"China",days:1,calendar:"China",methodFamily:"Local / ACH",status:"ACTIVE",source:"UAT SLA master"},
+  {bank:"Citi Singapore",currency:"IDR",destination:"Indonesia",days:2,calendar:"Indonesia",methodFamily:"Cross-border",status:"ACTIVE",source:"UAT example only"},
+  {bank:"HSBC Singapore",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
+  {bank:"Deutsche Bank",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
+  {bank:"Standard Chartered",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
+  {bank:"Bangkok Bank",currency:"ANY",destination:"Thailand",days:null,calendar:"Thailand",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"}
+];
+const holidayCalendar = {
+  "Singapore":[{date:"2026-07-24",name:"Configured Singapore bank holiday (UAT sample)",source:"UAT"}],
+  "Indonesia":[{date:"2026-07-06",name:"Configured Indonesia bank holiday (UAT sample)",source:"UAT"}],
+  "Thailand":[{date:"2026-07-28",name:"Configured Thailand bank holiday (UAT sample)",source:"UAT"}],
+  "China":[{date:"2026-07-29",name:"Configured China bank holiday (UAT sample)",source:"UAT"}],
+  "United States":[],"Hong Kong":[],"Korea":[]
+};
+const minimumBuffers = {
+  "0863645018|USD":300000,
+  "0863645026|SGD":50000,
+  "0553241006|THB":100000,
+  "0553241103|USD":25000,
+  "1817086221|CNY":200000
+};
+const idrProcessingExample = {
+  entity:"VNG I",bank:"Citi Singapore",currency:"IDR",valueDate:"2026-07-03",days:2,destinationCountry:"Indonesia",calendar:"Indonesia",reference:"FA-PM260703-IDR-UAT"
+};
+
+// Prior-batch references already observed in parsed bank history.
+const bankUsedReferences = new Set([
+  "FA-PM260701999",
+  "FA-PM260612777",
+  "FA-AV260630888"
+].map(normalizeReference));
+
+// Additional UAT groups demonstrating the newly approved payment-reference rules.
+payments.push(
+  {id:17,entity:"VNGSING",org:"SG01",supplier:"36480",invoice:"MULTI-INVOICE",eform:"",beneficiary:"Ryu Hyebin",amount:0,currency:"USD",payFrom:"0863645018",method:"SING-CBT - URGP - CITI392",charge:"DEBT",ordering:"0863645018",mapping:"AUTO",approved:true,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",vendorAccount:"98765001234",swift:"KOEXKRSEXXX",purpose:"SERV",description:"Two invoices settled in one payment",sourceFile:"AP_VNGSING_2207.xlsx",sourceGroupOrder:170,invoiceLines:[
+    {sourceRow:170,invoice:"INV-HY-001",originalEform:"FA-PM260703076",amount:115.61,description:"36480 - Hyebin Ryu Hazel-Hazelh"},
+    {sourceRow:171,invoice:"INV-HY-002",originalEform:"FA-AV260706016",amount:180.00,description:"Ryu Hyebin"}
+  ]},
+  {id:18,entity:"VNGGAMES Sing",org:"GG01",supplier:"G000601",invoice:"GG-DUP-01",eform:"FA-PM260708106",beneficiary:"Supplier Alpha",amount:950,currency:"USD",payFrom:"0139143019",method:"SING-CBT - URGP - CITI392",charge:"SHAR",ordering:"0139143019",mapping:"AUTO",approved:true,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",vendorAccount:"4400001001",swift:"DBSSSGSGXXX",purpose:"SERV",description:"Repeated base E-form demo",sourceFile:"AP_VNGGAMES_0807.xlsx",sourceGroupOrder:180},
+  {id:19,entity:"VNGGAMES Sing",org:"GG01",supplier:"G000602",invoice:"GG-DUP-02",eform:"FA-PM260708106",beneficiary:"Supplier Beta",amount:1250,currency:"USD",payFrom:"0139143019",method:"SING-CBT - URGP - CITI392",charge:"SHAR",ordering:"0139143019",mapping:"AUTO",approved:true,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",vendorAccount:"4400001002",swift:"OCBCSGSGXXX",purpose:"SERV",description:"Repeated base E-form demo",sourceFile:"AP_VNGGAMES_0807.xlsx",sourceGroupOrder:190},
+  {id:20,entity:"VNGGAMES Sing",org:"GG01",supplier:"G000603",invoice:"GG-DUP-03",eform:"FA-PM260708106",beneficiary:"Supplier Gamma",amount:1750,currency:"USD",payFrom:"0139143019",method:"SING-CBT - URGP - CITI392",charge:"SHAR",ordering:"0139143019",mapping:"AUTO",approved:true,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",vendorAccount:"4400001003",swift:"UOVBSGSGXXX",purpose:"SERV",description:"Repeated base E-form demo",sourceFile:"AP_VNGGAMES_0807.xlsx",sourceGroupOrder:200},
+  {id:21,entity:"ZPI",org:"ZP01",supplier:"Z000099",invoice:"ZPI-REF-001",eform:"FA-PM260701999",beneficiary:"Reference Control Vendor",amount:4200,currency:"SGD",payFrom:"0001051016",method:"SING-ACH - NURG - CITI421",charge:"SHAR",ordering:"0001051016",mapping:"AUTO",approved:true,include:true,exported:false,citi:"NOT_CHECKED",debit:"NOT_CHECKED",valueDate:"2026-07-22",vendorAccount:"7755001100",swift:"DBSSSGSGXXX",purpose:"SERV",description:"Reference already used in prior bank history",sourceFile:"AP_ZPI_2207.xlsx",sourceGroupOrder:210}
+);
+
+const selected = new Set();
+const citiSelected = new Set();
+const expandedGroups = new Set([17]);
+let cashSelectedEntity = "VNGSING";
+let cashSelectedCurrency = "USD";
+let cashSelectedAccountKey = "0863645018|USD";
+
+function normalizeReference(v){return String(v||"").trim().toUpperCase().replace(/\s+/g,"");}
+function fmt(n,currency=""){
+  const value=Number(n||0); const abs=Math.abs(value);
+  const s=abs.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (value<0?"("+s+")":s)+(currency?" "+currency:"");
+}
+function pct(a,b){return b?Math.round(a/b*100):0;}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+function optionHtml(list,current){return list.map(v=>`<option value="${escapeHtml(v)}" ${v===current?"selected":""}>${escapeHtml(v)}</option>`).join("");}
+function minSourceRow(p){return Math.min(...p.invoiceLines.map(x=>Number(x.sourceRow||999999)));}
+function referenceRuleLabel(p){
+  if(p.manualReference) return "Manual override";
+  if(p.referenceRule==="AUTO_SUFFIX_BY_GROUP") return "Repeated base → sequential suffix";
+  return "Last non-blank E-form in group";
+}
+function eformClass(p){
+  return ["DUPLICATE_IN_BANK","DUPLICATE_IN_BATCH","MISSING_REFERENCE"].includes(p.referenceStatus) ? "bad" : "good";
+}
+function eformDisplayValue(p){
+  return String(p.manualReference || p.paymentReference || p.baseReference || p.eformNo || "").trim();
+}
+
+function isoDate(d){return d.toISOString().slice(0,10);}
+function parseISO(v){if(!v)return null;const d=new Date(v+"T00:00:00");return isNaN(d)?null:d;}
+function dateLabel(v){const d=parseISO(v);return d?d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"-";}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function countryFromSwift(swift){const code=String(swift||"").toUpperCase().slice(4,6);return ({SG:"Singapore",US:"United States",TH:"Thailand",CN:"China",ID:"Indonesia",HK:"Hong Kong",KR:"Korea"})[code]||"Any";}
+function paymentBankLabel(p){
+  if(p.paymentBank)return p.paymentBank;
+  const acct=normAccount(p.ordering||p.payFrom||"");
+  const found=accounts.find(a=>normAccount(a.account)===acct);
+  if(found){if(found.bank==="Citi")return "Citi Singapore";if(found.bank==="HSBC")return "HSBC Singapore";return found.bank;}
+  return "Citi Singapore";
+}
+function paymentDestination(p){return p.destinationCountry||countryFromSwift(p.swift)||"Any";}
+function findProcessingRule(p){
+  const bank=paymentBankLabel(p),destination=paymentDestination(p),currency=String(p.currency||"").toUpperCase();
+  let rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency&&(r.destination===destination||r.destination==="Any"));
+  if(!rule)rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency);
+  return rule||null;
+}
+function calculateExpectedCompletion(valueDate,days,calendarName){
+  const start=parseISO(valueDate);if(!start||days===null||days===undefined)return{expected:"",weekends:[],holidays:[],notes:[]};
+  let d=new Date(start),count=0;const weekends=[],holidays=[],notes=[];const holidayMap=new Map((holidayCalendar[calendarName]||[]).map(h=>[h.date,h]));
+  while(count<Number(days)){
+    d=addDays(d,1);const key=isoDate(d),dow=d.getDay();
+    if(dow===0||dow===6){weekends.push(key);continue;}
+    if(holidayMap.has(key)){const h=holidayMap.get(key);holidays.push(h);continue;}
+    count++;
+  }
+  if(weekends.length)notes.push(`${weekends.length} weekend day(s) skipped`);
+  if(holidays.length)notes.push(holidays.map(h=>h.name).join("; "));
+  return{expected:isoDate(d),weekends,holidays,notes};
+}
+function processingInfo(p){
+  const rule=findProcessingRule(p);if(!rule)return{rule:null,ruleLabel:"No active SLA rule",expected:"",status:"RULE_MISSING",holidayAdjusted:false,adjustmentNote:"Processing rule must be configured"};
+  const calendarName=rule.calendar==="Destination country"?paymentDestination(p):rule.calendar;
+  const calc=calculateExpectedCompletion(p.valueDate,rule.days,calendarName);
+  let status="ON_TRACK";if(!calc.expected)status="RULE_MISSING";else if(p.debit==="DEBIT_CONFIRMED")status="COMPLETED";else if(calc.expected<AS_OF_DATE)status="OVERDUE";else if(calc.expected===AS_OF_DATE)status="DUE_TODAY";
+  return{rule,calendarName,ruleLabel:`${rule.bank} · ${p.currency} · T+${rule.days} business day${rule.days===1?"":"s"}`,expected:calc.expected,status,holidayAdjusted:calc.holidays.length>0,weekendAdjusted:calc.weekends.length>0,adjustmentNote:calc.notes.join(" · ")||"No weekend or holiday adjustment"};
+}
+function timingHtml(info){return `<div class="timing-stack">${statusPill(info.status)}${info.holidayAdjusted?statusPill("HOLIDAY_ADJUSTED"):""}${info.weekendAdjusted&&!info.holidayAdjusted?'<span class="small muted">Weekend adjusted</span>':""}</div>`;}
+function minimumBuffer(a){return Number(minimumBuffers[accountKey(a)]||0);}
+
+function preparePaymentData(){
+  payments.forEach((p,index)=>{
+    if(!Array.isArray(p.invoiceLines)||!p.invoiceLines.length){
+      p.invoiceLines=[{sourceRow:p.sourceRow||index+2,invoice:p.invoice||"",originalEform:p.eform||"",amount:Number(p.amount||0),description:p.description||""}];
+    }
+    p.invoiceLines=p.invoiceLines.map((x,i)=>({...x,sourceRow:Number(x.sourceRow||i+1),amount:Number(x.amount||0),originalEform:String(x.originalEform||"").trim()})).sort((a,b)=>a.sourceRow-b.sourceRow);
+    p.amount=p.invoiceLines.reduce((s,x)=>s+x.amount,0);
+    p.invoiceCount=p.invoiceLines.length;
+    p.sourceFile=p.sourceFile||`AP_${String(p.entity).replace(/[^A-Za-z0-9]+/g,"_")}_2207.xlsx`;
+    p.sourceGroupOrder=Number(p.sourceGroupOrder||minSourceRow(p)||index+1);
+    p.manualReference=p.manualReference||"";
+    const refs=p.invoiceLines.map(x=>x.originalEform).filter(Boolean);
+    p.sourceEforms=refs;
+    p.baseReference=refs.length?refs[refs.length-1]:"";
+    p.paymentBank=paymentBankLabel(p);
+    p.destinationCountry=paymentDestination(p);
+  });
+  derivePaymentReferences();
+}
+function derivePaymentReferences(){
+  const byBase=new Map();
+  payments.forEach(p=>{
+    const key=`${p.sourceFile}|${normalizeReference(p.baseReference)}`;
+    if(!byBase.has(key))byBase.set(key,[]); byBase.get(key).push(p);
+  });
+  byBase.forEach(arr=>{
+    arr.sort((a,b)=>a.sourceGroupOrder-b.sourceGroupOrder||a.id-b.id);
+    const repeated=arr.length>1&&arr[0].baseReference;
+    arr.forEach((p,i)=>{
+      p.referenceRule=repeated?"AUTO_SUFFIX_BY_GROUP":"LAST_EFORM_IN_GROUP";
+      p.autoReference=repeated?`${p.baseReference} -${i+1}`:p.baseReference;
+      p.paymentReference=String(p.manualReference||p.autoReference||"").trim();
+    });
+  });
+  const counts=new Map();
+  payments.forEach(p=>{const k=normalizeReference(p.paymentReference);if(k)counts.set(k,(counts.get(k)||0)+1);});
+  payments.forEach(p=>{
+    const key=normalizeReference(p.paymentReference);
+    if(!key)p.referenceStatus="MISSING_REFERENCE";
+    else if((counts.get(key)||0)>1)p.referenceStatus="DUPLICATE_IN_BATCH";
+    else if(bankUsedReferences.has(key))p.referenceStatus="DUPLICATE_IN_BANK";
+    else if(p.manualReference)p.referenceStatus="MANUAL_OVERRIDE";
+    else if(p.referenceRule==="AUTO_SUFFIX_BY_GROUP")p.referenceStatus="AUTO_SUFFIXED";
+    else p.referenceStatus="UNIQUE";
+    p.referenceBlocked=["MISSING_REFERENCE","DUPLICATE_IN_BATCH","DUPLICATE_IN_BANK"].includes(p.referenceStatus);
+  });
+}
+function erpStatus(p){
+  if(!p.include)return "EXCLUDED";
+  if(p.referenceBlocked)return "REFERENCE_BLOCKED";
+  if(!p.method||!p.charge||!p.ordering||!p.valueDate)return "CM_INPUT_REQUIRED";
+  if(!p.approved)return "CM_APPROVAL_PENDING";
+  if(p.exported)return "EXPORTED";
+  return "READY";
+}
+function isComplete(p){return p.exported&&p.citi==="CREATED"&&p.debit==="DEBIT_CONFIRMED";}
+function statusPill(text){
+  let cls="gray";
+  if(["READY","EXPORTED","CREATED","DEBIT_CONFIRMED","PASS","FRESH","SUFFICIENT","UNIQUE","AUTO_SUFFIXED","MANUAL_OVERRIDE","ON_TRACK","COMPLETED"].includes(text))cls="good";
+  else if(["CM_INPUT_REQUIRED","NOT_CREATED","DEBIT_AMOUNT_DIFF","BLOCKER","FAIL","SHORTFALL","REFERENCE_BLOCKED","DUPLICATE_IN_BANK","DUPLICATE_IN_BATCH","MISSING_REFERENCE"].includes(text))cls="bad";
+  else if(["CM_APPROVAL_PENDING","PENDING_DEBIT","DIFF","STALE","HIGH","NO_BALANCE_DATA","DUE_TODAY","HOLIDAY_ADJUSTED"].includes(text))cls="warn";
+  else if(["NOT_CHECKED","EXCLUDED","MEDIUM","NO_DATA","NO PAYMENT"].includes(text))cls="gray";
+  else cls="info";
+  return `<span class="status ${cls}">${escapeHtml(String(text).replaceAll("_"," "))}</span>`;
+}
+function activePayments(){return payments.filter(p=>p.include);}
+
+function exceptions(){
+  const list=[];
+  payments.forEach(p=>{
+    const ref=p.paymentReference||p.baseReference||"(missing)",e=erpStatus(p),timing=processingInfo(p);
+    if(p.referenceStatus==="DUPLICATE_IN_BANK")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Reference already exists in prior bank history",action:"Enter a unique manual reference override"});
+    if(p.referenceStatus==="DUPLICATE_IN_BATCH")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Final Payment Reference is duplicated within the current batch",action:"Review grouping or enter a unique manual override"});
+    if(p.referenceStatus==="MISSING_REFERENCE")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"No E-form is available in the payment group",action:"Enter a manual Payment Reference"});
+    if(e==="CM_INPUT_REQUIRED")list.push({stage:"AP / CM",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Method, Bank Charge, Bank Account or Value Date is missing",action:"Complete the payment setup"});
+    if(e==="CM_APPROVAL_PENDING")list.push({stage:"AP / CM",severity:"HIGH",entity:p.entity,eform:ref,issue:"Payment setup is available but CM approval is pending",action:"Review and tick CM Approved"});
+    if(p.exported&&p.citi==="NOT_CREATED")list.push({stage:"BANK CREATE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Reference was not found in the payment-bank result",action:"Check ERP and bank creation"});
+    if(p.exported&&p.citi==="DIFF")list.push({stage:"BANK CREATE",severity:"HIGH",entity:p.entity,eform:ref,issue:"Bank-result amount, beneficiary account or SWIFT differs",action:"Review the payment-bank result"});
+    if(p.citi==="CREATED"&&p.debit==="PENDING_DEBIT")list.push({stage:"BANK DEBIT",severity:"MEDIUM",entity:p.entity,eform:ref,issue:"Created at the payment bank but no matching debit has been found",action:"Continue daily statement follow-up"});
+    if(p.debit==="DEBIT_AMOUNT_DIFF")list.push({stage:"BANK DEBIT",severity:"HIGH",entity:p.entity,eform:ref,issue:"Statement debit amount differs from the payment-group amount",action:"Review transaction detail"});
+    if(timing.status==="OVERDUE"&&p.debit!=="DEBIT_CONFIRMED")list.push({stage:"SETTLEMENT",severity:"HIGH",entity:p.entity,eform:ref,issue:`Expected completion ${dateLabel(timing.expected)} has passed`,action:"Check bank status and escalate if required"});
+    if(timing.status==="RULE_MISSING")list.push({stage:"SETTLEMENT",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"No active bank processing rule is configured",action:"Update the processing-rule master"});
+  });return list;
+}
+
+function demoAction(label){showToast(label+" · simulated action in this UI draft.");}
+function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove("show"),2700);}
+
+function activateTab(id){
+  document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
+  document.querySelectorAll(".tabpanel").forEach(p=>p.classList.toggle("active",p.id===id));
+  location.hash=id;
+  if(id==="overview")renderOverview();
+  if(id==="workbench")renderWorkbench();
+  if(id==="erp")renderErp();
+  if(id==="citi")renderCiti();
+  if(id==="statement")renderDebit();
+  if(id==="calendar")renderCalendar();
+  if(id==="exceptions")renderExceptions();
+  if(id==="cash")renderCash();
+  if(id==="master")renderMasterTables();
+}
+document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>activateTab(b.dataset.tab));
+
+
+function renderOverview(){
+  const total=payments.length,multi=payments.filter(p=>p.invoiceCount>1).length,refBlocks=payments.filter(p=>p.referenceBlocked).length;
+  const ready=payments.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=payments.filter(p=>p.exported).length,created=payments.filter(p=>p.citi==="CREATED").length,debited=payments.filter(p=>p.debit==="DEBIT_CONFIRMED").length,overdue=payments.filter(p=>processingInfo(p).status==="OVERDUE").length,ex=exceptions().length,complete=payments.filter(isComplete).length;
+  const kpis=[["Payment groups",total,"Parsed AP payment groups",""],["Multi-invoice groups",multi,"One bank payment, multiple ERP lines","purple"],["Reference blocked",refBlocks,"Manual action required",refBlocks?"bad":"good"],["ERP ready",ready,`${pct(ready,payments.filter(p=>p.include).length)}% of selected`,"good"],["ERP exported",exported,`${pct(exported,payments.filter(p=>p.include).length)}% of selected`,"good"],["Bank created",created,`${pct(created,exported)}% of exported`,"good"],["Debit confirmed",debited,`${pct(debited,created)}% of created`,"good"],["Settlement overdue",overdue,`${ex} open exceptions`,overdue?"bad":"good"]];
+  document.getElementById("kpiGrid").innerHTML=kpis.map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
+  const stages=[["AP groups",total,100],["Valid references",payments.filter(p=>!p.referenceBlocked).length,pct(payments.filter(p=>!p.referenceBlocked).length,total)],["ERP exported",exported,pct(exported,total)],["Bank created",created,pct(created,total)],["Debit confirmed",debited,pct(debited,total)]];
+  document.getElementById("pipeline").innerHTML=stages.map(s=>`<div class="stage"><div class="stage-name">${s[0]}</div><div class="stage-num">${s[1]}</div><div class="stage-rate">${s[2]}% of AP groups</div><div class="mini-progress"><span style="width:${s[2]}%"></span></div></div>`).join("");
+  const entities=[...new Set(payments.map(p=>p.entity))];
+  const rows=entities.map(entity=>{const arr=payments.filter(p=>p.entity===entity),selected=arr.filter(p=>p.include).length,refs=arr.filter(p=>p.referenceBlocked).length,ready=arr.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=arr.filter(p=>p.exported).length,bank=arr.filter(p=>p.citi==="CREATED").length,debit=arr.filter(p=>p.debit==="DEBIT_CONFIRMED").length,settlement=arr.filter(p=>processingInfo(p).status==="OVERDUE").length,exCount=exceptions().filter(e=>e.entity===entity).length;return `<tr><td class="entity-name">${entity}</td><td class="num">${arr.length}</td><td class="num">${selected}</td><td class="num">${refs}</td><td class="num">${ready}</td><td class="num">${exported}</td><td class="num">${bank}</td><td class="num">${debit}</td><td class="num">${settlement}</td><td class="num">${exCount}</td></tr>`;}).join("");
+  document.getElementById("entitySummary").innerHTML=`<thead><tr><th>Entity</th><th class="num">Groups</th><th class="num">Selected</th><th class="num">Ref Blocks</th><th class="num">ERP Ready</th><th class="num">Exported</th><th class="num">Bank Created</th><th class="num">Debited</th><th class="num">Overdue</th><th class="num">Exceptions</th></tr></thead><tbody>${rows}</tbody>`;
+  const completion=total?pct(complete,total):0;const donut=document.getElementById("completionDonut");donut.style.setProperty("--p",completion);donut.style.setProperty("--c",completion>=80?"var(--green)":completion>=50?"#d4962a":"var(--red)");document.getElementById("completionPct").innerHTML=`${completion}%<small>Fully completed</small>`;document.getElementById("completionLegend").innerHTML=`<div class="legend-row"><span class="legend-label"><span class="dot" style="background:var(--green)"></span>Complete</span><strong>${complete}</strong></div><div class="legend-row"><span class="legend-label"><span class="dot" style="background:#d4962a"></span>In progress</span><strong>${total-complete-refBlocks}</strong></div><div class="legend-row"><span class="legend-label"><span class="dot" style="background:var(--red)"></span>Reference blocked</span><strong>${refBlocks}</strong></div>`;
+  const top=exceptions().slice(0,8);document.getElementById("topExceptions").innerHTML=`<thead><tr><th>Stage</th><th>Severity</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Action</th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.stage}</td><td>${statusPill(x.severity)}</td><td class="entity-name">${x.entity}</td><td><span class="payment-ref">${escapeHtml(x.eform)}</span></td><td>${escapeHtml(x.issue)}</td><td>${escapeHtml(x.action)}</td></tr>`).join("")||'<tr><td colspan="6">No open exception.</td></tr>'}</tbody>`;
+}
+
+function currentFilters(){return{entity:document.getElementById("filterEntity").value,bank:document.getElementById("filterBank").value,currency:document.getElementById("filterCurrency").value,paymentDate:document.getElementById("filterPaymentDate").value,valueDate:document.getElementById("filterValueDate").value,timing:document.getElementById("filterTiming").value,citi:document.getElementById("filterCiti").value,search:document.getElementById("filterSearch").value.trim().toLowerCase()};}
+function filteredPayments(){const f=currentFilters();return payments.filter(p=>{const timing=processingInfo(p);if(f.entity&&p.entity!==f.entity)return false;if(f.bank&&paymentBankLabel(p)!==f.bank)return false;if(f.currency&&p.currency!==f.currency)return false;if(f.paymentDate&&p.paymentDate!==f.paymentDate)return false;if(f.valueDate&&p.valueDate!==f.valueDate)return false;if(f.timing&&timing.status!==f.timing)return false;if(f.citi&&p.citi!==f.citi)return false;const hay=`${p.entity} ${p.supplier} ${p.supplierNumber||""} ${p.invoice||p.invoiceNumber||""} ${p.beneficiary} ${p.beneName||""} ${p.paymentReference} ${p.baseReference} ${p.sourceEforms.join(" ")} ${p.invoiceLines.map(x=>x.invoice).join(" ")} ${p.detail||p.description||""} ${paymentBankLabel(p)} ${p.ordering}`.toLowerCase();if(f.search&&!hay.includes(f.search))return false;return true;});}
+function initFilters(){const entities=[...new Set(payments.map(p=>p.entity))],currencies=[...new Set(payments.map(p=>p.currency))];document.getElementById("filterEntity").innerHTML='<option value="">All</option>'+entities.map(x=>`<option>${x}</option>`).join("");document.getElementById("filterBank").innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");document.getElementById("filterCurrency").innerHTML='<option value="">All</option>'+currencies.map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkMethod").innerHTML='<option value="">-- No change --</option>'+[...new Set([...methods, ...BANK_OPTIONS.map(x=>x.label)])].map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkOrdering").innerHTML='<option value="">-- No change --</option>'+orderings.map(x=>`<option>${x}</option>`).join("");document.getElementById("reconBank").innerHTML='<option value="">All payment banks</option>'+optionHtmlPairs(BANK_OPTIONS,"");[["calendarEntity",entities],["calendarCurrency",currencies]].forEach(([id,vals])=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">All</option>'+vals.map(x=>`<option>${x}</option>`).join("");});const calBank=document.getElementById("calendarBank");if(calBank)calBank.innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");}
+function clearFilters(){["filterEntity","filterBank","filterCurrency","filterPaymentDate","filterValueDate","filterTiming","filterCiti","filterSearch"].forEach(id=>document.getElementById(id).value="");renderWorkbench();}
+
+function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.filter(p=>p.invoiceCount>1).length,"Representative reference = last source E-form"],["Last-E-form rule",payments.filter(p=>p.referenceRule==="LAST_EFORM_IN_GROUP").length,"Single or multi-invoice groups"],["Auto-suffixed",payments.filter(p=>p.referenceStatus==="AUTO_SUFFIXED").length,"Repeated base references by payment group"],["Bank-history blocks",payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length,"Manual unique override required"],["Reference-ready",payments.filter(p=>!p.referenceBlocked).length,`${pct(payments.filter(p=>!p.referenceBlocked).length,payments.length)}% of payment groups`]];document.getElementById("referenceKpis").innerHTML=items.map(x=>`<div class="reference-kpi"><div class="label">${x[0]}</div><div class="value">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join("");}
+function renderInvoiceDetails(p){const rows=p.invoiceLines.map((x,i)=>`<tr><td>${x.sourceRow}</td><td>${escapeHtml(x.invoice)}</td><td><span class="source-ref-chip">${escapeHtml(x.originalEform||"(blank)")}</span>${i===p.invoiceLines.length-1?'<span class="detail-count">LAST ROW</span>':''}</td><td class="num">${fmt(x.amount,p.currency)}</td><td>${escapeHtml(x.description||p.description||"")}</td><td>${escapeHtml(p.paymentReference)}</td></tr>`).join("");return `<tr class="invoice-detail-row"><td colspan="21"><div class="invoice-detail-box"><div class="invoice-detail-title"><span>Invoice-line detail · ${escapeHtml(p.sourceFile)} · Group total ${fmt(p.amount,p.currency)}</span><span>${escapeHtml(referenceRuleLabel(p))}</span></div><table class="invoice-lines-table"><thead><tr><th>Source Row</th><th>AP Invoice</th><th>Original E-form</th><th class="num">Invoice Amount</th><th>Description</th><th>ERP EFORM_NUMBER</th></tr></thead><tbody>${rows}</tbody></table></div></td></tr>`;}
+
+function renderWorkbench(){
+  const rows=filteredPayments();
+  document.getElementById("visibleCount").textContent=rows.length;
+  document.getElementById("selectedCount").textContent=0;
+  document.getElementById("workbenchBody").innerHTML=rows.map(p=>{
+    const eform=eformDisplayValue(p);
+    const eformCls=eformClass(p);
+    const bankValue=paymentBankLabel(p);
+    const methodLocked=bankDisplay(bankValue)!=="Citi";
+    const methodValue=p.method||defaultMethodForBank(bankValue,p.currency,p.entity,p.swiftcode||p.swift);
+    const chargeValue=p.charge||chargeCodeFromRaw(p.bankCharge)||defaultCharge(p.currency);
+    return `<tr>
+      <td>${dateLabel(p.paymentDate||p.valueDate||"")}</td>
+      <td>${escapeHtml(p.supplierNumber||p.supplier||"")}</td>
+      <td>${escapeHtml(p.invoiceNumber||p.invoice||"")}</td>
+      <td>${dateLabel(p.valueDate||"")}</td>
+      <td>${escapeHtml(p.beneName||p.beneficiary||"")}</td>
+      <td class="num"><span class="amount">${fmt(p.amount,p.currency)}</span></td>
+      <td><span class="currency-chip">${escapeHtml(p.currency||"")}</span></td>
+      <td>
+        <div class="eform-cell">
+          <span class="payment-ref ${eformCls}">${escapeHtml(eform||"MISSING")}</span>
+          <span class="ref-meta">Base: ${escapeHtml(p.baseReference||p.eformNo||"-")} · ${escapeHtml(referenceRuleLabel(p))}</span>
+          <input class="eform-override" value="${escapeHtml(p.manualReference||"")}" placeholder="Manual E-form override" onchange="updateManualReference(${p.id},this.value)">
+          <span class="ref-meta">Duplicate check: ${escapeHtml(p.referenceStatus||"UNIQUE")}</span>
+        </div>
+      </td>
+      <td class="editable"><select class="cell-select" onchange="updatePaymentBank(${p.id},this.value)">${optionHtmlPairs(BANK_OPTIONS,bankValue)}</select></td>
+      <td class="editable"><select class="cell-select" ${methodLocked?"disabled title=\"Locked: this bank has no routing-code choice\"":""} onchange="updatePayment(${p.id},'method',this.value)">${methodLocked?"":'<option value="">-- Select --</option>'}${optionHtml(methodOptionsForBank(bankValue),methodValue)}</select></td>
+      <td class="editable"><select class="cell-select" onchange="updatePayment(${p.id},'charge',this.value)"><option value="">-- Select --</option>${optionHtml(chargeOptions,chargeValue)}</select></td>
+      <td>${escapeHtml(p.bankCharge||p.charge||"")}</td>
+      <td>${escapeHtml(p.detail||p.description||"")}</td>
+      <td>${escapeHtml(p.accountNumber||p.ordering||p.payFrom||"")}</td>
+      <td>${escapeHtml(p.swiftcode||p.swift||"")}</td>
+    </tr>`;
+  }).join("");
+}
+function toggleInvoiceDetails(id){expandedGroups.has(id)?expandedGroups.delete(id):expandedGroups.add(id);renderWorkbench();}
+function toggleRow(id,checked){checked?selected.add(id):selected.delete(id);renderWorkbench();}
+function toggleAllVisible(checked){filteredPayments().forEach(p=>checked?selected.add(p.id):selected.delete(p.id));renderWorkbench();}
+function updateManualReference(id,value){const p=payments.find(x=>x.id===id);p.manualReference=String(value||"").trim();if(p.exported){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}derivePaymentReferences();showToast(p.referenceBlocked?"The E-form override is still not unique. ERP export remains blocked.":"E-form No. updated and uniqueness revalidated.");renderWorkbench();renderOverview();renderErp();}
+
+function updatePayment(id,key,value){const p=payments.find(x=>x.id===id);p[key]=value;if(["method","charge","ordering","approved","include","valueDate"].includes(key)&&p.exported){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}if(["method","charge","ordering"].includes(key))p.mapping="CM";renderWorkbench();renderOverview();renderCalendar();}
+
+// Selecting a non-Citi bank locks Payment Method to that bank (no routing-code
+// choice exists for HSBC / Standard Chartered / Deutsche Bank). Selecting Citi
+// re-opens Payment Method and refreshes the default from computeDefaultCitiMethod.
+function updatePaymentBank(id,value){
+  const p=payments.find(x=>x.id===id);
+  if(!p)return;
+  p.paymentBank=value;
+  const display=bankDisplay(value);
+  p.method = display==="Citi" ? computeDefaultCitiMethod(p.entity,p.currency,p.swiftcode||p.swift) : display;
+  p.mapping="CM";
+  if(p.exported){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}
+  renderWorkbench();renderOverview();renderCalendar();
+}
+
+function applyBulk(filtered){const targets=filtered?filteredPayments():payments.filter(p=>selected.has(p.id));if(!targets.length){showToast("No payment group is available for this update.");return;}const method=document.getElementById("bulkMethod").value,ordering=document.getElementById("bulkOrdering").value,valueDate=document.getElementById("bulkValueDate").value,approved=document.getElementById("bulkApproved").value,include=document.getElementById("bulkInclude").value;targets.forEach(p=>{if(method)p.method=method;if(ordering)p.ordering=ordering;if(valueDate)p.valueDate=valueDate;if(approved)p.approved=approved==="Y";if(include)p.include=include==="Y";if(method||ordering)p.mapping="CM";if(p.exported&&(method||ordering||valueDate||approved||include)){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}});showToast(`Updated ${targets.length} payment group(s).`);renderWorkbench();renderOverview();renderErp();renderCalendar();}
+function entityExportData(){const entities=[...new Set(payments.map(p=>p.entity))];return entities.map(entity=>{const arr=payments.filter(p=>p.entity===entity&&p.include);const ready=arr.filter(p=>["READY","EXPORTED"].includes(erpStatus(p)));const blocked=arr.filter(p=>!["READY","EXPORTED"].includes(erpStatus(p)));const exported=arr.filter(p=>p.exported);const detailRows=ready.reduce((s,p)=>s+p.invoiceCount,0);return{entity,arr,ready,blocked,exported,detailRows};});}
+function blockReason(p){const s=erpStatus(p);if(s==="REFERENCE_BLOCKED")return `Payment Reference blocked: ${p.referenceStatus.replaceAll("_"," ")}`;if(s==="CM_INPUT_REQUIRED")return "Payment Method, Bank Charge, Bank Account or Value Date is missing";if(s==="CM_APPROVAL_PENDING")return "CM approval is pending";return s;}
+function renderErp(){derivePaymentReferences();document.getElementById("entityExportCards").innerHTML=entityExportData().map(g=>{const state=g.blocked.length?"BLOCKED":(g.arr.length?"READY":"NO DATA");return `<div class="entity-card"><div class="entity-card-top"><div><h4>${g.entity}</h4><div class="small muted">${g.arr.length} selected payment groups</div></div>${statusPill(state)}</div><div class="metric"><span>Ready groups</span><strong>${g.ready.length}</strong></div><div class="metric"><span>ERP detail rows</span><strong>${g.detailRows}</strong></div><div class="metric"><span>Blocked groups</span><strong>${g.blocked.length}</strong></div><div class="metric"><span>Previously exported</span><strong>${g.exported.length}</strong></div><div class="entity-card-actions"><button class="btn primary" ${g.blocked.length||!g.arr.length?"disabled":""} onclick="downloadEntityCSV('${g.entity.replaceAll("'","\\'")}')">Download CSV</button><button class="btn" onclick="filterEntityWorkbench('${g.entity.replaceAll("'","\\'")}')">Review</button></div></div>`;}).join("");const blocked=payments.filter(p=>p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));document.getElementById("validationList").innerHTML=blocked.length?blocked.map(p=>`<div class="validation-item"><span><strong>${p.entity}</strong> · ${escapeHtml(p.paymentReference||p.baseReference||"Missing reference")}<br><span class="muted">${escapeHtml(blockReason(p))}</span></span>${statusPill(erpStatus(p))}</div>`).join(""):`<div class="validation-item"><span>No blocking validation issues.</span>${statusPill("PASS")}</div>`;}
+function filterEntityWorkbench(entity){activateTab("workbench");document.getElementById("filterEntity").value=entity;renderWorkbench();}
+const CREATED_BY_DEFAULT = "Tultc4";
+
+// ORDERING_PARTY on the real ERP upload template is the company's OWN
+// paying account for that entity+currency (e.g. VNGSING/USD -> 0863645018,
+// VNGSING/SGD -> 0863645026) \u2014 never the vendor's account. Resolved from the
+// `accounts` master: exact entity+currency Citi account first, else the
+// entity's Citi USD account (cross-border legs settle out of the USD
+// account regardless of invoice currency), else fallbackAccount() as a last
+// resort for entities with no Citi rows in the master.
+function orderingAccountFor(entity, currency){
+  const ccy = String(currency || "").toUpperCase();
+  const candidates = accounts.filter(a => a.entity === entity && a.bank === "Citi");
+  const exact = candidates.find(a => a.currency === ccy);
+  if (exact) return exact.account;
+  const usd = candidates.find(a => a.currency === "USD");
+  if (usd) return usd.account;
+  return (candidates[0] || {}).account || fallbackAccount(entity);
+}
+
+// Converts the internal "YYYY-MM-DD" value date to the DD/MM/YYYY format the
+// ERP upload template requires.
+function csvDate(v){
+  const m = String(v || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v || "");
+}
+
+function csvRows(entity){derivePaymentReferences();const cols=["ORG_ID","SUPPLIER_NUM","AP_INVOICE_NUMBER","EFORM_NUMBER","PAYMENT_AMOUNT","DESCRIPTION","PAYMENT_METHOD","CHARGES_INDICATOR","ORDERING_PARTY","PURPOSE_CODE","","Value date","CREATED_BY"];const groups=payments.filter(p=>p.entity===entity&&p.include&&p.approved&&p.method&&p.charge&&p.ordering&&!p.referenceBlocked);const rows=groups.flatMap(p=>p.invoiceLines.map(line=>[p.org,p.supplier,line.invoice,p.paymentReference,line.amount,line.description||p.description,p.method,p.charge,orderingAccountFor(p.entity,p.currency),p.purpose||"",p.vendorAccount||"",csvDate(p.valueDate),p.createdBy||CREATED_BY_DEFAULT]));return{cols,rows,groups};}
+function downloadEntityCSV(entity){const data=csvRows(entity);if(!data.rows.length){showToast("No ready ERP detail row is available for export.");return;}const entityBlocked=payments.some(p=>p.entity===entity&&p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));if(entityBlocked){showToast(`${entity} is blocked. Resolve all selected payment groups before export.`);return;}const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;const csv=[data.cols.map(esc).join(","),...data.rows.map(r=>r.map(esc).join(","))].join("\r\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ERP_UPLOAD_${entity.replace(/[^A-Za-z0-9]+/g,"_")}_2207.csv`;a.click();URL.revokeObjectURL(a.href);data.groups.forEach(p=>p.exported=true);showToast(`Created ${data.rows.length} ERP detail row(s) for ${entity}.`);renderErp();renderOverview();}
+function downloadAllReady(){const groups=entityExportData().filter(g=>g.arr.length&&!g.blocked.length);groups.forEach((g,i)=>setTimeout(()=>downloadEntityCSV(g.entity),i*250));if(!groups.length)showToast("No entity currently passes all export controls.");}
+
+function renderCiti(){
+  derivePaymentReferences();const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";
+  const exported=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank)),statuses=["CREATED","NOT_CREATED","DIFF","NOT_CHECKED"];
+  document.getElementById("citiSummary").innerHTML=`<div class="validation-item"><span>Payment banks in selected result</span><strong>${new Set(exported.map(paymentBankLabel)).size}</strong></div><div class="validation-item"><span>Prior bank references loaded</span><strong>${bankUsedReferences.size}</strong></div><div class="validation-item"><span>Reference blocks before export</span><strong>${payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length}</strong></div>`+statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${exported.filter(p=>p.citi===s).length}</strong></div>`).join("");
+  const rows=exported.map(p=>{
+    const diffBase=p.citi==="DIFF"?"Amount / beneficiary / account / SWIFT does not fully match":p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
+    const diff=[diffBase,p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
+    const c=p.bankCheck||{};
+    const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?"OK":"FAIL"}`:"Not checked against a bank result yet";
+    const matchBadge=p.bankMatched?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`:p.bankCheck?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span>`:`<span class="status gray">-</span>`;
+    const checked=citiSelected.has(p.id)?"checked":"";
+    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
+  }).join("");
+  document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
+}
+function toggleCitiRow(id,checked){checked?citiSelected.add(id):citiSelected.delete(id);}
+function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched)citiSelected.add(p.id);});renderCiti();}
+function downloadCitiSelection(){
+  const rows=payments.filter(p=>p.exported&&citiSelected.has(p.id));
+  if(!rows.length){showToast("No reconciled row selected.");return;}
+  const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","Overall Match","Bank Status"];
+  const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",p.bankMatched?"TRUE":"FALSE",p.bankStatusRaw||""];});
+  const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+  const csv=[cols.map(esc).join(","),...body.map(r=>r.map(esc).join(","))].join("\r\n");
+  const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`BANK_RECONCILE_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href);
+  showToast(`Downloaded ${rows.length} reconciled row(s).`);
+}
+
+
+function renderDebit(){
+  const created=payments.filter(p=>p.citi==="CREATED"),statuses=["DEBIT_CONFIRMED","PENDING_DEBIT","DEBIT_AMOUNT_DIFF","NOT_CHECKED"];
+  document.getElementById("debitSummary").innerHTML=statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${created.filter(p=>p.debit===s).length}</strong></div>`).join("");
+  const rows=created.map(p=>{const match=p.debit==="DEBIT_CONFIRMED"?"REFERENCE + AMOUNT":p.debit==="DEBIT_AMOUNT_DIFF"?"REFERENCE / AMOUNT DIFF":p.debit==="PENDING_DEBIT"?"NO REFERENCE MATCH":"NOT CHECKED",action=p.debit==="PENDING_DEBIT"?"Continue daily follow-up":p.debit==="DEBIT_AMOUNT_DIFF"?"Review candidate transaction":"No action",timing=processingInfo(p);return `<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td>${escapeHtml(p.beneficiary)}</td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${match}</td><td>${statusPill(p.debit)}</td><td>${action}</td></tr>`;}).join("");
+  document.getElementById("debitTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Bank Account</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th>Value Date</th><th>Expected Completion</th><th>Statement Match</th><th>Debit Status</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="13">No bank-created payment data.</td></tr>'}</tbody>`;
+}
+
+function renderExceptions(){const ex=exceptions(),stage=document.getElementById("exStage").value,sev=document.getElementById("exSeverity").value,q=document.getElementById("exSearch").value.toLowerCase();const filtered=ex.filter(e=>(!stage||e.stage===stage)&&(!sev||e.severity===sev)&&(!q||`${e.stage} ${e.severity} ${e.entity} ${e.eform} ${e.issue}`.toLowerCase().includes(q)));const cats=["REFERENCE","AP / CM","ERP","BANK CREATE","BANK DEBIT","SETTLEMENT"];document.getElementById("exceptionCards").innerHTML=cats.map(c=>`<div class="exception-card" onclick="document.getElementById('exStage').value='${c}';renderExceptions()"><span class="muted small">${c}</span><strong>${ex.filter(e=>e.stage===c).length}</strong><span class="small muted">open items</span></div>`).join("");const rows=filtered.map(e=>`<tr><td>${statusPill(e.severity)}</td><td>${e.stage}</td><td class="entity-name">${e.entity}</td><td><span class="payment-ref">${escapeHtml(e.eform)}</span></td><td>${e.issue}</td><td>${e.action}</td><td><select class="cell-select"><option>New</option><option>In Progress</option><option>Resolved</option></select></td><td><input class="cell-select" placeholder="CM note"></td></tr>`).join("");document.getElementById("exceptionTable").innerHTML=`<thead><tr><th>Severity</th><th>Stage</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Required Action</th><th>Status</th><th>CM Note</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No exception matches the current filters.</td></tr>'}</tbody>`;}
+
+function filteredCalendarPayments(){
+  const entity=document.getElementById("calendarEntity")?.value||"",bank=document.getElementById("calendarBank")?.value||"",currency=document.getElementById("calendarCurrency")?.value||"",status=document.getElementById("calendarStatus")?.value||"";
+  return payments.filter(p=>{const info=processingInfo(p);return(!entity||p.entity===entity)&&(!bank||paymentBankLabel(p)===bank)&&(!currency||p.currency===currency)&&(!status||info.status===status);});
+}
+function renderCalendar(){
+  const all=payments.map(p=>({p,info:processingInfo(p)})),rows=filteredCalendarPayments().map(p=>({p,info:processingInfo(p)}));
+  const counts={scheduled:all.filter(x=>["ON_TRACK","DUE_TODAY"].includes(x.info.status)).length,holiday:all.filter(x=>x.info.holidayAdjusted).length,overdue:all.filter(x=>x.info.status==="OVERDUE").length,complete:all.filter(x=>x.info.status==="COMPLETED").length,missing:all.filter(x=>x.info.status==="RULE_MISSING").length};
+  document.getElementById("calendarKpis").innerHTML=[["Scheduled",counts.scheduled,"On track or due today","good"],["Holiday adjusted",counts.holiday,"Destination calendar changed ETA","warn"],["Overdue",counts.overdue,"Expected completion passed","bad"],["Completed",counts.complete,"Debit confirmed","good"],["Rule missing",counts.missing,"SLA master action required","bad"]].map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
+  document.getElementById("settlementAlerts").innerHTML=`<div class="alert-box ${counts.overdue?"bad":"good"}"><strong>${counts.overdue} overdue payment(s)</strong>${counts.overdue?"Expected completion has passed without debit confirmation.":"No settlement overdue item in the UAT view."}</div><div class="alert-box ${counts.holiday?"warn":"good"}"><strong>${counts.holiday} holiday-adjusted payment(s)</strong>Holiday notes remain visible in Payment List, calendar and audit detail.</div><div class="alert-box good"><strong>Citi Singapore primary · multi-bank ready</strong>Future bank SLAs use the same configurable rule contract.</div>`;
+  const idrCalc=calculateExpectedCompletion(idrProcessingExample.valueDate,idrProcessingExample.days,idrProcessingExample.calendar);document.getElementById("idrExample").innerHTML=`<div class="grid-3"><div class="validation-item"><span>Payment Reference</span><strong>${idrProcessingExample.reference}</strong></div><div class="validation-item"><span>Value Date</span><strong>${dateLabel(idrProcessingExample.valueDate)}</strong></div><div class="validation-item"><span>Processing Rule</span><strong>T+${idrProcessingExample.days} business days</strong></div><div class="validation-item"><span>Calendar</span><strong>${idrProcessingExample.calendar}</strong></div><div class="validation-item"><span>Expected Completion</span><strong>${dateLabel(idrCalc.expected)}</strong></div><div class="validation-item"><span>Adjustment Note</span><strong>${escapeHtml(idrCalc.notes.join(" · ")||"No adjustment")}</strong></div></div>`;
+  const groups=new Map();rows.forEach(x=>{const key=x.info.expected||"RULE MISSING";if(!groups.has(key))groups.set(key,[]);groups.get(key).push(x);});
+  document.getElementById("processingCalendar").innerHTML=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,items])=>`<div class="calendar-day"><div class="calendar-day-head"><span>${date==="RULE MISSING"?date:dateLabel(date)}</span><span>${items.length} payment(s)</span></div><div class="calendar-day-body">${items.map(({p,info})=>`<div class="calendar-payment ${info.status==="OVERDUE"?"overdue":info.status==="COMPLETED"?"complete":info.holidayAdjusted?"holiday":""}"><strong>${escapeHtml(p.paymentReference||p.baseReference||"Missing reference")}</strong> · ${p.entity}<div class="meta">${escapeHtml(paymentBankLabel(p))} · ${fmt(p.amount,p.currency)}<br>${escapeHtml(info.adjustmentNote)}</div></div>`).join("")}</div></div>`).join("")||'<div class="card">No payment matches the selected filters.</div>';
+  document.getElementById("processingTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Currency</th><th class="num">Amount</th><th>Value Date</th><th>Processing Rule</th><th>Calendar</th><th>Adjustment Note</th><th>Expected Completion</th><th>Timing Status</th><th>Debit Status</th></tr></thead><tbody>${rows.map(({p,info})=>`<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${p.currency}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${escapeHtml(info.ruleLabel)}</td><td>${escapeHtml(info.calendarName||"-")}</td><td>${escapeHtml(info.adjustmentNote)}</td><td>${dateLabel(info.expected)}</td><td>${timingHtml(info)}</td><td>${statusPill(p.debit)}</td></tr>`).join("")||'<tr><td colspan="12">No payment matches the selected filters.</td></tr>'}</tbody>`;
+}
+function renderMasterTables(){
+  const activeRules=bankProcessingRules;document.getElementById("processingRuleTable").innerHTML=`<thead><tr><th>Bank</th><th>Currency</th><th>Destination</th><th>Processing</th><th>Calendar</th><th>Status</th><th>Source</th></tr></thead><tbody>${activeRules.map(r=>`<tr><td>${r.bank}</td><td>${r.currency}</td><td>${r.destination}</td><td>${r.days===null?"To configure":`T+${r.days} business day${r.days===1?"":"s"}`}</td><td>${r.calendar}</td><td>${statusPill(r.status==="ACTIVE"?"PASS":"NOT_CHECKED")}</td><td>${r.source}</td></tr>`).join("")}</tbody>`;
+  const h=[];Object.entries(holidayCalendar).forEach(([country,arr])=>arr.forEach(x=>h.push({country,...x})));document.getElementById("holidayTable").innerHTML=`<thead><tr><th>Country</th><th>Date</th><th>Description</th><th>Source</th></tr></thead><tbody>${h.map(x=>`<tr><td>${x.country}</td><td>${dateLabel(x.date)}</td><td>${x.name}</td><td>${x.source}</td></tr>`).join("")||'<tr><td colspan="4">No UAT holiday example configured.</td></tr>'}</tbody>`;
+}
+
+function normAccount(v){const raw=String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(/^\d+$/.test(raw))return raw.replace(/^0+(?=\d)/,"");return raw;}
+function accountKey(a){return `${a.account}|${a.currency}`;}
+function paymentAccount(p){return p.ordering||p.payFrom||"";}
+function paymentsForAccount(a){return payments.filter(p=>p.include&&p.currency===a.currency&&normAccount(paymentAccount(p))===normAccount(a.account));}
+
+function accountFunding(a){
+  const payRows=paymentsForAccount(a),required=payRows.reduce((s,p)=>s+Number(p.amount||0),0),hasBalance=a.balance!==null&&a.balance!==undefined&&a.balance!=="",buffer=minimumBuffer(a),projected=hasBalance?Number(a.balance)-required:null,fundingRequired=hasBalance?Math.max(0,required+buffer-Number(a.balance)):required+buffer;
+  let fundingStatus="NO PAYMENT";if(required>0&&!hasBalance)fundingStatus="NO_BALANCE_DATA";else if(required>0&&projected<buffer)fundingStatus="SHORTFALL";else if(required>0)fundingStatus="SUFFICIENT";else if(!hasBalance)fundingStatus="NO_DATA";
+  const coverage=required>0&&hasBalance?Number(a.balance)/required:null;return{payRows,required,projected,fundingStatus,coverage,hasBalance,buffer,fundingRequired};
+}
+function cashEntities(){const order=["VNGSING","VNGGAMES Sing","ZPI","GAMECO","KMZ","GN TH","VNG I","GREENNODE SG"];return order.filter(e=>accounts.some(a=>a.entity===e));}
+function cashEntityChanged(){cashSelectedEntity=document.getElementById("cashEntity").value;cashSelectedCurrency="";cashSelectedAccountKey="";renderCash();}
+function cashCurrencyChanged(){cashSelectedCurrency=document.getElementById("cashCurrency").value;cashSelectedAccountKey="";renderCash();}
+function cashAccountChanged(){cashSelectedAccountKey=document.getElementById("cashAccount").value;renderCash();}
+function setCashEntity(entity){cashSelectedEntity=entity;cashSelectedCurrency="";cashSelectedAccountKey="";renderCash();}
+function setCashAccount(key){const a=accounts.find(x=>accountKey(x)===key);if(!a)return;cashSelectedEntity=a.entity;cashSelectedCurrency=a.currency;cashSelectedAccountKey=key;renderCash();}
+
+function renderCash(){
+  const entitySelect=document.getElementById("cashEntity"),entities=cashEntities();entitySelect.innerHTML=entities.map(e=>`<option value="${escapeHtml(e)}" ${e===cashSelectedEntity?"selected":""}>${escapeHtml(e)}</option>`).join("");if(!entities.includes(cashSelectedEntity))cashSelectedEntity=entities[0]||"";
+  const entityAccounts=accounts.filter(a=>a.entity===cashSelectedEntity),currencies=[...new Set(entityAccounts.map(a=>a.currency))].sort(),curSelect=document.getElementById("cashCurrency");curSelect.innerHTML='<option value="">All</option>'+currencies.map(c=>`<option value="${c}" ${c===cashSelectedCurrency?"selected":""}>${c}</option>`).join("");if(cashSelectedCurrency&&!currencies.includes(cashSelectedCurrency))cashSelectedCurrency="";
+  const accountChoices=entityAccounts.filter(a=>!cashSelectedCurrency||a.currency===cashSelectedCurrency);if(!accountChoices.some(a=>accountKey(a)===cashSelectedAccountKey)){const preferred=accountChoices.find(a=>a.account==="0863645018"&&a.currency==="USD")||accountChoices.find(a=>paymentsForAccount(a).length>0)||accountChoices[0];cashSelectedAccountKey=preferred?accountKey(preferred):"";}const accSelect=document.getElementById("cashAccount");accSelect.innerHTML=accountChoices.map(a=>`<option value="${accountKey(a)}" ${accountKey(a)===cashSelectedAccountKey?"selected":""}>${a.account} · ${a.currency} · ${a.bank}</option>`).join("");const selectedAccount=accounts.find(a=>accountKey(a)===cashSelectedAccountKey)||accountChoices[0];
+  document.getElementById("cashEntityCards").innerHTML=entities.map(entity=>{const arr=accounts.filter(a=>a.entity===entity),funding=arr.map(accountFunding),required=funding.reduce((s,f)=>s+f.required,0),shortfall=funding.filter(f=>f.fundingStatus==="SHORTFALL").length,noData=funding.filter(f=>f.fundingStatus==="NO_BALANCE_DATA").length,state=shortfall?"SHORTFALL":noData?"NO_BALANCE_DATA":required>0?"SUFFICIENT":"NO PAYMENT";return `<div class="cash-entity-card ${entity===cashSelectedEntity?"active":""}" onclick="setCashEntity('${entity.replaceAll("'","\'")}')"><div style="display:flex;justify-content:space-between;gap:8px"><h4>${entity}</h4>${statusPill(state)}</div><div class="line"><span>Accounts</span><strong>${arr.length}</strong></div><div class="line"><span>Payment accounts</span><strong>${funding.filter(f=>f.required>0).length}</strong></div><div class="line"><span>Attention</span><strong>${shortfall+noData}</strong></div></div>`;}).join("");
+  const f=selectedAccount?accountFunding(selectedAccount):null;if(selectedAccount&&f){const bannerClass=f.fundingStatus==="SUFFICIENT"?"good":f.fundingStatus==="SHORTFALL"?"bad":f.fundingStatus==="NO_BALANCE_DATA"?"warn":"info";const message=f.fundingStatus==="SUFFICIENT"?`Sufficient funds after selected payments and minimum buffer. Projected balance: ${fmt(f.projected,selectedAccount.currency)}.`:f.fundingStatus==="SHORTFALL"?`Funding requirement: ${fmt(f.fundingRequired,selectedAccount.currency)} to cover selected payments and minimum buffer.`:f.fundingStatus==="NO_BALANCE_DATA"?"Payments are allocated to this account, but no latest balance is available. Load the balance summary before proceeding.":"No selected payment is allocated to this account.";document.getElementById("cashStatusBanner").innerHTML=`<div class="cash-status-banner ${bannerClass}"><span><strong>${selectedAccount.account} · ${selectedAccount.currency} · ${selectedAccount.bank}</strong><br>${message}</span>${statusPill(f.fundingStatus)}</div>`;const coverage=f.coverage===null?"-":`${f.coverage.toFixed(1)}x`;document.getElementById("cashKpiGrid").innerHTML=`<div class="cash-kpi ${f.hasBalance?"good":"warn"}"><div class="label">Latest available balance</div><div class="value">${f.hasBalance?fmt(selectedAccount.balance,selectedAccount.currency):"NO DATA"}</div><div class="sub">${selectedAccount.date||"No statement date"} · ${selectedAccount.source}</div></div><div class="cash-kpi ${f.required>0?"":"warn"}"><div class="label">Selected payments</div><div class="value">${fmt(f.required,selectedAccount.currency)}</div><div class="sub">${f.payRows.length} payment group(s) · INCLUDE_ERP = Y</div></div><div class="cash-kpi ${f.fundingStatus==="SHORTFALL"?"bad":f.hasBalance?"good":"warn"}"><div class="label">Projected balance</div><div class="value">${f.projected===null?"NO DATA":fmt(f.projected,selectedAccount.currency)}</div><div class="sub">Latest balance minus selected payment groups</div></div><div class="cash-kpi warn"><div class="label">Minimum buffer</div><div class="value">${fmt(f.buffer,selectedAccount.currency)}</div><div class="sub">Configurable by entity, bank account and currency</div></div><div class="cash-kpi ${f.fundingRequired>0?"bad":"good"}"><div class="label">Funding required</div><div class="value">${fmt(f.fundingRequired,selectedAccount.currency)}</div><div class="sub">Coverage ${coverage} · ${f.fundingStatus.replaceAll("_"," ")}</div></div>`;}else{document.getElementById("cashStatusBanner").innerHTML="";document.getElementById("cashKpiGrid").innerHTML="";}
+  const currencyRows=currencies.map(cur=>{const arr=entityAccounts.filter(a=>a.currency===cur),balance=arr.reduce((s,a)=>s+(a.balance===null?0:Number(a.balance)),0),required=arr.reduce((s,a)=>s+accountFunding(a).required,0),buffer=arr.reduce((s,a)=>s+accountFunding(a).buffer,0),missing=arr.some(a=>accountFunding(a).required>0&&a.balance===null),projected=missing?null:balance-required,state=missing?"NO_BALANCE_DATA":projected<buffer?"SHORTFALL":required>0?"SUFFICIENT":"NO PAYMENT";return `<tr><td><strong>${cur}</strong></td><td>Latest balance</td><td>${fmt(balance,cur)}</td></tr><tr><td></td><td>Selected payments / buffer</td><td>${fmt(required,cur)} / ${fmt(buffer,cur)}</td></tr><tr><td></td><td>Projected / Status</td><td>${projected===null?"NO DATA":fmt(projected,cur)} &nbsp; ${statusPill(state)}</td></tr>`;}).join("");document.getElementById("entityCurrencySummary").innerHTML=currencyRows||'<tr><td>No currency data.</td></tr>';
+  const fresh=entityAccounts.filter(a=>a.fresh==="FRESH").length,stale=entityAccounts.filter(a=>a.fresh==="STALE").length,noData=entityAccounts.filter(a=>a.fresh==="NO_DATA").length,breaks=entityAccounts.filter(a=>a.continuity!=="PASS"&&a.continuity!=="NO_DATA").length;document.getElementById("coverageSummary").innerHTML=`<div class="validation-item"><span>Accounts in master</span><strong>${entityAccounts.length}</strong></div><div class="validation-item"><span>Fresh statements</span><strong>${fresh}</strong></div><div class="validation-item"><span>Stale statements</span><strong>${stale}</strong></div><div class="validation-item"><span>No balance data</span><strong>${noData}</strong></div><div class="validation-item"><span>Continuity breaks</span><strong>${breaks}</strong></div>`;
+  const rows=accountChoices.map(a=>{const af=accountFunding(a),key=accountKey(a),rowClass=key===cashSelectedAccountKey?"cash-row-selected":af.fundingStatus==="SHORTFALL"?"cash-row-shortfall":af.fundingStatus==="NO_BALANCE_DATA"?"cash-row-nodata":"";return `<tr class="${rowClass}" onclick="setCashAccount('${key.replaceAll("'","\'")}')" style="cursor:pointer"><td class="entity-name">${a.entity}</td><td>${a.bank}</td><td><strong>${a.account}</strong><span class="vendor-sub">${a.accountName}</span></td><td>${a.currency}</td><td>${a.date||"-"}</td><td class="num amount">${af.hasBalance?fmt(a.balance,a.currency):"-"}</td><td class="num amount">${fmt(af.required,a.currency)}</td><td class="num amount">${fmt(af.buffer,a.currency)}</td><td class="num amount">${af.projected===null?"-":fmt(af.projected,a.currency)}</td><td class="num amount">${fmt(af.fundingRequired,a.currency)}</td><td>${statusPill(af.fundingStatus)}</td><td>${statusPill(a.fresh)}</td></tr>`;}).join("");document.getElementById("cashTable").innerHTML=`<thead><tr><th>Entity</th><th>Bank</th><th>Account / Account Name</th><th>Currency</th><th>Latest Statement</th><th class="num">Latest Balance</th><th class="num">Selected Payments</th><th class="num">Minimum Buffer</th><th class="num">Projected Balance</th><th class="num">Funding Required</th><th>Funding Status</th><th>Freshness</th></tr></thead><tbody>${rows||'<tr><td colspan="12">No account data.</td></tr>'}</tbody>`;
+  const payRows=selectedAccount?paymentsForAccount(selectedAccount):[],sorted=[...payRows].sort((a,b)=>(processingInfo(a).expected||"").localeCompare(processingInfo(b).expected||""));let running=selectedAccount&&selectedAccount.balance!==null?Number(selectedAccount.balance):null;const forecast=sorted.map(p=>{const info=processingInfo(p);if(running!==null)running-=Number(p.amount||0);const afterBuffer=running===null?null:running-minimumBuffer(selectedAccount);return `<tr><td>${dateLabel(info.expected)}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(p.beneficiary)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td class="num">${running===null?"-":fmt(running,selectedAccount.currency)}</td><td class="num">${afterBuffer===null?"-":fmt(afterBuffer,selectedAccount.currency)}</td><td>${timingHtml(info)}</td></tr>`;}).join("");document.getElementById("cashForecastTable").innerHTML=`<thead><tr><th>Expected Debit Date</th><th>Payment Reference</th><th>Beneficiary</th><th class="num">Expected Debit</th><th class="num">Projected Balance</th><th class="num">Balance Above / (Below) Buffer</th><th>Timing</th></tr></thead><tbody>${forecast||'<tr><td colspan="7">No selected payment is allocated to this account.</td></tr>'}</tbody>`;
+  const payHtml=payRows.map(p=>{const info=processingInfo(p);return `<tr><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span><span class="vendor-sub">${p.invoiceCount} ERP invoice line(s)</span></td><td>${escapeHtml(paymentBankLabel(p))}</td><td>${escapeHtml(p.beneficiary)}</td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td class="num amount">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(info.expected)}</td><td>${statusPill(p.referenceStatus)}</td><td>${statusPill(erpStatus(p))}</td><td>${statusPill(p.citi)}</td><td>${escapeHtml(p.description)}</td></tr>`;}).join("");document.getElementById("cashPaymentTable").innerHTML=`<thead><tr><th>Payment Reference</th><th>Payment Bank</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th>Value Date</th><th>Expected Completion</th><th>Reference Status</th><th>ERP Status</th><th>Bank Status</th><th>Description</th></tr></thead><tbody>${payHtml||'<tr><td colspan="12">No INCLUDE_ERP payment is allocated to this account.</td></tr>'}</tbody>`;
+}
+
+
+preparePaymentData();initFilters();renderOverview();renderWorkbench();renderErp();renderCiti();renderDebit();renderCalendar();renderExceptions();renderCash();renderMasterTables();
+const startTab=location.hash.replace("#","");if(startTab&&document.getElementById(startTab))activateTab(startTab);
+</script>
+
+<input type="file" id="apImportInput" class="hidden" accept=".xlsx,.xlsm,.csv" />
+<input type="file" id="bankImportInput" class="hidden" multiple accept=".xlsx,.xlsm,.xls,.csv" />
+<input type="file" id="statementImportInput" class="hidden" multiple accept=".xlsx,.xlsm,.xls,.csv" />
+<script>
+(function(){
+  function norm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
+  function first(row, keys){
+    const cols = Object.keys(row || {});
+    for (const key of keys) {
+      const keyNorm = norm(String(key)).replace(/[^a-z0-9]+/g, '');
+      const hit = cols.find(c => {
+        const cNorm = norm(c).replace(/[^a-z0-9]+/g, '');
+        return cNorm === keyNorm || cNorm.includes(keyNorm) || keyNorm.includes(cNorm);
+      });
+      if (hit !== undefined) {
+        const v = row[hit];
+        if (v !== null && v !== undefined && String(v).trim() !== '') return String(v).trim();
+      }
+    }
+    return '';
+  }
+  function toNum(v){
+    if (v === null || v === undefined || v === '') return 0;
+    if (typeof v === 'number') return v;
+    const s = String(v).replace(/[,$\s]/g,'').replace(/[()]/g, m => m === '(' ? '-' : '');
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+  function parseDate(v){
+    if (!v) return '';
+    if (typeof v === 'string') {
+      const s = v.trim();
+      const m1 = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m1) return s;
+      const m2 = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+      if (m2) return `${m2[3]}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}`;
+    }
+    const d = new Date(v);
+    return isNaN(d) ? String(v) : d.toISOString().slice(0,10);
+  }
+  function guessEntity(text){
+    const t = String(text || '').toLowerCase();
+    if (t.includes('vngsing')) return 'VNGSING';
+    if (t.includes('vngg')) return 'VNGGAMES Sing';
+    if (t.includes('zpi')) return 'ZPI';
+    if (t.includes('vngth') || t.includes('gameco')) return 'GAMECO';
+    if (t.includes('kmz')) return 'KMZ';
+    if (t.includes('gnth') || t.includes('gn th')) return 'GN TH';
+    if (t.includes('vngi')) return 'VNG I';
+    return 'AP';
+  }
+  function normalizeBankName(v){
+    const s = String(v || '').trim();
+    const t = s.toLowerCase();
+    if (!s) return 'Citi Singapore';
+    if (t.includes('citi')) return 'Citi Singapore';
+    if (t.includes('hsbc')) return 'HSBC Singapore';
+    if (t.includes('deutsche') || t === 'db') return 'Deutsche Bank';
+    if (t.includes('standard chartered') || t === 'sc') return 'Standard Chartered';
+    return s;
+  }
+  function inferBankFromAccount(account){
+    const s = String(account || '').replace(/\s+/g,'');
+    if (/^(086364|013914|000105|000010|500010|181708|055324|068495)/.test(s)) return 'Citi Singapore';
+    if (/^(047-|260-503|260-521|147-127|260-875)/.test(s)) return 'HSBC Singapore';
+    if (/^(010278|017072)/.test(s)) return 'Standard Chartered';
+    if (/^(205028|205034|003919)/.test(s)) return 'Deutsche Bank';
+    return 'Citi Singapore';
+  }
+  function defaultMethod(ccy){
+    if (ccy === 'THB') return 'THAILAND-DFT - URGP - CITI391';
+    if (ccy === 'CNY') return 'CHINA-ACH - NURG - CITI400';
+    if (ccy === 'SGD') return 'SING-ACH - NURG - CITI421';
+    return 'SING-CBT - URGP - CITI392';
+  }
+  function defaultCharge(ccy){ return (ccy === 'SGD' || ccy === 'CNY') ? 'SHAR' : 'DEBT'; }
+  // Exposed on window: computeDefaultCitiMethod (defined outside this closure,
+  // near BANK_OPTIONS) falls back to these for entities it does not special-case.
+  window.defaultMethod = defaultMethod;
+  window.defaultCharge = defaultCharge;
+  function fallbackAccount(entity){
+    const map = { VNGSING:'0863645018', 'VNGGAMES Sing':'0139143019', ZPI:'0001051016', GAMECO:'0000108006', KMZ:'1817086221', 'GN TH':'0553241006', 'VNG I':'068495008', AP:'' };
+    return map[entity] || '';
+  }
+  function guessCCY(row){
+    const txt = JSON.stringify(row || {}).toUpperCase();
+    if (txt.includes('USD')) return 'USD';
+    if (txt.includes('SGD')) return 'SGD';
+    if (txt.includes('THB')) return 'THB';
+    if (txt.includes('CNY')) return 'CNY';
+    if (txt.includes('IDR')) return 'IDR';
+    return 'USD';
+  }
+
+  // Lightweight audit/bookkeeping bucket used by the import flows below.
+  // (Pre-existing code referenced `state.*` without ever declaring it, which
+  // threw ReferenceError and aborted every AP/bank/statement import partway
+  // through — nothing currently reads these fields back for display.)
+  let state = {};
+
+  async function readWorkbook(file){
+    const buf = await file.arrayBuffer();
+    return XLSX.read(buf, { type:'array', cellDates:true });
+  }
+
+  async function importApFiles(fileList){
+    const files = [...fileList].filter(f => /\.(xlsx|xlsm|csv)$/i.test(f.name));
+    if (!files.length) { showToast('No AP summary file selected.'); return; }
+    const file = files[0];
+    const wb = await readWorkbook(file);
+    const ws = wb.Sheets['PAYMENT_LIST'] || wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+    if (!rows.length) { showToast('PAYMENT_LIST sheet is empty.'); return; }
+
+    const groups = [];
+    const pending = [];
+    const entityFromName = guessEntity(file.name) || guessEntity(file.webkitRelativePath || '');
+
+    rows.forEach((r, idx) => {
+      const paymentDate = parseDate(first(r, ['Due Date(Payment date)', 'Due Date (Payment date)', 'Payment Date']));
+      const supplierNumber = first(r, ['Supplier Number', 'Supplier Num', 'Supplier ID']);
+      const invoiceNumber = first(r, ['Invoice Number', 'AP Invoice Number', 'Invoice No.']);
+      const valueDate = parseDate(first(r, ['Due Date(Value date)', 'Due Date (Value date)', 'Value Date']));
+      const beneName = first(r, ['Bene name', 'Beneficiary Name', 'Beneficiary']) || supplierNumber;
+      const amount = toNum(first(r, ['Amount', 'Payment Amount', 'Invoice Amount']));
+      const currency = (first(r, ['Currency', 'CCY']) || guessCCY(r)).toUpperCase();
+      const eformNo = first(r, ['E-form No.', 'E-form No', 'Eform No.', 'Payment Reference', 'Reference']);
+      // Prefer an explicit per-row Entity column (written by the AP parser when it
+      // consolidates multiple entities into one PAYMENT_LIST sheet). Fall back to
+      // guessing from the uploaded file name for older, single-entity AP files.
+      const rowEntity = first(r, ['Entity']) || entityFromName;
+      const rowSourceFile = first(r, ['Source File', 'Source file']) || file.name;
+      const bankChargeRaw = first(r, ['Bank charge', 'Bank Charge', 'Charges Indicator']);
+      const bankCharge = bankChargeRaw || defaultCharge(currency);
+      const chargeCode = chargeCodeFromRaw(bankChargeRaw) || defaultCharge(currency);
+      const detail = first(r, ['Detail', 'Description', 'Payment Details', 'Remarks']);
+      const accountNumber = first(r, ['Account number', 'Bank Account', 'Ordering Party', 'Pay From']) || fallbackAccount(rowEntity);
+      const swiftcode = first(r, ['Swiftcode', 'Swift Code', 'SWIFT', 'BIC']);
+      const paymentBankRaw = normalizeBankName(first(r, ['Payment Bank', 'Payment Bank Name']) || inferBankFromAccount(accountNumber));
+      const paymentMethod = paymentBankRaw === 'Citi Singapore' ? computeDefaultCitiMethod(rowEntity, currency, swiftcode) : bankDisplay(paymentBankRaw);
+
+      const useful = [paymentDate, supplierNumber, invoiceNumber, valueDate, beneName, amount, currency, eformNo, bankCharge, detail, accountNumber, swiftcode].some(v => String(v ?? '').trim() !== '' && String(v) !== '0');
+      if (!useful) return;
+
+      groups.push({
+        entity: rowEntity,
+        paymentDate,
+        supplierNumber,
+        supplier: supplierNumber,
+        invoiceNumber,
+        invoice: invoiceNumber || `ROW-${idx+2}`,
+        valueDate,
+        beneName,
+        beneficiary: beneName,
+        amount,
+        currency,
+        eformNo,
+        baseReference: eformNo,
+        bankCharge,
+        charge: chargeCode,
+        detail,
+        description: detail,
+        accountNumber,
+        bankAccount: accountNumber,
+        ordering: accountNumber,
+        paymentMethod,
+        paymentBank: paymentBankRaw,
+        swiftcode,
+        swift: swiftcode,
+        vendorBankAccount: accountNumber,
+        sourceFile: rowSourceFile,
+        sourceGroupOrder: idx + 2,
+        invoices: [{ sourceRow: idx + 2, invoice: invoiceNumber || `ROW-${idx+2}`, originalEform: eformNo || '', amount, description: detail || '' }]
+      });
+    });
+
+    payments = groups.map((g, idx) => ({
+      id: idx + 1,
+      entity: g.entity,
+      // ORG_ID master, confirmed against the entity org list (VNGSING also
+      // cross-checked against a real ERP upload file,
+      // Template_upload_V2_SING_1208_1.csv). All 7 entities now confirmed.
+      org: { VNGSING:'298', ZPI:'598', GAMECO:'738', KMZ:'984', 'GN TH':'1249', 'VNG I':'940', 'VNGGAMES Sing':'1491', AP:'' }[g.entity] || '',
+      supplier: g.supplier || g.supplierNumber || '',
+      supplierNumber: g.supplierNumber || g.supplier || '',
+      invoice: g.invoices?.[0]?.invoice || g.invoiceNumber || '',
+      invoiceNumber: g.invoiceNumber || g.invoices?.[0]?.invoice || '',
+      beneficiary: g.beneficiary || g.beneName || g.supplier || '',
+      beneName: g.beneName || g.beneficiary || g.supplier || '',
+      amount: g.amount,
+      currency: g.currency,
+      payFrom: g.bankAccount || g.accountNumber || '',
+      method: g.paymentMethod || defaultMethodForBank(g.paymentBank || 'Citi Singapore', g.currency, g.entity, g.swiftcode),
+      charge: g.charge || chargeCodeFromRaw(g.bankCharge) || defaultCharge(g.currency),
+      bankCharge: g.bankCharge || '',
+      ordering: g.bankAccount || g.accountNumber || '',
+      mapping: 'AUTO',
+      approved: true,
+      include: true,
+      exported: false,
+      citi: 'NOT_CHECKED',
+      debit: 'NOT_CHECKED',
+      valueDate: g.valueDate,
+      paymentDate: g.paymentDate || '',
+      bankRef: '',
+      vendorAccount: g.vendorBankAccount || g.accountNumber || '',
+      accountNumber: g.accountNumber || g.vendorBankAccount || g.bankAccount || '',
+      swift: g.swift || g.swiftcode || '',
+      swiftcode: g.swiftcode || g.swift || '',
+      // Real ERP upload files show PURPOSE_CODE blank for every VNGSING row
+      // seen so far — leave blank until a purpose-code master rule shows up.
+      purpose: '',
+      description: g.description || g.detail || '',
+      detail: g.detail || g.description || '',
+      sourceFile: g.sourceFile,
+      sourceGroupOrder: g.sourceGroupOrder,
+      invoiceLines: g.invoices,
+      sourceEforms: g.invoices.map(x => x.originalEform).filter(Boolean),
+      baseReference: g.baseReference || g.eformNo || '',
+      eformNo: g.eformNo || g.baseReference || '',
+      manualReference: '',
+      paymentBank: normalizeBankName(g.paymentBank || 'Citi Singapore')
+    }));
+    state.pending = pending;
+    preparePaymentData();
+    state.lastRefresh = new Date();
+    state.audit = state.audit || [];
+    state.audit.unshift(`AP imported: ${file.name} · ${payments.length} payment line(s)`);
+    showToast(`Imported AP summary: ${file.name}`);
+    refreshAll();
+  }
+  // Loose match for account numbers / SWIFT codes: strips punctuation and
+  // spacing and normalizes leading zeros via the existing normAccount()
+  // helper, so "0863645018", "863645018" and "863 645 018" all compare
+  // equal — bank exports are inconsistent about this formatting.
+  function accountsMatchLoose(a, b){
+    const na = normAccount(a), nb = normAccount(b);
+    return !!na && na === nb;
+  }
+  // Loose match for beneficiary names. Real bank exports (confirmed on a
+  // live Citi "Manage Payments" download) truncate the field to ~35 chars
+  // and strip Vietnamese diacritics — neither means the beneficiary is
+  // actually different, so: strip diacritics, normalize case/punctuation/
+  // spacing, then accept if either string is a prefix of the other. This
+  // deliberately does NOT try to fuzzy-match different abbreviation styles
+  // (e.g. spelled-out vs acronym company names) — that's genuinely
+  // ambiguous and should surface as DIFF for a human to check rather than
+  // being auto-accepted.
+  function namesMatchLoose(a, b){
+    const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
+    const na = norm(a), nb = norm(b);
+    if (!na || !nb) return false;
+    return na === nb || na.startsWith(nb) || nb.startsWith(na);
+  }
+  // SWIFT/BIC codes are only guaranteed to agree on the first 8 characters
+  // (institution + country + location); the trailing 3-character branch
+  // code is routinely reported inconsistently (e.g. "DBSSSGSG" vs
+  // "DBSSSGSGXXX" for the same bank) — compare on the 8-char root only.
+  function swiftMatchLoose(a, b){
+    const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    const na = norm(a), nb = norm(b);
+    return !!na && na === nb;
+  }
+
+  // Some bank export formats have the company's own account number sitting
+  // under an unpredictable/mislabeled header (seen on a real Citi download:
+  // "Ordering Party" / "Account Number" / "Account Name" columns were each
+  // one column off from their header text). Rather than trust any single
+  // header label, scan every value in the row for one that matches a known
+  // company account in the `accounts` master, and use that account's entity.
+  function findCompanyAccountEntity(rowValues){
+    for (const v of rowValues) {
+      const n = normAccount(v);
+      if (!n) continue;
+      const acc = accounts.find(a => normAccount(a.account) === n);
+      if (acc) return acc.entity;
+    }
+    return '';
+  }
+
+  // Some bank exports have a junk row (e.g. plain column numbers "1,2,3,...")
+  // before the real header row — seen on a real Citi "Transaction Reference"
+  // download where row 1 is that junk row and row 2 is the true header.
+  // sheet_to_json() always assumes row 1 is the header, which silently
+  // produces "1","2","3"-keyed rows instead of real field names. Detect the
+  // header row by content instead of assuming it's row 1.
+  function sheetToJsonSmart(ws, headerHints){
+    const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', blankrows:false });
+    if (!raw.length) return [];
+    const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const hints = headerHints.map(norm);
+    let headerRowIdx = 0, bestHits = -1;
+    for (let i = 0; i < Math.min(raw.length, 10); i++) {
+      const cells = (raw[i] || []).map(norm);
+      const hits = hints.reduce((n, h) => n + (cells.some(c => c.includes(h)) ? 1 : 0), 0);
+      if (hits > bestHits) { bestHits = hits; headerRowIdx = i; }
+    }
+    const headers = raw[headerRowIdx].map((h, i) => String(h || '').trim() || `__EMPTY_${i}`);
+    return raw.slice(headerRowIdx + 1)
+      .filter(r => r.some(v => String(v || '').trim() !== ''))
+      .map(r => Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ''])));
+  }
+
+  async function importBankResults(fileList){
+    const files = [...fileList].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
+    if (!files.length) { showToast('No bank result file selected.'); return; }
+    const used = new Set(state.bankUsedReferences || []);
+    const touchedIds = new Set();
+    const touchedEntities = new Set();
+    for (const file of files) {
+      const wb = await readWorkbook(file);
+      wb.SheetNames.forEach(sheetName => {
+        const rows = sheetToJsonSmart(wb.Sheets[sheetName], ['transaction reference', 'value date', 'amount', 'status']);
+        rows.forEach(r => {
+          // Transaction Reference is the authoritative match key against our
+          // own Payment Reference (E-form, incl. auto-suffix like "-1"/"-3").
+          const ref = first(r, ['transaction reference', 'reference', 'payment reference', 'customer reference', 'eform number', 'payment ref']) || first(r, ['eform']);
+          if (!ref) return;
+          used.add(normalizeReference(ref));
+          const entity = findCompanyAccountEntity(Object.values(r));
+          if (entity) touchedEntities.add(entity);
+          // When a base reference is shared by more than one payment (auto-
+          // suffixed "-1"/"-2" duplicates in the same batch) and the bank
+          // file also repeats that same unsuffixed reference once per
+          // underlying transaction, exclude payments already matched by an
+          // earlier row in *this* import so each bank row pairs with a
+          // different payment instead of all piling onto the first one.
+          const p = payments.find(x => !touchedIds.has(x.id) && (normalizeReference(x.baseReference || x.paymentReference) === normalizeReference(ref) || normalizeReference(x.paymentReference) === normalizeReference(ref)));
+          if (p) {
+            touchedIds.add(p.id);
+            p.bankStatusRaw = first(r, ['status']) || '';
+            const bankAmount = toNum(first(r, ['amount']));
+            const bankBeneficiary = first(r, ['beneficiary name']);
+            const bankVendorAccount = first(r, ['beneficiary/remitter account number', 'beneficiary account number']);
+            const bankSwift = first(r, ['beneficiary bank routing code', 'swift', 'bic']);
+            const amountOK = Math.abs(bankAmount - Number(p.amount || 0)) <= 0.01;
+            const beneficiaryOK = namesMatchLoose(bankBeneficiary, p.beneName || p.beneficiary);
+            const accountOK = accountsMatchLoose(bankVendorAccount, p.vendorAccount);
+            const swiftOK = swiftMatchLoose(bankSwift, p.swift);
+            p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK };
+            p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
+            p.citi = p.bankMatched ? 'CREATED' : 'DIFF';
+            p.exported = true;
+            p.bankRef = first(r, ['bank reference', 'reference id', 'file run id']) || p.bankRef || '';
+            if (p.citi !== 'CREATED') p.debit = 'NOT_CHECKED';
+            if (p.bankMatched) citiSelected.add(p.id);
+          }
+        });
+      });
+    }
+    // A payment that was exported and belongs to an entity this file covers,
+    // but never showed up in it, genuinely was not found at the bank — flip
+    // it from NOT_CHECKED to NOT_CREATED. Never downgrade a payment already
+    // reconciled by an earlier file (a later file may simply be a different
+    // batch/date that doesn't repeat every prior payment).
+    payments.forEach(p => {
+      if (p.exported && p.citi === 'NOT_CHECKED' && touchedEntities.has(p.entity) && !touchedIds.has(p.id)) {
+        p.citi = 'NOT_CREATED';
+      }
+    });
+    state.bankUsedReferences = used;
+    state.audit = state.audit || [];
+    state.audit.unshift(`Bank result imported: ${files.length} file(s)`);
+    refreshAll();
+    showToast(`Imported ${files.length} bank result file(s).`);
+  }
+
+  async function importStatements(fileList){
+    const files = [...fileList].filter(f => /\.(xlsx|xlsm|xls|csv)$/i.test(f.name));
+    if (!files.length) { showToast('No statement file selected.'); return; }
+    const rowsAll = [];
+    const balanceRowsAll = [];
+    for (const file of files) {
+      const wb = await readWorkbook(file);
+      // The Bank Statement Transaction Parser's own output names its sheets
+      // explicitly (TRANSACTION_DETAIL / BALANCE_SUMMARY), with the header
+      // on row 5, not row 1 (rows 1-4 are a title/subtitle/blank spacer) —
+      // read those by name with the same smart header-row finder used for
+      // the Bank Reconciliation import, rather than assuming row 1.
+      const hasNamedSheets = wb.SheetNames.includes('TRANSACTION_DETAIL') || wb.SheetNames.includes('BALANCE_SUMMARY');
+      if (hasNamedSheets) {
+        if (wb.SheetNames.includes('TRANSACTION_DETAIL')) {
+          const rows = sheetToJsonSmart(wb.Sheets['TRANSACTION_DETAIL'], ['account_number', 'entry_date', 'transaction_amount', 'bank_reference']);
+          rows.forEach((r, idx) => {
+            const account = first(r, ['account_number']) || '';
+            const currency = (first(r, ['account_currency']) || '').toUpperCase();
+            const amount = toNum(first(r, ['transaction_amount']));
+            const ref = first(r, ['eform_candidate', 'customer_reference', 'bank_reference', 'transaction_description', 'payment_details']) || '';
+            const valueDate = parseDate(first(r, ['value_date', 'entry_date'])) || '';
+            rowsAll.push({ file: file.name, sheet: 'TRANSACTION_DETAIL', row: idx + 6, account, currency, amount, reference: ref, valueDate, balance: null });
+          });
+        }
+        if (wb.SheetNames.includes('BALANCE_SUMMARY')) {
+          const rows = sheetToJsonSmart(wb.Sheets['BALANCE_SUMMARY'], ['account_number', 'currency', 'closing_balance', 'statement_date']);
+          rows.forEach(r => {
+            const account = first(r, ['account_number']) || '';
+            const currency = (first(r, ['currency']) || '').toUpperCase();
+            const closing = first(r, ['closing_balance']);
+            const statementDate = parseDate(first(r, ['statement_date'])) || '';
+            const bankName = first(r, ['bank_name']) || '';
+            if (account && closing !== '' && closing !== undefined) {
+              balanceRowsAll.push({ account, currency, balance: toNum(closing), date: statementDate, bankName });
+            }
+          });
+        }
+      } else {
+        // Fall back to the older generic single-sheet-shape scan for any
+        // other ad-hoc bank export that isn't this parser's own output.
+        wb.SheetNames.forEach(sheetName => {
+          const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval:'' });
+          rows.forEach((r, idx) => {
+            const account = first(r, ['account','bank account','ordering party','account number']) || '';
+            const currency = (first(r, ['currency','ccy']) || '').toUpperCase();
+            const amount = toNum(first(r, ['amount','debit amount','credit amount','transaction amount']));
+            const ref = first(r, ['reference','payment reference','customer reference','eform number','description','narrative']) || '';
+            const valueDate = parseDate(first(r, ['value date','date'])) || '';
+            const balance = first(r, ['balance','closing balance']);
+            rowsAll.push({ file: file.name, sheet: sheetName, row: idx + 2, account, currency, amount, reference: ref, valueDate, balance: balance !== '' ? toNum(balance) : null });
+            if (account && balance !== '' && balance !== undefined) {
+              balanceRowsAll.push({ account, currency, balance: toNum(balance), date: valueDate, bankName: '' });
+            }
+          });
+        });
+      }
+    }
+    state.statements = rowsAll;
+    payments.forEach(p => {
+      const m = rowsAll.find(r => normalizeReference(r.reference).includes(normalizeReference(p.paymentReference)));
+      if (m) {
+        // Statement amounts follow debit=negative/credit=positive; AP
+        // payment amounts are always stored positive — compare magnitude,
+        // not sign, or every real match would wrongly show as DIFF.
+        const amountOK = !m.amount || Math.abs(Math.abs(Number(m.amount)) - Math.abs(Number(p.amount))) <= 0.01;
+        p.debit = amountOK ? 'DEBIT_CONFIRMED' : 'DEBIT_AMOUNT_DIFF';
+        if (p.citi !== 'CREATED') p.citi = 'CREATED';
+      } else if (p.citi === 'CREATED') {
+        p.debit = 'PENDING_DEBIT';
+      }
+    });
+    // Keep the latest (by statement date) balance per account+currency —
+    // a parsed batch typically carries one row per account per day.
+    const latestByKey = new Map();
+    balanceRowsAll.forEach(r => {
+      const key = `${normAccount(r.account)}|${r.currency}`;
+      const prev = latestByKey.get(key);
+      if (!prev || String(r.date || '') >= String(prev.date || '')) latestByKey.set(key, r);
+    });
+    latestByKey.forEach(r => {
+      const a = accounts.find(x => normAccount(x.account) === normAccount(r.account) && (!r.currency || x.currency === r.currency));
+      if (a && r.balance !== null) {
+        a.balance = Number(r.balance);
+        a.date = r.date || a.date;
+        a.fresh = 'FRESH';
+        a.source = 'uploaded statement';
+      }
+    });
+    state.audit = state.audit || [];
+    state.audit.unshift(`Statement imported: ${files.length} file(s)`);
+    refreshAll();
+    showToast(`Imported ${files.length} statement file(s).`);
+  }
+
+  function refreshAll(){
+  if (typeof preparePaymentData === 'function') preparePaymentData();
+  if (typeof initFilters === 'function') initFilters();
+  if (typeof renderOverview === 'function') renderOverview();
+  if (typeof renderWorkbench === 'function') renderWorkbench();
+  if (typeof renderErp === 'function') renderErp();
+  if (typeof renderCiti === 'function') renderCiti();
+  if (typeof renderDebit === 'function') renderDebit();
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderExceptions === 'function') renderExceptions();
+  if (typeof renderCash === 'function') renderCash();
+  if (typeof renderMasterTables === 'function') renderMasterTables();
+}
+
+window.refreshAll = refreshAll;
+
+function openApImport(){ document.getElementById('apImportInput').click(); }
+  function openBankImport(){ document.getElementById('bankImportInput').click(); }
+  function openStatementImport(){ document.getElementById('statementImportInput').click(); }
+
+  function connect(){
+    document.getElementById('apImportInput').addEventListener('change', e => importApFiles(e.target.files).finally(() => { e.target.value=''; refreshAll(); }));
+    document.getElementById('bankImportInput').addEventListener('change', e => importBankResults(e.target.files).finally(() => { e.target.value=''; refreshAll(); }));
+    document.getElementById('statementImportInput').addEventListener('change', e => importStatements(e.target.files).finally(() => { e.target.value=''; refreshAll(); }));
+    const ribbon = document.querySelector('.demo-ribbon');
+    if (ribbon) ribbon.textContent = 'INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation workbook · Statement = upload the transaction-level statement file';
+    state.audit = state.audit || [];
+    state.audit.unshift('Browser import layer loaded.');
+  }
+
+  // Lets the Bank Creation Reconciliation drop-zone accept a drag-and-drop
+  // file directly, reusing the same importBankResults() path as the hidden
+  // file input.
+  function handleCitiDrop(event){
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const files = event.dataTransfer.files;
+    if (files && files.length) importBankResults(files).finally(refreshAll);
+  }
+
+  // Lets the Bank Debit Reconciliation drop-zone accept a drag-and-drop
+  // file directly, reusing the same importStatements() path as the hidden
+  // file input.
+  function handleStatementDrop(event){
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const files = event.dataTransfer.files;
+    if (files && files.length) importStatements(files).finally(refreshAll);
+  }
+
+  window.openApImport = openApImport;
+  window.openBankImport = openBankImport;
+  window.openStatementImport = openStatementImport;
+  window.connectImportLayer = connect;
+  window.handleCitiDrop = handleCitiDrop;
+  window.handleStatementDrop = handleStatementDrop;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', connect);
+  } else {
+    connect();
+  }
+})();
+</script>
+
+</body>
+</html>
