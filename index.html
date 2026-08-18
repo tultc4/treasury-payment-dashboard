@@ -392,12 +392,10 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
   <div class="bulk-panel">
     <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong><span class="small muted">Apply Selected affects checked rows. Apply Filtered affects every visible row.</span></div>
-    <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr 1fr 1fr auto auto">
+    <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr auto auto">
       <div class="field"><label>Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
       <div class="field"><label>Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
       <div class="field"><label>Value Date</label><input type="date" id="bulkValueDate"></div>
-      <div class="field"><label>CM Approved</label><select id="bulkApproved"><option value="">--</option><option value="Y">Y</option><option value="N">N</option></select></div>
-      <div class="field"><label>Include ERP</label><select id="bulkInclude"><option value="">--</option><option value="Y">Y</option><option value="N">N</option></select></div>
       <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
     </div>
   </div>
@@ -446,12 +444,15 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
 <section id="statement" class="tabpanel">
   <div class="page-head"><div><h2>Bank Debit Reconciliation</h2><p>The final Payment Reference is searched in transaction-level statement fields to confirm whether the payment has been debited.</p></div></div>
+  <div class="primary-bank-note"><strong>Daily flow (T−1):</strong> the bank statement you download each morning covers <strong>yesterday's</strong> transactions. Upload the parser's <code>bank_transaction_detail.xlsx</code> here and one import does three things at once: ① confirms which previously-submitted payments were actually debited (by reference + amount), ② lists every statement transaction below so you can see exactly what the parser extracted, and ③ refreshes each bank account's closing balance — the sufficiency table below shows whether what's left still covers the batches you're about to submit (same numbers as the Cash Position tab).</div>
   <div class="grid-3">
     <div class="card"><h3>Transaction detail</h3><div class="card-sub">Upload the statement detail file used to confirm actual debit / credit transactions.</div><div class="upload-zone" id="statementDropZone" onclick="openStatementImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleStatementDrop(event)"><strong>Drop transaction-level statement here</strong>Upload the bank statement detail file (.csv or .xlsx) used to confirm debits by reference and amount.</div></div>
-    <div class="card"><h3>Match confidence</h3><div class="validation-list"><div class="validation-item"><span>Exact reference + amount</span><span class="status good">Confirmed</span></div><div class="validation-item"><span>Account + currency + amount + date</span><span class="status warn">Probable</span></div><div class="validation-item"><span>Multiple candidate debits</span><span class="status bad">Manual review</span></div></div></div>
+    <div class="card"><h3>Imported statement</h3><div id="stmtImportSummary" class="validation-list"></div></div>
     <div class="card"><h3>Debit status summary</h3><div id="debitSummary" class="validation-list"></div></div>
   </div>
+  <div class="section-title">Balance & sufficiency by account <small>Closing balance from the uploaded statement vs. pending payments paid from that account</small></div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
   <div class="section-title">Payment debit follow-up <small>Debit follow-up starts only after Bank Status = CREATED</small></div><div class="table-wrap"><table id="debitTable"></table></div>
+  <div class="section-title">Statement transactions <small>Every transaction row imported from the parser output — matched payment shown when a reference paired</small></div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
 </section>
 
 
@@ -1024,7 +1025,9 @@ function updatePaymentBank(id,value){
   renderWorkbench();renderOverview();renderCalendar();
 }
 
-function applyBulk(filtered){const targets=filtered?filteredPayments():payments.filter(p=>selected.has(p.id));if(!targets.length){showToast("No payment group is available for this update.");return;}const method=document.getElementById("bulkMethod").value,ordering=document.getElementById("bulkOrdering").value,valueDate=document.getElementById("bulkValueDate").value,approved=document.getElementById("bulkApproved").value,include=document.getElementById("bulkInclude").value;targets.forEach(p=>{if(method)p.method=method;if(ordering)p.ordering=ordering;if(valueDate)p.valueDate=valueDate;if(approved)p.approved=approved==="Y";if(include)p.include=include==="Y";if(method||ordering)p.mapping="CM";if(p.exported&&(method||ordering||valueDate||approved||include)){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}});showToast(`Updated ${targets.length} payment group(s).`);renderWorkbench();renderOverview();renderErp();renderCalendar();}
+// CM Approved / Include ERP were dropped from the bulk panel (not needed as
+// bulk fields) — both remain editable per row on the Payment List table.
+function applyBulk(filtered){const targets=filtered?filteredPayments():payments.filter(p=>selected.has(p.id));if(!targets.length){showToast("No payment group is available for this update.");return;}const method=document.getElementById("bulkMethod").value,ordering=document.getElementById("bulkOrdering").value,valueDate=document.getElementById("bulkValueDate").value;targets.forEach(p=>{if(method)p.method=method;if(ordering)p.ordering=ordering;if(valueDate)p.valueDate=valueDate;if(method||ordering)p.mapping="CM";if(p.exported&&(method||ordering||valueDate)){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}});showToast(`Updated ${targets.length} payment group(s).`);renderWorkbench();renderOverview();renderErp();renderCalendar();}
 function entityExportData(){const entities=[...new Set(payments.map(p=>p.entity))];return entities.map(entity=>{const arr=payments.filter(p=>p.entity===entity&&p.include);const ready=arr.filter(p=>["READY","EXPORTED"].includes(erpStatus(p)));const blocked=arr.filter(p=>!["READY","EXPORTED"].includes(erpStatus(p)));const exported=arr.filter(p=>p.exported);const detailRows=ready.reduce((s,p)=>s+p.invoiceCount,0);return{entity,arr,ready,blocked,exported,detailRows};});}
 function blockReason(p){const s=erpStatus(p);if(s==="REFERENCE_BLOCKED")return `Payment Reference blocked: ${p.referenceStatus.replaceAll("_"," ")}`;if(s==="CM_INPUT_REQUIRED")return "Payment Method, Bank Charge, Bank Account or Value Date is missing";if(s==="CM_APPROVAL_PENDING")return "CM approval is pending";return s;}
 function renderErp(){derivePaymentReferences();document.getElementById("entityExportCards").innerHTML=entityExportData().map(g=>{const state=g.blocked.length?"BLOCKED":(g.arr.length?"READY":"NO DATA");return `<div class="entity-card"><div class="entity-card-top"><div><h4>${g.entity}</h4><div class="small muted">${g.arr.length} selected payment groups</div></div>${statusPill(state)}</div><div class="metric"><span>Ready groups</span><strong>${g.ready.length}</strong></div><div class="metric"><span>ERP detail rows</span><strong>${g.detailRows}</strong></div><div class="metric"><span>Blocked groups</span><strong>${g.blocked.length}</strong></div><div class="metric"><span>Previously exported</span><strong>${g.exported.length}</strong></div><div class="entity-card-actions"><button class="btn primary" ${g.blocked.length||!g.arr.length?"disabled":""} onclick="downloadEntityCSV('${g.entity.replaceAll("'","\\'")}')">Download CSV</button><button class="btn" onclick="filterEntityWorkbench('${g.entity.replaceAll("'","\\'")}')">Review</button></div></div>`;}).join("");const blocked=payments.filter(p=>p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));document.getElementById("validationList").innerHTML=blocked.length?blocked.map(p=>`<div class="validation-item"><span><strong>${p.entity}</strong> · ${escapeHtml(p.paymentReference||p.baseReference||"Missing reference")}<br><span class="muted">${escapeHtml(blockReason(p))}</span></span>${statusPill(erpStatus(p))}</div>`).join(""):`<div class="validation-item"><span>No blocking validation issues.</span>${statusPill("PASS")}</div>`;}
@@ -1092,8 +1095,34 @@ function downloadCitiSelection(){
 function renderDebit(){
   const created=payments.filter(p=>p.citi==="CREATED"),statuses=["DEBIT_CONFIRMED","PENDING_DEBIT","DEBIT_AMOUNT_DIFF","NOT_CHECKED"];
   document.getElementById("debitSummary").innerHTML=statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${created.filter(p=>p.debit===s).length}</strong></div>`).join("");
-  const rows=created.map(p=>{const match=p.debit==="DEBIT_CONFIRMED"?"REFERENCE + AMOUNT":p.debit==="DEBIT_AMOUNT_DIFF"?"REFERENCE / AMOUNT DIFF":p.debit==="PENDING_DEBIT"?"NO REFERENCE MATCH":"NOT CHECKED",action=p.debit==="PENDING_DEBIT"?"Continue daily follow-up":p.debit==="DEBIT_AMOUNT_DIFF"?"Review candidate transaction":"No action",timing=processingInfo(p);return `<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td>${escapeHtml(p.beneficiary)}</td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${match}</td><td>${statusPill(p.debit)}</td><td>${action}</td></tr>`;}).join("");
-  document.getElementById("debitTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Bank Account</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th>Value Date</th><th>Expected Completion</th><th>Statement Match</th><th>Debit Status</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="13">No bank-created payment data.</td></tr>'}</tbody>`;
+
+  // --- Imported statement summary + transaction list (parser output) ---
+  const stmt=window.importedStatementRows||[];
+  const entityForAccount=acc=>{const a=accounts.find(x=>normAccount(x.account)===normAccount(acc));return a?a.entity:"";};
+  const matched=stmt.filter(r=>r.matchedPayment);
+  const debits=stmt.filter(r=>Number(r.amount)<0),credits=stmt.filter(r=>Number(r.amount)>0);
+  document.getElementById("stmtImportSummary").innerHTML=stmt.length?
+    `<div class="validation-item"><span>Transactions imported</span><strong>${stmt.length}</strong></div>
+     <div class="validation-item"><span>Matched to a payment</span><strong>${matched.length}</strong></div>
+     <div class="validation-item"><span>Debits / credits</span><strong>${debits.length} / ${credits.length}</strong></div>
+     <div class="validation-item"><span>Accounts with fresh balance</span><strong>${accounts.filter(a=>a.source==="uploaded statement").length}</strong></div>`:
+    `<div class="validation-item"><span>No statement imported yet</span><span class="small muted">Upload bank_transaction_detail.xlsx</span></div>`;
+  document.getElementById("stmtTxTable").innerHTML=stmt.length?
+    `<thead><tr><th>#</th><th>Entity</th><th>Account</th><th>CCY</th><th class="num">Amount</th><th>Value Date</th><th>Reference (statement)</th><th>Matched Payment</th><th>Source File</th></tr></thead><tbody>${
+      stmt.map((r,i)=>`<tr><td>${i+1}</td><td class="entity-name">${escapeHtml(r.matchedEntity||entityForAccount(r.account)||"-")}</td><td>${escapeHtml(String(r.account||"-"))}</td><td>${escapeHtml(r.currency||"-")}</td><td class="num" style="${Number(r.amount)<0?"color:var(--red)":"color:#1f5c43"}">${fmt(r.amount,r.currency)}</td><td>${dateLabel(r.valueDate)}</td><td class="small">${escapeHtml(String(r.reference||"").slice(0,60))}</td><td>${r.matchedPayment?`<span class="payment-ref">${escapeHtml(r.matchedPayment)}</span>`:'<span class="small muted">—</span>'}</td><td class="small muted">${escapeHtml(r.file||"")}</td></tr>`).join("")
+    }</tbody>`:
+    `<thead><tr><th>Statement transactions</th></tr></thead><tbody><tr><td>Nothing imported yet — upload the parser's bank_transaction_detail.xlsx on the drop-zone above. Its TRANSACTION_DETAIL rows will be listed here with their match result.</td></tr></tbody>`;
+
+  // --- Balance & sufficiency by account (same math as Cash Position) ---
+  const balAccounts=accounts.map(a=>({a,f:accountFunding(a)})).filter(x=>x.a.source==="uploaded statement"||x.f.required>0);
+  document.getElementById("stmtBalanceTable").innerHTML=balAccounts.length?
+    `<thead><tr><th>Entity</th><th>Bank</th><th>Account</th><th>CCY</th><th class="num">Closing Balance</th><th>Statement Date</th><th class="num">Pending Payments</th><th class="num">Projected After Pay</th><th>Funding Status</th></tr></thead><tbody>${
+      balAccounts.map(({a,f})=>`<tr><td class="entity-name">${a.entity}</td><td>${escapeHtml(a.bank)}</td><td>${escapeHtml(a.account)}</td><td>${a.currency}</td><td class="num">${f.hasBalance?fmt(a.balance,a.currency):'<span class="muted">no data</span>'}</td><td>${a.date?dateLabel(a.date):"-"}</td><td class="num">${f.required?fmt(f.required,a.currency):"-"}</td><td class="num" style="${f.projected!==null&&f.projected<0?"color:var(--red);font-weight:800":""}">${f.projected!==null?fmt(f.projected,a.currency):"-"}</td><td>${statusPill(f.fundingStatus)}</td></tr>`).join("")
+    }</tbody>`:
+    `<thead><tr><th>Balance & sufficiency</th></tr></thead><tbody><tr><td>No statement balance yet — the BALANCE_SUMMARY sheet of the uploaded file fills this table (and the Cash Position tab) per account.</td></tr></tbody>`;
+
+  const rows=created.map(p=>{const fx=p.stmtCurrency&&p.currency&&p.stmtCurrency!==p.currency;const match=p.debit==="DEBIT_CONFIRMED"?"REFERENCE + AMOUNT":p.debit==="DEBIT_AMOUNT_DIFF"?(fx?`REFERENCE · FX LEG (${p.currency} → ${p.stmtCurrency})`:"REFERENCE / AMOUNT DIFF"):p.debit==="PENDING_DEBIT"?"NO REFERENCE MATCH":"NOT CHECKED",action=p.debit==="PENDING_DEBIT"?"Continue daily follow-up":p.debit==="DEBIT_AMOUNT_DIFF"?(fx?"Check FX-converted debit amount":"Review candidate transaction"):"No action",timing=processingInfo(p);return `<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td>${escapeHtml(p.beneficiary)}</td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td class="num">${fmt(p.amount,p.currency)}</td><td class="num">${p.stmtAmount!==undefined&&p.stmtAmount!==null?fmt(p.stmtAmount,p.stmtCurrency):"-"}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${match}</td><td>${statusPill(p.debit)}</td><td>${action}</td></tr>`;}).join("");
+  document.getElementById("debitTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Bank Account</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th class="num">Statement Amount</th><th>Value Date</th><th>Expected Completion</th><th>Statement Match</th><th>Debit Status</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="14">No bank-created payment data yet — payments appear here once a bank result marks them CREATED, or automatically when a statement reference matches them.</td></tr>'}</tbody>`;
 }
 
 function renderExceptions(){const ex=exceptions(),stage=document.getElementById("exStage").value,sev=document.getElementById("exSeverity").value,q=document.getElementById("exSearch").value.toLowerCase();const filtered=ex.filter(e=>(!stage||e.stage===stage)&&(!sev||e.severity===sev)&&(!q||`${e.stage} ${e.severity} ${e.entity} ${e.eform} ${e.issue}`.toLowerCase().includes(q)));const cats=["REFERENCE","AP / CM","ERP","BANK CREATE","BANK DEBIT","SETTLEMENT"];document.getElementById("exceptionCards").innerHTML=cats.map(c=>`<div class="exception-card" onclick="document.getElementById('exStage').value='${c}';renderExceptions()"><span class="muted small">${c}</span><strong>${ex.filter(e=>e.stage===c).length}</strong><span class="small muted">open items</span></div>`).join("");const rows=filtered.map(e=>`<tr><td>${statusPill(e.severity)}</td><td>${e.stage}</td><td class="entity-name">${e.entity}</td><td><span class="payment-ref">${escapeHtml(e.eform)}</span></td><td>${e.issue}</td><td>${e.action}</td><td><select class="cell-select"><option>New</option><option>In Progress</option><option>Resolved</option></select></td><td><input class="cell-select" placeholder="CM note"></td></tr>`).join("");document.getElementById("exceptionTable").innerHTML=`<thead><tr><th>Severity</th><th>Stage</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Required Action</th><th>Status</th><th>CM Note</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No exception matches the current filters.</td></tr>'}</tbody>`;}
@@ -1384,7 +1413,8 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
         nextId: state.nextId || 0,
         importedAp: !!state.importedAp,
         audit: state.audit || [],
-        bankUsedReferences: state.bankUsedReferences ? [...state.bankUsedReferences] : []
+        bankUsedReferences: state.bankUsedReferences ? [...state.bankUsedReferences] : [],
+        statements: window.importedStatementRows || []
       }));
     } catch (e) { /* storage full/blocked — dashboard still works in-memory */ }
   }
@@ -1406,6 +1436,7 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       state.importedAp = !!saved.importedAp;
       state.audit = Array.isArray(saved.audit) ? saved.audit : [];
       state.bankUsedReferences = new Set(saved.bankUsedReferences || []);
+      if (Array.isArray(saved.statements)) { state.statements = saved.statements; window.importedStatementRows = saved.statements; }
       state.restoredFromStorage = true;
     } catch (e) { /* corrupted/incompatible storage — fall back to seed data */ }
   }
@@ -1790,14 +1821,56 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       }
     }
     state.statements = rowsAll;
+    // Exposed for renderDebit(), which lives in the OUTER script scope and
+    // cannot see this closure's `state` (same cross-scope rule as
+    // defaultMethod/fallbackAccount).
+    window.importedStatementRows = rowsAll;
+    // Reference matching, with three guards that mirror the Bank Reconcile
+    // import's documented behavior:
+    // - a payment with a BLANK reference never matches ("".includes("") is
+    //   true, so without this guard every blank-ref payment silently
+    //   "confirmed" against the first statement row);
+    // - each statement row pairs with at most ONE payment (`used`), so two
+    //   payments sharing a base reference can't both confirm off the same
+    //   single debit;
+    // - an auto-suffixed reference ("FA-X -1"/"FA-X -2") falls back to its
+    //   base E-form when the full suffixed form isn't in the statement —
+    //   the bank strips the suffix, so the full form alone never matched.
+    // Among multiple candidate rows, an amount-matching one wins before a
+    // mismatching one is accepted as DIFF.
+    const usedStmtRows = new Set();
+    const candidatesFor = ref => {
+      const out = [];
+      if (ref) rowsAll.forEach((r, i) => { if (!usedStmtRows.has(i) && normalizeReference(r.reference).includes(ref)) out.push(i); });
+      return out;
+    };
     payments.forEach(p => {
-      const m = rowsAll.find(r => normalizeReference(r.reference).includes(normalizeReference(p.paymentReference)));
-      if (m) {
-        // Statement amounts follow debit=negative/credit=positive; AP
-        // payment amounts are always stored positive — compare magnitude,
-        // not sign, or every real match would wrongly show as DIFF.
-        const amountOK = !m.amount || Math.abs(Math.abs(Number(m.amount)) - Math.abs(Number(p.amount))) <= 0.01;
-        p.debit = amountOK ? 'DEBIT_CONFIRMED' : 'DEBIT_AMOUNT_DIFF';
+      const full = normalizeReference(p.paymentReference || '');
+      if (!full) return;
+      // Statement amounts follow debit=negative/credit=positive; AP
+      // payment amounts are always stored positive — compare magnitude,
+      // not sign, or every real match would wrongly show as DIFF. A row
+      // with no amount at all can't disprove the match.
+      const amountOK = i => { const m = rowsAll[i]; return !m.amount || Math.abs(Math.abs(Number(m.amount)) - Math.abs(Number(p.amount))) <= 0.01; };
+      let cand = candidatesFor(full);
+      if (!cand.length) {
+        const base = normalizeReference(p.baseReference || '');
+        if (base && base !== full) cand = candidatesFor(base);
+      }
+      if (cand.length) {
+        const pick = cand.find(amountOK) !== undefined ? cand.find(amountOK) : cand[0];
+        usedStmtRows.add(pick);
+        rowsAll[pick].matchedPayment = p.paymentReference;
+        rowsAll[pick].matchedEntity = p.entity;
+        // Keep what the bank actually debited so the review table can show
+        // it. When the invoice currency differs from the account currency
+        // (e.g. a VND invoice paid out of the USD account), the magnitudes
+        // are not comparable without an FX rate — the row still lands in
+        // DEBIT_AMOUNT_DIFF for a human to eyeball, but it's labelled as an
+        // FX leg rather than a genuine amount mismatch.
+        p.stmtAmount = rowsAll[pick].amount;
+        p.stmtCurrency = rowsAll[pick].currency || '';
+        p.debit = amountOK(pick) ? 'DEBIT_CONFIRMED' : 'DEBIT_AMOUNT_DIFF';
         if (p.citi !== 'CREATED') p.citi = 'CREATED';
       } else if (p.citi === 'CREATED') {
         p.debit = 'PENDING_DEBIT';
