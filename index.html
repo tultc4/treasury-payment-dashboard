@@ -261,6 +261,39 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 .calendar-payment.holiday{border-left:4px solid #d4962a;background:#fffaf0}
 .calendar-payment.overdue{border-left:4px solid var(--red);background:#fff6f5}
 .calendar-payment.complete{border-left:4px solid var(--green);background:#f3fbf7}
+/* ===== Payment-run calendar (đi lệnh) ===== */
+.rc-hero{display:grid;grid-template-columns:minmax(250px,1.35fr) repeat(3,minmax(140px,1fr));gap:11px;margin-bottom:14px}
+.rc-hero .rc-next{background:linear-gradient(135deg,#1f5c43,#2e7d5b);color:#fff;border:none;border-radius:var(--radius);padding:16px 18px;box-shadow:0 6px 22px rgba(31,92,67,.28);position:relative;overflow:hidden}
+.rc-hero .rc-next:after{content:"";position:absolute;right:-28px;top:-28px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+.rc-hero .rc-next .kpi-label{color:#d7ecdf;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:800}
+.rc-hero .rc-next .kpi-value{color:#fff;font-size:23px;font-weight:850;margin:5px 0 3px}
+.rc-hero .rc-next .kpi-sub{color:#cfe7d8;font-size:11px}
+.rc-legend{display:flex;flex-wrap:wrap;gap:7px 16px;align-items:center;margin:2px 0 12px;font-size:10.8px;color:var(--muted)}
+.rc-legend .sw{display:inline-block;width:13px;height:13px;border-radius:5px;margin-right:5px;vertical-align:-2px}
+.rc-year{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:12px;margin-bottom:16px}
+.rc-month{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 12px 13px}
+.rc-month.current{border-color:#2e7d5b;box-shadow:0 6px 20px rgba(46,125,91,.16)}
+.rc-month h4{margin:0 0 8px;font-size:12.2px;color:var(--navy-3);display:flex;justify-content:space-between;align-items:baseline}
+.rc-month h4 small{color:var(--muted);font-weight:650;font-size:10px}
+.rc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2.5px}
+.rc-dow{text-align:center;font-size:8.6px;font-weight:800;color:#aab2bc;text-transform:uppercase;padding:2px 0 4px;letter-spacing:.04em}
+.rc-dow.wed{color:#2e7d5b}
+.rc-day{height:25px;display:flex;align-items:center;justify-content:center;font-size:10.6px;border-radius:7px;color:var(--text);position:relative}
+.rc-day.we{color:#c4cad2}
+.rc-day.past{opacity:.42}
+.rc-day.lock{background:var(--amber-bg);color:var(--amber);font-weight:650}
+.rc-day.run{background:#2e7d5b;color:#fff;font-weight:850;box-shadow:0 2px 7px rgba(46,125,91,.35)}
+.rc-day.blocked{background:var(--red-bg);color:var(--red);font-weight:800;text-decoration:line-through}
+.rc-day.today{outline:2px solid var(--navy-3);outline-offset:1px;font-weight:800}
+.rc-ccy{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:11px;margin-bottom:16px}
+.rc-ccy .ccy-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:13px 15px}
+.rc-ccy .ccy-card .ccys{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0 6px}
+.rc-ccy .ccy-card .ccys span{background:var(--blue-bg);color:var(--navy-3);border:1px solid var(--border);border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800}
+.rc-ccy .ccy-card.rule2 .ccys span{background:#e7f3ec;color:#1f5c43;border-color:#bcdccb}
+.rc-ccy .ccy-card .lead{font-size:12.6px;font-weight:800;color:var(--navy-3)}
+.rc-ccy .ccy-card .note{font-size:10.6px;color:var(--muted);margin-top:4px;line-height:1.45}
+@media(max-width:1100px){.rc-hero{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.rc-hero{grid-template-columns:1fr}}
 .alert-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
 .alert-box{background:white;border:1px solid var(--border);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow);font-size:11px;line-height:1.4}
 .alert-box strong{display:block;color:var(--navy);font-size:12px;margin-bottom:4px}
@@ -352,7 +385,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
     <div class="field"><label>Currency</label><select id="filterCurrency" onchange="renderWorkbench()"><option value="">All</option></select></div>
     <div class="field"><label>Payment Date</label><input type="date" id="filterPaymentDate" onchange="renderWorkbench()"></div>
     <div class="field"><label>Value Date</label><input type="date" id="filterValueDate" onchange="renderWorkbench()"></div>
-    <div class="field"><label>Timing Status</label><select id="filterTiming" onchange="renderWorkbench()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option></select></div>
+    <div class="field"><label>Timing Status</label><select id="filterTiming" onchange="renderWorkbench()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option><option>NO_VALUE_DATE</option></select></div>
     <div class="field"><label>Bank Status</label><select id="filterCiti" onchange="renderWorkbench()"><option value="">All</option><option>CREATED</option><option>NOT_CREATED</option><option>DIFF</option><option>NOT_CHECKED</option></select></div>
     <div class="field search"><label>Search supplier / invoice / reference</label><input id="filterSearch" placeholder="Example: FA-PM260708106" oninput="renderWorkbench()"></div>
   </div>
@@ -422,15 +455,30 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
 
 <section id="calendar" class="tabpanel">
-  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Expected Completion = Value Date + configured bank processing business days, adjusted for weekends and the applicable destination-country holiday calendar.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
-  <div class="primary-bank-note"><strong>Control principle:</strong> Value Date is the date the bank starts processing. Processing days and holiday calendars are master data by Payment Bank, bank location, payment currency, destination country and payment method. The rule values shown in this draft are UAT examples only and must be replaced by the approved bank SLA and official holiday calendars in production.</div>
+  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Payment-run days (đi lệnh): every Wednesday, except a Wednesday falling inside the month-end lock window (last day − 3 → last day). Expected Completion = Value Date + processing working days per currency.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
+  <div class="primary-bank-note"><strong>Run-day rule:</strong> payments are submitted on <strong>Wednesdays</strong> only. In the last week of a month, if the window from (last calendar day − 3) to month-end contains a Wednesday, that Wednesday is <strong>blocked</strong> (month-end close); if the window misses Wednesday, the week runs normally. Working day = Mon–Fri; bank holidays follow the destination-calendar master below.</div>
+
+  <div class="section-title">Payment-run calendar 2026 <small>Ngày đi lệnh trong tháng — green = run day, red = blocked Wednesday, amber = month-end lock window</small></div>
+  <div class="rc-hero" id="rcHero"></div>
+  <div class="rc-legend">
+    <span><span class="sw" style="background:#2e7d5b"></span>Run day (Wednesday)</span>
+    <span><span class="sw" style="background:var(--red-bg);border:1px solid var(--red)"></span>Blocked Wednesday (month-end lock)</span>
+    <span><span class="sw" style="background:var(--amber-bg);border:1px solid #e3cf9a"></span>Lock window (EOM−3 → EOM)</span>
+    <span><span class="sw" style="border:2px solid var(--navy-3)"></span>Today</span>
+    <span><span class="sw" style="background:#f0f2f5"></span>Weekend</span>
+  </div>
+  <div class="rc-year" id="rcYear"></div>
+
+  <div class="section-title">Currency processing rules <small>Working days from Value Date until processing is done (weekends skipped, destination holidays applied)</small></div>
+  <div class="rc-ccy" id="rcCcyRules"></div>
+
   <div class="alert-strip" id="settlementAlerts"></div>
   <div class="calendar-kpis" id="calendarKpis"></div>
   <div class="toolbar">
     <div class="field"><label>Entity</label><select id="calendarEntity" onchange="renderCalendar()"><option value="">All</option></select></div>
     <div class="field"><label>Payment Bank</label><select id="calendarBank" onchange="renderCalendar()"><option value="">All</option></select></div>
     <div class="field"><label>Currency</label><select id="calendarCurrency" onchange="renderCalendar()"><option value="">All</option></select></div>
-    <div class="field"><label>Timing Status</label><select id="calendarStatus" onchange="renderCalendar()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option></select></div>
+    <div class="field"><label>Timing Status</label><select id="calendarStatus" onchange="renderCalendar()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option><option>NO_VALUE_DATE</option></select></div>
   </div>
   <div class="card" style="margin-bottom:14px"><h3>Illustrative IDR case</h3><div class="card-sub">This example shows the user note requested for Value Date 03 Jul. It is not a statement of the actual 2026 Citi SLA or Indonesia holiday calendar.</div><div id="idrExample"></div></div>
   <div class="section-title">Expected completion calendar <small>Payments are grouped by calculated settlement date</small></div><div class="calendar-grid" id="processingCalendar"></div>
@@ -653,13 +701,23 @@ const accounts = [
 
 
 
-const AS_OF_DATE = "2026-07-22";
+// Live "today" (was a hardcoded demo date) — timing statuses (ON_TRACK /
+// DUE_TODAY / OVERDUE) now track the real current date.
+const AS_OF_DATE = isoDate(new Date());
 const bankProcessingRules = [
   {bank:"Citi Singapore",currency:"SGD",destination:"Singapore",days:1,calendar:"Singapore",methodFamily:"Local / ACH",status:"ACTIVE",source:"UAT SLA master"},
   {bank:"Citi Singapore",currency:"USD",destination:"Any",days:2,calendar:"Destination country",methodFamily:"Cross-border",status:"ACTIVE",source:"UAT SLA master"},
-  {bank:"Citi Singapore",currency:"THB",destination:"Thailand",days:1,calendar:"Thailand",methodFamily:"Local / DFT",status:"ACTIVE",source:"UAT SLA master"},
+  // IDR / THB / MYR: confirmed treasury rule — Value Date + 2 working days
+  // to finish processing (weekends skipped; destination holiday calendar
+  // applies when configured).
+  {bank:"Citi Singapore",currency:"THB",destination:"Thailand",days:2,calendar:"Thailand",methodFamily:"Local / DFT",status:"ACTIVE",source:"Treasury rule (VD + 2 WD)"},
+  {bank:"Citi Singapore",currency:"MYR",destination:"Malaysia",days:2,calendar:"Malaysia",methodFamily:"Cross-border",status:"ACTIVE",source:"Treasury rule (VD + 2 WD)"},
   {bank:"Citi Singapore",currency:"CNY",destination:"China",days:1,calendar:"China",methodFamily:"Local / ACH",status:"ACTIVE",source:"UAT SLA master"},
-  {bank:"Citi Singapore",currency:"IDR",destination:"Indonesia",days:2,calendar:"Indonesia",methodFamily:"Cross-border",status:"ACTIVE",source:"UAT example only"},
+  {bank:"Citi Singapore",currency:"IDR",destination:"Indonesia",days:2,calendar:"Indonesia",methodFamily:"Cross-border",status:"ACTIVE",source:"Treasury rule (VD + 2 WD)"},
+  // Catch-all so other currencies (VND, KRW, PHP, TWD, EUR, ...) get a
+  // tracked ETA instead of RULE_MISSING. Assumed default — replace with the
+  // confirmed bank SLA per currency when available.
+  {bank:"Citi Singapore",currency:"ANY",destination:"Any",days:1,calendar:"Destination country",methodFamily:"Default",status:"ACTIVE",source:"Assumed default (VD + 1 WD) — confirm with bank"},
   {bank:"HSBC Singapore",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
   {bank:"Deutsche Bank",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
   {bank:"Standard Chartered",currency:"ANY",destination:"Any",days:null,calendar:"Configurable",methodFamily:"Future add-in",status:"INACTIVE",source:"Not yet approved"},
@@ -679,8 +737,11 @@ const minimumBuffers = {
   "0553241103|USD":25000,
   "1817086221|CNY":200000
 };
+// Worked example from treasury: an IDR payment whose upload Value Date is
+// 01 Aug 2026 (a Saturday) finishes processing 2 working days later —
+// Mon 03 Aug is day 1, Tue 04 Aug is day 2 → expected done 04 Aug.
 const idrProcessingExample = {
-  entity:"VNG I",bank:"Citi Singapore",currency:"IDR",valueDate:"2026-07-03",days:2,destinationCountry:"Indonesia",calendar:"Indonesia",reference:"FA-PM260703-IDR-UAT"
+  entity:"VNGSING",bank:"Citi Singapore",currency:"IDR",valueDate:"2026-08-01",days:2,destinationCountry:"Indonesia",calendar:"Indonesia",reference:"VD 01 Aug + 2 WD (IDR/THB/MYR)"
 };
 
 // Prior-batch references already observed in parsed bank history.
@@ -731,7 +792,10 @@ function eformDisplayValue(p){
   return String(p.manualReference || p.paymentReference || p.baseReference || p.eformNo || "").trim();
 }
 
-function isoDate(d){return d.toISOString().slice(0,10);}
+// Local-date components, NOT toISOString(): this dashboard runs in UTC+7,
+// where toISOString() on a local-midnight Date rolls back to the previous
+// day and silently shifted every computed expected-completion date by -1.
+function isoDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 function parseISO(v){if(!v)return null;const d=new Date(v+"T00:00:00");return isNaN(d)?null:d;}
 function dateLabel(v){const d=parseISO(v);return d?d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"-";}
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
@@ -748,6 +812,7 @@ function findProcessingRule(p){
   const bank=paymentBankLabel(p),destination=paymentDestination(p),currency=String(p.currency||"").toUpperCase();
   let rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency&&(r.destination===destination||r.destination==="Any"));
   if(!rule)rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency);
+  if(!rule)rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency==="ANY");
   return rule||null;
 }
 function calculateExpectedCompletion(valueDate,days,calendarName){
@@ -767,7 +832,7 @@ function processingInfo(p){
   const rule=findProcessingRule(p);if(!rule)return{rule:null,ruleLabel:"No active SLA rule",expected:"",status:"RULE_MISSING",holidayAdjusted:false,adjustmentNote:"Processing rule must be configured"};
   const calendarName=rule.calendar==="Destination country"?paymentDestination(p):rule.calendar;
   const calc=calculateExpectedCompletion(p.valueDate,rule.days,calendarName);
-  let status="ON_TRACK";if(!calc.expected)status="RULE_MISSING";else if(p.debit==="DEBIT_CONFIRMED")status="COMPLETED";else if(calc.expected<AS_OF_DATE)status="OVERDUE";else if(calc.expected===AS_OF_DATE)status="DUE_TODAY";
+  let status="ON_TRACK";if(!calc.expected)status=String(p.valueDate||"").trim()?"RULE_MISSING":"NO_VALUE_DATE";else if(p.debit==="DEBIT_CONFIRMED")status="COMPLETED";else if(calc.expected<AS_OF_DATE)status="OVERDUE";else if(calc.expected===AS_OF_DATE)status="DUE_TODAY";
   return{rule,calendarName,ruleLabel:`${rule.bank} · ${p.currency} · T+${rule.days} business day${rule.days===1?"":"s"}`,expected:calc.expected,status,holidayAdjusted:calc.holidays.length>0,weekendAdjusted:calc.weekends.length>0,adjustmentNote:calc.notes.join(" · ")||"No weekend or holiday adjustment"};
 }
 function timingHtml(info){return `<div class="timing-stack">${statusPill(info.status)}${info.holidayAdjusted?statusPill("HOLIDAY_ADJUSTED"):""}${info.weekendAdjusted&&!info.holidayAdjusted?'<span class="small muted">Weekend adjusted</span>':""}</div>`;}
@@ -1036,10 +1101,82 @@ function filteredCalendarPayments(){
   const entity=document.getElementById("calendarEntity")?.value||"",bank=document.getElementById("calendarBank")?.value||"",currency=document.getElementById("calendarCurrency")?.value||"",status=document.getElementById("calendarStatus")?.value||"";
   return payments.filter(p=>{const info=processingInfo(p);return(!entity||p.entity===entity)&&(!bank||paymentBankLabel(p)===bank)&&(!currency||p.currency===currency)&&(!status||info.status===status);});
 }
+// ===== Payment-run day (đi lệnh) rules =====
+// Run day = Wednesday, weekly. Month-end lock: the window from
+// (last calendar day − MONTH_END_LOCK_DAYS) through the last day is closed
+// for payment runs — a Wednesday inside it is blocked; when the window
+// misses Wednesday, the last week runs normally.
+const RUN_CAL_YEAR = 2026;
+const RUN_WEEKDAY = 3; // Wednesday
+const MONTH_END_LOCK_DAYS = 3;
+
+function monthEndLock(y,m){ // m is 0-based; returns ISO strings [start,end]
+  const eom=new Date(y,m+1,0);
+  return {start:isoDate(addDays(eom,-MONTH_END_LOCK_DAYS)),end:isoDate(eom)};
+}
+function inMonthEndLock(d){
+  const k=isoDate(d),w=monthEndLock(d.getFullYear(),d.getMonth());
+  return k>=w.start&&k<=w.end;
+}
+function isRunDay(d){return d.getDay()===RUN_WEEKDAY&&!inMonthEndLock(d);}
+function runDaysOfYear(year){
+  const runs=[],blocked=[];
+  for(let d=new Date(year,0,1);d.getFullYear()===year;d=addDays(d,1)){
+    if(d.getDay()!==RUN_WEEKDAY)continue;
+    (inMonthEndLock(d)?blocked:runs).push(isoDate(d));
+  }
+  return {runs,blocked};
+}
+function renderRunCalendar(){
+  const heroEl=document.getElementById("rcHero");
+  if(!heroEl)return;
+  const today=AS_OF_DATE;
+  const {runs,blocked}=runDaysOfYear(RUN_CAL_YEAR);
+  const upcoming=runs.filter(k=>k>=today);
+  const next=upcoming[0]||"";
+  const daysToNext=next?Math.round((parseISO(next)-parseISO(today))/86400000):null;
+  const monthRuns=runs.filter(k=>k.slice(0,7)===today.slice(0,7));
+  heroEl.innerHTML=`
+    <div class="rc-next"><div class="kpi-label">Next payment run</div><div class="kpi-value">${next?dateLabel(next):"—"}</div><div class="kpi-sub">${next?(daysToNext===0?"Today":daysToNext===1?"Tomorrow":`in ${daysToNext} days`)+" · Wednesday":"No run day left in "+RUN_CAL_YEAR}</div></div>
+    <div class="kpi-card good"><div class="kpi-label">Runs left in ${RUN_CAL_YEAR}</div><div class="kpi-value">${upcoming.length}</div><div class="kpi-sub">of ${runs.length} run days this year</div></div>
+    <div class="kpi-card"><div class="kpi-label">Runs this month</div><div class="kpi-value">${monthRuns.length}</div><div class="kpi-sub">${monthRuns.map(k=>k.slice(8,10)).join(" · ")||"—"}</div></div>
+    <div class="kpi-card bad"><div class="kpi-label">Blocked Wednesdays ${RUN_CAL_YEAR}</div><div class="kpi-value">${blocked.length}</div><div class="kpi-sub">${blocked.map(dateLabel).join(" · ")||"None"}</div></div>`;
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DOW=["Mo","Tu","We","Th","Fr","Sa","Su"];
+  document.getElementById("rcYear").innerHTML=MONTHS.map((name,m)=>{
+    const first=new Date(RUN_CAL_YEAR,m,1),lead=(first.getDay()+6)%7,dim=new Date(RUN_CAL_YEAR,m+1,0).getDate();
+    const lock=monthEndLock(RUN_CAL_YEAR,m);
+    const mRuns=runs.filter(k=>k.slice(5,7)===String(m+1).padStart(2,"0"));
+    const mBlocked=blocked.filter(k=>k.slice(5,7)===String(m+1).padStart(2,"0"));
+    let cells=DOW.map(d=>`<div class="rc-dow ${d==="We"?"wed":""}">${d}</div>`).join("");
+    cells+='<div class="rc-day"></div>'.repeat(lead);
+    for(let day=1;day<=dim;day++){
+      const d=new Date(RUN_CAL_YEAR,m,day),k=isoDate(d),dow=d.getDay();
+      const cls=["rc-day"];let title="";
+      if(dow===0||dow===6)cls.push("we");
+      if(k>=lock.start&&k<=lock.end){cls.push("lock");title="Month-end lock (EOM−3 → EOM)";}
+      if(dow===RUN_WEEKDAY){
+        if(k>=lock.start&&k<=lock.end){cls.splice(cls.indexOf("lock"),1);cls.push("blocked");title="Wednesday blocked — month-end lock";}
+        else{cls.push("run");title="Payment run day";}
+      }
+      if(k<today)cls.push("past");
+      if(k===today)cls.push("today");
+      cells+=`<div class="${cls.join(" ")}"${title?` title="${title}"`:""}>${day}</div>`;
+    }
+    const isCur=today.slice(0,7)===`${RUN_CAL_YEAR}-${String(m+1).padStart(2,"0")}`;
+    return `<div class="rc-month${isCur?" current":""}"><h4>${name} <small>${mRuns.length} run${mRuns.length===1?"":"s"}${mBlocked.length?` · ${mBlocked.length} blocked`:""}</small></h4><div class="rc-grid">${cells}</div></div>`;
+  }).join("");
+  document.getElementById("rcCcyRules").innerHTML=`
+    <div class="ccy-card rule2"><div class="lead">Value Date + 2 working days</div><div class="ccys"><span>IDR</span><span>THB</span><span>MYR</span></div><div class="note">E.g. Value Date 01 Aug (Sat) → Mon 03 Aug is WD 1, Tue 04 Aug is WD 2 → <strong>expected done 04 Aug</strong>. Weekends are skipped; destination holiday calendar applies when configured.</div></div>
+    <div class="ccy-card"><div class="lead">Value Date + 1 working day</div><div class="ccys"><span>SGD</span><span>CNY</span><span>VND</span><span>KRW</span><span>PHP</span><span>other</span></div><div class="note">Assumed default for currencies without a confirmed SLA — replace with the bank's official figure per currency (see Master Data → Processing Rules).</div></div>
+    <div class="ccy-card"><div class="lead">Value Date + 2 working days</div><div class="ccys"><span>USD cross-border</span></div><div class="note">Existing UAT SLA for USD cross-border legs out of Citi Singapore.</div></div>`;
+}
+
 function renderCalendar(){
+  renderRunCalendar();
   const all=payments.map(p=>({p,info:processingInfo(p)})),rows=filteredCalendarPayments().map(p=>({p,info:processingInfo(p)}));
-  const counts={scheduled:all.filter(x=>["ON_TRACK","DUE_TODAY"].includes(x.info.status)).length,holiday:all.filter(x=>x.info.holidayAdjusted).length,overdue:all.filter(x=>x.info.status==="OVERDUE").length,complete:all.filter(x=>x.info.status==="COMPLETED").length,missing:all.filter(x=>x.info.status==="RULE_MISSING").length};
-  document.getElementById("calendarKpis").innerHTML=[["Scheduled",counts.scheduled,"On track or due today","good"],["Holiday adjusted",counts.holiday,"Destination calendar changed ETA","warn"],["Overdue",counts.overdue,"Expected completion passed","bad"],["Completed",counts.complete,"Debit confirmed","good"],["Rule missing",counts.missing,"SLA master action required","bad"]].map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
+  const counts={scheduled:all.filter(x=>["ON_TRACK","DUE_TODAY"].includes(x.info.status)).length,holiday:all.filter(x=>x.info.holidayAdjusted).length,overdue:all.filter(x=>x.info.status==="OVERDUE").length,complete:all.filter(x=>x.info.status==="COMPLETED").length,missing:all.filter(x=>["RULE_MISSING","NO_VALUE_DATE"].includes(x.info.status)).length};
+  document.getElementById("calendarKpis").innerHTML=[["Scheduled",counts.scheduled,"On track or due today","good"],["Holiday adjusted",counts.holiday,"Destination calendar changed ETA","warn"],["Overdue",counts.overdue,"Expected completion passed","bad"],["Completed",counts.complete,"Debit confirmed","good"],["Rule / date missing",counts.missing,"No SLA rule, or source row has no value date","bad"]].map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
   document.getElementById("settlementAlerts").innerHTML=`<div class="alert-box ${counts.overdue?"bad":"good"}"><strong>${counts.overdue} overdue payment(s)</strong>${counts.overdue?"Expected completion has passed without debit confirmation.":"No settlement overdue item in the UAT view."}</div><div class="alert-box ${counts.holiday?"warn":"good"}"><strong>${counts.holiday} holiday-adjusted payment(s)</strong>Holiday notes remain visible in Payment List, calendar and audit detail.</div><div class="alert-box good"><strong>Citi Singapore primary · multi-bank ready</strong>Future bank SLAs use the same configurable rule contract.</div>`;
   const idrCalc=calculateExpectedCompletion(idrProcessingExample.valueDate,idrProcessingExample.days,idrProcessingExample.calendar);document.getElementById("idrExample").innerHTML=`<div class="grid-3"><div class="validation-item"><span>Payment Reference</span><strong>${idrProcessingExample.reference}</strong></div><div class="validation-item"><span>Value Date</span><strong>${dateLabel(idrProcessingExample.valueDate)}</strong></div><div class="validation-item"><span>Processing Rule</span><strong>T+${idrProcessingExample.days} business days</strong></div><div class="validation-item"><span>Calendar</span><strong>${idrProcessingExample.calendar}</strong></div><div class="validation-item"><span>Expected Completion</span><strong>${dateLabel(idrCalc.expected)}</strong></div><div class="validation-item"><span>Adjustment Note</span><strong>${escapeHtml(idrCalc.notes.join(" · ")||"No adjustment")}</strong></div></div>`;
   const groups=new Map();rows.forEach(x=>{const key=x.info.expected||"RULE MISSING";if(!groups.has(key))groups.set(key,[]);groups.get(key).push(x);});
