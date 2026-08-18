@@ -1177,6 +1177,15 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
     const map = { VNGSING:'0863645018', 'VNGGAMES Sing':'0139143019', ZPI:'0001051016', GAMECO:'0000108006', KMZ:'1817086221', 'GN TH':'0553241006', 'VNG I':'068495008', AP:'' };
     return map[entity] || '';
   }
+  // Exposed on window for the same scope reason as defaultMethod/defaultCharge
+  // above: orderingAccountFor() lives in the OUTER script scope and calls this
+  // as its last resort, so without the export it threw
+  // "ReferenceError: fallbackAccount is not defined" for any entity with no
+  // Citi row in `accounts` — GREENNODE SG (Deutsche Bank/HSBC only) is exactly
+  // that case. Because importApFiles() resolves ordering/payFrom through
+  // orderingAccountFor(), one GREENNODE SG row in the workbook aborted the
+  // whole AP import for every entity, not just that one.
+  window.fallbackAccount = fallbackAccount;
   function guessCCY(row){
     const txt = JSON.stringify(row || {}).toUpperCase();
     if (txt.includes('USD')) return 'USD';
