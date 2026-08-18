@@ -414,6 +414,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
 <section id="erp" class="tabpanel">
   <div class="page-head"><div><h2>ERP CSV Export</h2><p>Entity-level validation. Any selected group with an invalid payment reference, missing Payment Method, Bank Charge, Bank Account or Value Date, or pending approval blocks that entity.</p></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
+  <div class="primary-bank-note"><strong>Why this tab exists — Citi only:</strong> this tab builds the CSV files (one per entity, 13-column template) that are uploaded into ERP when the payment run goes through <strong>Citi bank</strong>. Payments routed through another Payment Bank (HSBC / Standard Chartered / Deutsche Bank) do <strong>not</strong> need an ERP CSV from here — they follow that bank's own submission process, so rows whose Payment Bank is not Citi are not meant for this upload even when they appear in an entity's file. Review the Payment Bank column on the Payment List before downloading.</div>
   <div class="entity-cards" id="entityExportCards"></div>
   <div class="section-title">Validation report <small>Reference checks run before ERP output is generated</small></div>
   <div class="grid-2">
