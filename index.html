@@ -286,8 +286,8 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
       <p>AP submission → Treasury enrichment → ERP CSV → bank creation → settlement and debit control</p>
     </div>
     <div class="header-actions">
-      <div class="batch-box"><small>Payment Batch</small><strong>22 Jul 2026</strong></div>
-      <div class="batch-box"><small>Last Refresh</small><strong>22 Jul 2026 · 09:18</strong></div>
+      <div class="batch-box"><small>Payment Batch</small><strong id="batchDateDisplay">–</strong></div>
+      <div class="batch-box"><small>Last Refresh</small><strong id="lastRefreshDisplay">–</strong></div>
       <button class="header-btn" onclick="openApImport()">＋ Import AP Summary</button>
       <button class="header-btn" onclick="activateTab('erp')">⇩ Export ERP</button>
     </div>
@@ -1185,6 +1185,72 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
   // threw ReferenceError and aborted every AP/bank/statement import partway
   // through — nothing currently reads these fields back for display.)
   let state = {};
+  const PERSIST_KEY = 'tpct_dashboard_v1';
+
+  // Keeps uploaded data across page reloads (this dashboard has no backend,
+  // so localStorage is the only place state can live between sessions).
+  // Only the mutable fields on `accounts` are restored — the array itself
+  // stays the code-defined master list, matched by account+currency.
+  function persistState(){
+    try {
+      localStorage.setItem(PERSIST_KEY, JSON.stringify({
+        version: 1,
+        payments,
+        accounts: accounts.map(a => ({ account: a.account, currency: a.currency, balance: a.balance, date: a.date, fresh: a.fresh, source: a.source })),
+        lastRefresh: state.lastRefresh ? state.lastRefresh.toISOString() : null,
+        nextId: state.nextId || 0,
+        importedAp: !!state.importedAp,
+        audit: state.audit || [],
+        bankUsedReferences: state.bankUsedReferences ? [...state.bankUsedReferences] : []
+      }));
+    } catch (e) { /* storage full/blocked — dashboard still works in-memory */ }
+  }
+
+  function restorePersistedState(){
+    try {
+      const raw = localStorage.getItem(PERSIST_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved.payments) && saved.payments.length) payments = saved.payments;
+      if (Array.isArray(saved.accounts)) {
+        saved.accounts.forEach(sa => {
+          const a = accounts.find(x => normAccount(x.account) === normAccount(sa.account) && x.currency === sa.currency);
+          if (a) { a.balance = sa.balance; a.date = sa.date; a.fresh = sa.fresh; a.source = sa.source; }
+        });
+      }
+      state.lastRefresh = saved.lastRefresh ? new Date(saved.lastRefresh) : null;
+      state.nextId = saved.nextId || 0;
+      state.importedAp = !!saved.importedAp;
+      state.audit = Array.isArray(saved.audit) ? saved.audit : [];
+      state.bankUsedReferences = new Set(saved.bankUsedReferences || []);
+      state.restoredFromStorage = true;
+    } catch (e) { /* corrupted/incompatible storage — fall back to seed data */ }
+  }
+
+  function renderHeaderMeta(){
+    const batchEl = document.getElementById('batchDateDisplay');
+    const refreshEl = document.getElementById('lastRefreshDisplay');
+    if (batchEl) {
+      // Validate as a real YYYY-MM-DD before trusting it in a string-max
+      // comparison — a handful of source rows parse to an out-of-range
+      // value like "2026-15-07" from ambiguous DD/MM vs MM/DD input, and an
+      // unvalidated one of those would silently win the "latest date" pick.
+      const isoDateRe = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+      const dates = payments.map(p => p.paymentDate || p.valueDate).filter(v => isoDateRe.test(v));
+      const latest = dates.length ? dates.reduce((a, b) => (a > b ? a : b)) : '';
+      batchEl.textContent = latest ? dateLabel(latest) : '–';
+    }
+    if (refreshEl) {
+      const d = state.lastRefresh;
+      if (d instanceof Date && !isNaN(d)) {
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        refreshEl.textContent = `${dateLabel(d.toISOString().slice(0, 10))} · ${hh}:${mm}`;
+      } else {
+        refreshEl.textContent = '–';
+      }
+    }
+  }
 
   async function readWorkbook(file){
     const buf = await file.arrayBuffer();
@@ -1262,8 +1328,10 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       });
     });
 
-    payments = groups.map((g, idx) => ({
-      id: idx + 1,
+    if (typeof state.nextId !== 'number') state.nextId = payments.reduce((m, p) => Math.max(m, p.id || 0), 0);
+    const startId = state.nextId;
+    const newRows = groups.map((g, idx) => ({
+      id: startId + idx + 1,
       entity: g.entity,
       // ORG_ID master, confirmed against the entity org list (VNGSING also
       // cross-checked against a real ERP upload file,
@@ -1301,6 +1369,12 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       description: g.description || g.detail || '',
       detail: g.detail || g.description || '',
       sourceFile: g.sourceFile,
+      // Which uploaded workbook produced this row — distinct from sourceFile,
+      // which is the original per-entity file name recorded *inside* a
+      // consolidated AP output (e.g. "15_VNGSING_Payment list_1507.xlsx").
+      // Re-uploads of the same consolidated file are deduped on this field,
+      // since no row's sourceFile ever equals the consolidated file's own name.
+      importFile: file.name,
       sourceGroupOrder: g.sourceGroupOrder,
       invoiceLines: g.invoices,
       sourceEforms: g.invoices.map(x => x.originalEform).filter(Boolean),
@@ -1309,12 +1383,24 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       manualReference: '',
       paymentBank: normalizeBankName(g.paymentBank || 'Citi Singapore')
     }));
+    state.nextId = startId + newRows.length;
+    if (!state.importedAp) {
+      // First real AP upload — replace the built-in demo rows.
+      payments = newRows;
+    } else {
+      // Later uploads add in: keep every previously loaded row except ones
+      // from this same upload (re-uploading a file refreshes just its own
+      // rows instead of duplicating them alongside the earlier copy).
+      const keep = payments.filter(p => p.importFile !== file.name);
+      payments = [...keep, ...newRows];
+    }
+    state.importedAp = true;
     state.pending = pending;
     preparePaymentData();
     state.lastRefresh = new Date();
     state.audit = state.audit || [];
-    state.audit.unshift(`AP imported: ${file.name} · ${payments.length} payment line(s)`);
-    showToast(`Imported AP summary: ${file.name}`);
+    state.audit.unshift(`AP imported: ${file.name} · ${newRows.length} payment line(s) (${payments.length} total)`);
+    showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)`);
     refreshAll();
   }
   // Loose match for account numbers / SWIFT codes: strips punctuation and
@@ -1447,6 +1533,7 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       }
     });
     state.bankUsedReferences = used;
+    state.lastRefresh = new Date();
     state.audit = state.audit || [];
     state.audit.unshift(`Bank result imported: ${files.length} file(s)`);
     refreshAll();
@@ -1542,6 +1629,7 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
         a.source = 'uploaded statement';
       }
     });
+    state.lastRefresh = new Date();
     state.audit = state.audit || [];
     state.audit.unshift(`Statement imported: ${files.length} file(s)`);
     refreshAll();
@@ -1560,6 +1648,8 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
   if (typeof renderExceptions === 'function') renderExceptions();
   if (typeof renderCash === 'function') renderCash();
   if (typeof renderMasterTables === 'function') renderMasterTables();
+  renderHeaderMeta();
+  persistState();
 }
 
 window.refreshAll = refreshAll;
@@ -1574,8 +1664,11 @@ function openApImport(){ document.getElementById('apImportInput').click(); }
     document.getElementById('statementImportInput').addEventListener('change', e => importStatements(e.target.files).finally(() => { e.target.value=''; refreshAll(); }));
     const ribbon = document.querySelector('.demo-ribbon');
     if (ribbon) ribbon.textContent = 'INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation workbook · Statement = upload the transaction-level statement file';
+    restorePersistedState();
     state.audit = state.audit || [];
     state.audit.unshift('Browser import layer loaded.');
+    refreshAll();
+    if (state.restoredFromStorage) showToast('Restored previously uploaded data from this browser.');
   }
 
   // Lets the Bank Creation Reconciliation drop-zone accept a drag-and-drop
