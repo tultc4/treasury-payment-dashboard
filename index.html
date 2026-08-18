@@ -455,15 +455,15 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
 
 <section id="calendar" class="tabpanel">
-  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Payment-run days (đi lệnh): every Wednesday, except a Wednesday falling inside the month-end lock window (last day − 3 → last day). Expected Completion = Value Date + processing working days per currency.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
-  <div class="primary-bank-note"><strong>Run-day rule:</strong> payments are submitted on <strong>Wednesdays</strong> only. In the last week of a month, if the window from (last calendar day − 3) to month-end contains a Wednesday, that Wednesday is <strong>blocked</strong> (month-end close); if the window misses Wednesday, the week runs normally. Working day = Mon–Fri; bank holidays follow the destination-calendar master below.</div>
+  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Payment-run days (đi lệnh): every Wednesday, except a Wednesday falling inside a book-closing window — month-start (first 4 working days) or month-end (last day − 3 → last day). Expected Completion = Value Date + processing working days per currency.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
+  <div class="primary-bank-note"><strong>Run-day rule:</strong> payments are submitted on <strong>Wednesdays</strong> only, except during the two book-closing windows: <strong>month-start close</strong> — the first 4 <em>working</em> days of the month (weekends don't consume the count) — and <strong>month-end close</strong> — from (last calendar day − 3) to month-end. A Wednesday inside either window is <strong>blocked</strong>; when a window misses Wednesday, that week runs normally. Working day = Mon–Fri; bank holidays follow the destination-calendar master below.</div>
 
   <div class="section-title">Payment-run calendar 2026 <small>Ngày đi lệnh trong tháng — green = run day, red = blocked Wednesday, amber = month-end lock window</small></div>
   <div class="rc-hero" id="rcHero"></div>
   <div class="rc-legend">
     <span><span class="sw" style="background:#2e7d5b"></span>Run day (Wednesday)</span>
-    <span><span class="sw" style="background:var(--red-bg);border:1px solid var(--red)"></span>Blocked Wednesday (month-end lock)</span>
-    <span><span class="sw" style="background:var(--amber-bg);border:1px solid #e3cf9a"></span>Lock window (EOM−3 → EOM)</span>
+    <span><span class="sw" style="background:var(--red-bg);border:1px solid var(--red)"></span>Blocked Wednesday (book-closing)</span>
+    <span><span class="sw" style="background:var(--amber-bg);border:1px solid #e3cf9a"></span>Closing window (first 4 WD · EOM−3 → EOM)</span>
     <span><span class="sw" style="border:2px solid var(--navy-3)"></span>Today</span>
     <span><span class="sw" style="background:#f0f2f5"></span>Weekend</span>
   </div>
@@ -1102,13 +1102,17 @@ function filteredCalendarPayments(){
   return payments.filter(p=>{const info=processingInfo(p);return(!entity||p.entity===entity)&&(!bank||paymentBankLabel(p)===bank)&&(!currency||p.currency===currency)&&(!status||info.status===status);});
 }
 // ===== Payment-run day (đi lệnh) rules =====
-// Run day = Wednesday, weekly. Month-end lock: the window from
-// (last calendar day − MONTH_END_LOCK_DAYS) through the last day is closed
-// for payment runs — a Wednesday inside it is blocked; when the window
-// misses Wednesday, the last week runs normally.
+// Run day = Wednesday, weekly, EXCEPT during the two book-closing windows:
+// - Month-end lock: from (last calendar day − MONTH_END_LOCK_DAYS) through
+//   the last day. A Wednesday inside it is blocked; when the window misses
+//   Wednesday, the last week runs normally.
+// - Month-start lock: the first MONTH_START_LOCK_WDS *working* days of the
+//   month (Mon–Fri only — weekends don't consume the count). A Wednesday
+//   that is one of those working days is blocked too.
 const RUN_CAL_YEAR = 2026;
 const RUN_WEEKDAY = 3; // Wednesday
 const MONTH_END_LOCK_DAYS = 3;
+const MONTH_START_LOCK_WDS = 4;
 
 function monthEndLock(y,m){ // m is 0-based; returns ISO strings [start,end]
   const eom=new Date(y,m+1,0);
@@ -1118,12 +1122,31 @@ function inMonthEndLock(d){
   const k=isoDate(d),w=monthEndLock(d.getFullYear(),d.getMonth());
   return k>=w.start&&k<=w.end;
 }
-function isRunDay(d){return d.getDay()===RUN_WEEKDAY&&!inMonthEndLock(d);}
+function monthStartLockDays(y,m){ // ISO strings of the first N working days
+  const out=[];
+  for(let d=new Date(y,m,1);d.getMonth()===m&&out.length<MONTH_START_LOCK_WDS;d=addDays(d,1)){
+    const dow=d.getDay();
+    if(dow!==0&&dow!==6)out.push(isoDate(d));
+  }
+  return out;
+}
+function inMonthStartLock(d){
+  return monthStartLockDays(d.getFullYear(),d.getMonth()).includes(isoDate(d));
+}
+function runBlockReason(d){ // "" when the Wednesday is runnable
+  if(d.getDay()!==RUN_WEEKDAY)return "";
+  if(inMonthStartLock(d))return "month-start close (first "+MONTH_START_LOCK_WDS+" working days)";
+  if(inMonthEndLock(d))return "month-end close (EOM−3 → EOM)";
+  return "";
+}
+function isRunDay(d){return d.getDay()===RUN_WEEKDAY&&!runBlockReason(d);}
 function runDaysOfYear(year){
   const runs=[],blocked=[];
   for(let d=new Date(year,0,1);d.getFullYear()===year;d=addDays(d,1)){
     if(d.getDay()!==RUN_WEEKDAY)continue;
-    (inMonthEndLock(d)?blocked:runs).push(isoDate(d));
+    const why=runBlockReason(d);
+    if(why)blocked.push({date:isoDate(d),reason:why});
+    else runs.push(isoDate(d));
   }
   return {runs,blocked};
 }
@@ -1136,27 +1159,33 @@ function renderRunCalendar(){
   const next=upcoming[0]||"";
   const daysToNext=next?Math.round((parseISO(next)-parseISO(today))/86400000):null;
   const monthRuns=runs.filter(k=>k.slice(0,7)===today.slice(0,7));
+  const blockedStart=blocked.filter(b=>b.reason.startsWith("month-start")).length;
+  const blockedEnd=blocked.length-blockedStart;
   heroEl.innerHTML=`
     <div class="rc-next"><div class="kpi-label">Next payment run</div><div class="kpi-value">${next?dateLabel(next):"—"}</div><div class="kpi-sub">${next?(daysToNext===0?"Today":daysToNext===1?"Tomorrow":`in ${daysToNext} days`)+" · Wednesday":"No run day left in "+RUN_CAL_YEAR}</div></div>
     <div class="kpi-card good"><div class="kpi-label">Runs left in ${RUN_CAL_YEAR}</div><div class="kpi-value">${upcoming.length}</div><div class="kpi-sub">of ${runs.length} run days this year</div></div>
     <div class="kpi-card"><div class="kpi-label">Runs this month</div><div class="kpi-value">${monthRuns.length}</div><div class="kpi-sub">${monthRuns.map(k=>k.slice(8,10)).join(" · ")||"—"}</div></div>
-    <div class="kpi-card bad"><div class="kpi-label">Blocked Wednesdays ${RUN_CAL_YEAR}</div><div class="kpi-value">${blocked.length}</div><div class="kpi-sub">${blocked.map(dateLabel).join(" · ")||"None"}</div></div>`;
+    <div class="kpi-card bad"><div class="kpi-label">Blocked Wednesdays ${RUN_CAL_YEAR}</div><div class="kpi-value">${blocked.length}</div><div class="kpi-sub">${blockedStart} month-start close · ${blockedEnd} month-end close</div></div>`;
   const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DOW=["Mo","Tu","We","Th","Fr","Sa","Su"];
   document.getElementById("rcYear").innerHTML=MONTHS.map((name,m)=>{
     const first=new Date(RUN_CAL_YEAR,m,1),lead=(first.getDay()+6)%7,dim=new Date(RUN_CAL_YEAR,m+1,0).getDate();
     const lock=monthEndLock(RUN_CAL_YEAR,m);
-    const mRuns=runs.filter(k=>k.slice(5,7)===String(m+1).padStart(2,"0"));
-    const mBlocked=blocked.filter(k=>k.slice(5,7)===String(m+1).padStart(2,"0"));
+    const startLock=monthStartLockDays(RUN_CAL_YEAR,m);
+    const mm=String(m+1).padStart(2,"0");
+    const mRuns=runs.filter(k=>k.slice(5,7)===mm);
+    const mBlocked=blocked.filter(b=>b.date.slice(5,7)===mm);
     let cells=DOW.map(d=>`<div class="rc-dow ${d==="We"?"wed":""}">${d}</div>`).join("");
     cells+='<div class="rc-day"></div>'.repeat(lead);
     for(let day=1;day<=dim;day++){
       const d=new Date(RUN_CAL_YEAR,m,day),k=isoDate(d),dow=d.getDay();
       const cls=["rc-day"];let title="";
       if(dow===0||dow===6)cls.push("we");
-      if(k>=lock.start&&k<=lock.end){cls.push("lock");title="Month-end lock (EOM−3 → EOM)";}
+      if(startLock.includes(k)){cls.push("lock");title=`Month-start close (first ${MONTH_START_LOCK_WDS} working days)`;}
+      else if(k>=lock.start&&k<=lock.end){cls.push("lock");title="Month-end close (EOM−3 → EOM)";}
       if(dow===RUN_WEEKDAY){
-        if(k>=lock.start&&k<=lock.end){cls.splice(cls.indexOf("lock"),1);cls.push("blocked");title="Wednesday blocked — month-end lock";}
+        const why=runBlockReason(d);
+        if(why){if(cls.includes("lock"))cls.splice(cls.indexOf("lock"),1);cls.push("blocked");title=`Wednesday blocked — ${why}`;}
         else{cls.push("run");title="Payment run day";}
       }
       if(k<today)cls.push("past");
