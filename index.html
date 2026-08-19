@@ -532,13 +532,13 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
   <div class="section-title">Processing SLA & Holiday Calendar <small>All values shown below are draft master-data examples</small></div>
   <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="card-sub">Production must source official bank and destination-country calendars. UAT examples are clearly labelled.</div><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
   <div class="section-title">Audit timeline <small>Production actions will be stored in SQLite</small></div>
-  <div class="grid-2"><div class="card"><div class="audit-timeline">
+  <div><div class="card"><div class="audit-timeline">
     <div class="audit-item"><div class="audit-time">22 Jul · 09:18</div><div class="audit-dot"></div><div class="audit-body"><strong>AP batch refreshed</strong><br><span class="muted">7 entities · parser contract passed · user: CM01</span></div></div>
     <div class="audit-item"><div class="audit-time">22 Jul · 09:19</div><div class="audit-dot"></div><div class="audit-body"><strong>Payment references derived</strong><br><span class="muted">Last-E-form rule applied · repeated bases suffixed · prior bank history checked</span></div></div>
     <div class="audit-item"><div class="audit-time">22 Jul · 09:20</div><div class="audit-dot"></div><div class="audit-body"><strong>Settlement forecast calculated</strong><br><span class="muted">Value Date + SLA business days + weekend / holiday adjustments</span></div></div>
     <div class="audit-item"><div class="audit-time">22 Jul · 09:34</div><div class="audit-dot"></div><div class="audit-body"><strong>Bulk payment setup applied</strong><br><span class="muted">ZPI · SGD · 3 payment groups · method, charge and bank account updated</span></div></div>
     <div class="audit-item"><div class="audit-time">22 Jul · 10:05</div><div class="audit-dot"></div><div class="audit-body"><strong>ERP CSV exported</strong><br><span class="muted">6 entities · validation passed</span></div></div>
-  </div></div><div class="card"><h3>Production architecture</h3><div class="card-sub">Offline web application on a Windows laptop.</div><div class="validation-list"><div class="validation-item"><span>Frontend</span><strong>HTML / CSS / JavaScript</strong></div><div class="validation-item"><span>Backend engine</span><strong>Packaged local EXE</strong></div><div class="validation-item"><span>Database</span><strong>SQLite</strong></div><div class="validation-item"><span>Launcher</span><strong>Run_Dashboard.cmd</strong></div><div class="validation-item"><span>Browser</span><strong>Edge / Chrome</strong></div><div class="validation-item"><span>Bank connectors</span><strong>Configurable add-ins</strong></div></div></div></div>
+  </div></div></div>
 </section>
 
 </main>
