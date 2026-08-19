@@ -680,12 +680,17 @@ const accounts = [
 {entity:"VNGSING",bank:"Standard Chartered",account:"0170725839",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:278045.99,date:"2026-07-15",fresh:"STALE",continuity:"PASS",source:"summary.xlsx"},
 {entity:"VNGSING",bank:"Deutsche Bank",account:"2050342050",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"VNGSING",bank:"Deutsche Bank",account:"2050342000",accountName:"VNG Singapore PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"VNGSING",bank:"Deutsche Bank",account:"2050342051",accountName:"VNG Singapore PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master (confirmed in DB_Jul26_SG.pdf)"},
+{entity:"VNGSING",bank:"Deutsche Bank",account:"1025899006",accountName:"VNG Singapore PTE. LTD. - HCMC",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master (DB Ho Chi Minh branch, DB_Jul26_VN.pdf)"},
+{entity:"VNGSING",bank:"Deutsche Bank",account:"1025899056",accountName:"VNG Singapore PTE. LTD. - HCMC",currency:"VND",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master (DB Ho Chi Minh branch, DB_Jul26_VN.pdf)"},
 {entity:"VNGGAMES Sing",bank:"Citi",account:"0139143019",accountName:"VNGGAMES PTE LTD",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"VNGGAMES Sing",bank:"Citi",account:"0139143027",accountName:"VNGGAMES PTE LTD",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"VNGGAMES Sing",bank:"Citi",account:"0139143035",accountName:"VNGGAMES PTE LTD",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"ZPI",bank:"Citi",account:"0001051008",accountName:"Zingplay International PTE. LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"ZPI",bank:"Citi",account:"0001051016",accountName:"Zingplay International PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"ZPI",bank:"Citi",account:"0001051024",accountName:"HR Zingplay International PTE. LTD.",currency:"SGD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
+{entity:"ZPI",bank:"Citi",account:"759416023",accountName:"Zingplay International PTE Limited",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master (discovered in Jul 2026 Citi statement)"},
+{entity:"ZPI",bank:"Citi",account:"759416058",accountName:"Zingplay International PTE Limited",currency:"PHP",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master (discovered in Jul 2026 Citi statement)"},
 {entity:"GAMECO",bank:"Citi",account:"0000108006",accountName:"VNG GAMES CO., LTD.",currency:"THB",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"GAMECO",bank:"Citi",account:"5000108008",accountName:"VNG GAMES CO., LTD.",currency:"USD",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
 {entity:"KMZ",bank:"Citi",account:"1817086221",accountName:"KMZ INTERACTIVE ENTERTAINMENT",currency:"CNY",balance:null,date:"",fresh:"NO_DATA",continuity:"NO_DATA",source:"account master"},
@@ -2027,6 +2032,7 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       const prev = latestByKey.get(key);
       if (!prev || String(r.date || '') >= String(prev.date || '')) latestByKey.set(key, r);
     });
+    let balUpdated = 0; const balUnknown = [];
     latestByKey.forEach(r => {
       const a = accounts.find(x => normAccount(x.account) === normAccount(r.account) && (!r.currency || x.currency === r.currency));
       if (a && r.balance !== null) {
@@ -2034,13 +2040,21 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
         a.date = r.date || a.date;
         a.fresh = 'FRESH';
         a.source = 'uploaded statement';
+        balUpdated++;
+      } else if (r.balance !== null) {
+        // Balance row for an account the dashboard's master doesn't know —
+        // surfaced instead of silently dropped, so a new bank account (or a
+        // stale/old statement file) is visible right at import time.
+        balUnknown.push(`${r.account} ${r.currency}`);
       }
     });
+    if (balUnknown.length) console.warn('Statement balance rows with no matching dashboard account:', balUnknown);
+    state.balanceImportNote = `${balUpdated} account balance(s) updated` + (balUnknown.length ? `, ${balUnknown.length} unknown account(s): ${balUnknown.slice(0,3).join('; ')}${balUnknown.length>3?'…':''}` : '');
     state.lastRefresh = new Date();
     state.audit = state.audit || [];
     state.audit.unshift(`Statement imported: ${files.length} file(s)`);
     refreshAll();
-    showToast(`Imported ${files.length} statement file(s).`);
+    showToast(`Imported ${files.length} statement file(s) · ${rowsAll.length} transaction(s) · ${state.balanceImportNote || 'no balance rows'}.`);
   }
 
   function refreshAll(){
