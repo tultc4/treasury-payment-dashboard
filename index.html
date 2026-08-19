@@ -1093,11 +1093,37 @@ function renderCiti(){
       ?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="overrideBankMatch(${p.id})" title="Đã tự kiểm tra và chấp nhận dòng này — cần nhập lý do">Override</button>`
       :`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
-    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${c.swiftBranchWarn?`<span class="status warn" title="${escapeHtml(c.swiftBranchWarn)}">${escapeHtml(p.swift||"-")} ⚠</span>`:escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
+    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><input class="ref-input" style="min-width:170px;margin-top:0${p.bankCheck&&!c.beneficiaryOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.beneName||p.beneficiary||"")}" title="${escapeHtml(reconFieldTitle(p,"beneficiary"))}" onchange="updateReconField(${p.id},'beneficiary',this.value)"></td><td><input class="ref-input" style="min-width:130px;margin-top:0${p.bankCheck&&!c.accountOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.vendorAccount||"")}" title="${escapeHtml(reconFieldTitle(p,"vendorAccount"))}" onchange="updateReconField(${p.id},'vendorAccount',this.value)"></td><td><input class="ref-input" style="min-width:105px;margin-top:0${p.bankCheck&&!c.swiftOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.swift||"")}" title="${escapeHtml(reconFieldTitle(p,"swift"))}" onchange="updateReconField(${p.id},'swift',this.value)">${c.swiftBranchWarn?`<span class="status warn" style="margin-left:4px" title="${escapeHtml(c.swiftBranchWarn)}">⚠</span>`:""}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
   }).join("");
   document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
 }
 function toggleCitiRow(id,checked){checked?citiSelected.add(id):citiSelected.delete(id);}
+// Inline correction of a SOURCE value (beneficiary / vendor account / SWIFT)
+// straight from the Bank Reconcile row — for when the diff is a typo or
+// stale value in the AP file rather than a bank problem. The edit updates
+// the payment record itself (so the ERP CSV's vendor-account column and
+// every other tab see the corrected value too), logs the change on
+// p.fieldEdits, and recomputes the 4-field match against the stored
+// bank-side values. Amount is deliberately NOT editable here: it is the sum
+// of the invoice lines, and a real amount difference must be resolved via
+// Override (with a reason) or at the source file.
+function updateReconField(id,field,value){
+  const p=payments.find(x=>x.id===id);if(!p)return;
+  const v=String(value||"").trim();
+  const before=field==="beneficiary"?(p.beneName||p.beneficiary||""):(p[field]||"");
+  if(String(before)===v)return;
+  p.fieldEdits=p.fieldEdits||[];
+  p.fieldEdits.push({field,from:String(before),to:v,at:new Date().toISOString().slice(0,16).replace("T"," ")});
+  if(field==="beneficiary"){p.beneName=v;p.beneficiary=v;}
+  else p[field]=v;
+  if(window.recomputeBankCheck)window.recomputeBankCheck(p);
+  showToast(`Đã sửa ${field==="beneficiary"?"Beneficiary":field==="vendorAccount"?"Vendor Bank Account":"SWIFT"} của ${p.paymentReference} — match tính lại: ${p.bankMatched?"TRUE":"vẫn FALSE"}.`);
+  window.refreshAll();
+}
+function reconFieldTitle(p,field){
+  const edits=(p.fieldEdits||[]).filter(e=>e.field===field);
+  return edits.length?`Edited ${edits.length}x — last: "${edits[edits.length-1].from}" → "${edits[edits.length-1].to}" (${edits[edits.length-1].at})`:"Sửa trực tiếp — match sẽ tính lại với giá trị bank đã gửi";
+}
 // Manual match override for a DIFF row the user has verified by hand (e.g.
 // the documented bank-side bundling of two payments into one debit, or an
 // FX-converted amount). Requires a reason; the computed per-field result
@@ -1702,6 +1728,44 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
     return !!na && na === nb;
   }
 
+  // Recompute the 4-field check from the stored bank-side values. Called at
+  // import time AND after an inline field edit on the Bank Reconcile tab
+  // (updateReconField in the outer scope — hence the window export, same
+  // cross-scope rule as defaultMethod/fallbackAccount).
+  function recomputeBankCheck(p){
+    if (!p.bankCheck || !p.bankCheck.bank) return;
+    const b = p.bankCheck.bank;
+    const amountOK = Math.abs(Number(b.amount) - Number(p.amount || 0)) <= 0.01;
+    const beneficiaryOK = namesMatchLoose(b.beneficiary, p.beneName || p.beneficiary);
+    const accountOK = accountsMatchLoose(b.account, p.vendorAccount);
+    // Book transfers carry NO SWIFT on the bank side — an empty (or
+    // placeholder junk "-"/"N/A"/".") routing-code cell is a PASS, not a
+    // mismatch; a populated-but-different SWIFT still fails.
+    const bankSwiftBlank = /^[\s\-–—.\/]*$/.test(String(b.swift || '')) || /^N\/?A$/i.test(String(b.swift || '').trim());
+    const swiftOK = bankSwiftBlank ? true : swiftMatchLoose(b.swift, p.swift);
+    // The match compares only the 8-char BIC root; a real (non-XXX) branch
+    // code on either side is flagged for human review unless both full
+    // codes are identical.
+    const normFull = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const nb = normFull(b.swift), np = normFull(p.swift);
+    let swiftBranchWarn = '';
+    if (!(nb && nb === np)) {
+      const odd = [];
+      if (nb.length > 8 && nb.slice(8) !== 'XXX') odd.push(`bank side ${nb} (branch ${nb.slice(8)})`);
+      if (np.length > 8 && np.slice(8) !== 'XXX') odd.push(`payment side ${np} (branch ${np.slice(8)})`);
+      if (odd.length) swiftBranchWarn = `branch code is not XXX — ${odd.join(' · ')} — verify the branch manually`;
+    }
+    p.bankCheck = { ...p.bankCheck, amountOK, beneficiaryOK, accountOK, swiftOK,
+      swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '',
+      swiftBranchWarn };
+    p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
+    // A manual override stays in force until undone, even when the
+    // computed result still disagrees.
+    p.citi = (p.bankMatched || p.bankOverride) ? 'CREATED' : 'DIFF';
+    if (p.bankMatched || p.bankOverride) citiSelected.add(p.id); else citiSelected.delete(p.id);
+  }
+  window.recomputeBankCheck = recomputeBankCheck;
+
   // Some bank export formats have the company's own account number sitting
   // under an unpredictable/mislabeled header (seen on a real Citi download:
   // "Ordering Party" / "Account Number" / "Account Name" columns were each
@@ -1773,51 +1837,15 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             const bankBeneficiary = first(r, ['beneficiary name']);
             const bankVendorAccount = first(r, ['beneficiary/remitter account number', 'beneficiary account number']);
             const bankSwift = first(r, ['beneficiary bank routing code', 'swift', 'bic']);
-            const amountOK = Math.abs(bankAmount - Number(p.amount || 0)) <= 0.01;
-            const beneficiaryOK = namesMatchLoose(bankBeneficiary, p.beneName || p.beneficiary);
-            const accountOK = accountsMatchLoose(bankVendorAccount, p.vendorAccount);
-            // Book transfers carry NO SWIFT on the bank side — nothing is
-            // routed between banks, so the bank's creation report leaves
-            // the routing-code field empty. An empty bank-side SWIFT is
-            // therefore a PASS (with a note shown in the tooltip), not a
-            // mismatch; a populated-but-different SWIFT still fails.
-            // "Blank" includes the placeholder junk real exports write into
-            // an empty routing-code cell ("-", "--", "N/A", "."), not just
-            // a truly empty string.
-            const bankSwiftBlank = /^[\s\-–—.\/]*$/.test(String(bankSwift || '')) || /^N\/?A$/i.test(String(bankSwift || '').trim());
-            const swiftOK = bankSwiftBlank ? true : swiftMatchLoose(bankSwift, p.swift);
-            // The match itself only compares the 8-char BIC root. When a
-            // code is LONGER than 8 characters, the tail is a real branch
-            // code unless it's the placeholder "XXX" — an 8-char match can
-            // then hide a genuine branch difference, so flag it for a human
-            // to double-check (highlighted, but the row still matches).
-            // Two fully identical codes need no review.
-            const normFull = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            const nb = normFull(bankSwift), np = normFull(p.swift);
-            let swiftBranchWarn = '';
-            if (!(nb && nb === np)) {
-              const odd = [];
-              if (nb.length > 8 && nb.slice(8) !== 'XXX') odd.push(`bank side ${nb} (branch ${nb.slice(8)})`);
-              if (np.length > 8 && np.slice(8) !== 'XXX') odd.push(`payment side ${np} (branch ${np.slice(8)})`);
-              if (odd.length) swiftBranchWarn = `branch code is not XXX — ${odd.join(' · ')} — verify the branch manually`;
-            }
-            p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK,
-              swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '',
-              swiftBranchWarn,
-              // What the bank actually sent, so the Difference column can
-              // show "bank X vs ours Y" per failing field instead of a
-              // generic "does not fully match".
-              bank: { amount: bankAmount, beneficiary: String(bankBeneficiary || ''), account: String(bankVendorAccount || ''), swift: String(bankSwift || '') } };
-            p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
-            p.citi = p.bankMatched ? 'CREATED' : 'DIFF';
+            // What the bank actually sent is stored once; all per-field
+            // flags derive from it in recomputeBankCheck(), which is also
+            // what the inline field-editing on the Bank Reconcile tab calls
+            // after the user corrects a source value.
+            p.bankCheck = { bank: { amount: bankAmount, beneficiary: String(bankBeneficiary || ''), account: String(bankVendorAccount || ''), swift: String(bankSwift || '') } };
+            recomputeBankCheck(p);
             p.exported = true;
             p.bankRef = first(r, ['bank reference', 'reference id', 'file run id']) || p.bankRef || '';
             if (p.citi !== 'CREATED') p.debit = 'NOT_CHECKED';
-            if (p.bankMatched) citiSelected.add(p.id);
-            // A manual override made earlier stays in force across
-            // re-imports: the computed result is refreshed above for the
-            // audit trail, but a human already accepted this row.
-            if (!p.bankMatched && p.bankOverride) { p.citi = 'CREATED'; citiSelected.add(p.id); }
           }
         });
       });
