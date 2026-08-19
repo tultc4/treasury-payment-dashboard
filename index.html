@@ -301,6 +301,15 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 .alert-box{background:white;border:1px solid var(--border);border-radius:10px;padding:11px 12px;box-shadow:var(--shadow);font-size:11px;line-height:1.4}
 .alert-box strong{display:block;color:var(--navy);font-size:12px;margin-bottom:4px}
 .alert-box.bad{border-left:3px solid var(--red)}.alert-box.warn{border-left:3px solid #c9971d}.alert-box.good{border-left:3px solid #d1d5db}
+/* Summary total payment (Bank Reconcile) */
+.bank-sum-chips{display:flex;gap:8px;flex-wrap:wrap}
+.bank-sum-chips .chip{background:#f9fafb;border:1px solid var(--border);border-radius:9px;padding:7px 12px;min-width:110px}
+.bank-sum-chips .chip .l{font-size:9.6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:750}
+.bank-sum-chips .chip .v{font-size:17px;color:var(--navy);font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
+.bank-sum-chips .chip.dark{background:#1f2937;border-color:#1f2937}
+.bank-sum-chips .chip.dark .l{color:#9ca3af}.bank-sum-chips .chip.dark .v{color:#fff}
+#citiPaymentSummary td.ent{font-weight:750;color:var(--navy)}
+#citiPaymentSummary tr.ccy-total td{background:#f9fafb;font-weight:750;border-top:1px solid var(--border)}
 .bank-master-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
 .bank-tile{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:#fbfcfd}
 .bank-tile strong{display:block;color:var(--navy);font-size:11.5px}.bank-tile span{display:block;color:var(--muted);font-size:9.8px;margin-top:4px;line-height:1.35}
@@ -435,8 +444,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
   <div class="primary-bank-note"><strong>Current operating model:</strong> Citi Singapore is the primary payment bank. The reconciliation screen is intentionally bank-neutral; each future bank will supply its own normalized result parser and matching configuration while retaining Payment Reference as the shared control key.</div>
   <div class="grid-3">
     <div class="card"><h3>Import payment-bank result and history</h3><div class="card-sub">The parsed layer retains prior payment references so uniqueness can be validated before export. Upload the bank result workbook to check Amount, Beneficiary Name, Bank Account and SWIFT.</div><div class="upload-zone" id="citiDropZone" onclick="openBankImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCitiDrop(event)"><strong>Drop bank result workbook here</strong>Upload the bank creation / payment result workbook (.xlsx, .xls or .csv). This file is used to reconcile Amount, Beneficiary Name, Bank Account and SWIFT against the Payment List.</div></div>
-    <div class="card"><h3>Reconcile logic</h3><div class="validation-list"><div class="validation-item"><span>1. Final Payment Reference</span><span class="status good">Primary key</span></div><div class="validation-item"><span>2. Amount</span><span class="status info">Checked</span></div><div class="validation-item"><span>3. Beneficiary Name</span><span class="status info">Checked</span></div><div class="validation-item"><span>4. Bank Account</span><span class="status info">Checked</span></div><div class="validation-item"><span>5. SWIFT</span><span class="status info">Checked</span></div><div class="validation-item"><span>Match = TRUE</span><span class="status good">All 4 checks pass</span></div></div></div>
-    <div class="card"><h3>Bank and reference summary</h3><div id="citiSummary" class="validation-list"></div></div>
+    <div class="card" style="grid-column:span 2"><h3>Summary total payment — bank result</h3><div class="card-sub">Every payment the uploaded bank result returned, grouped by entity and currency: how many orders and the total amount. Match rule: Reference is the key; Amount + Beneficiary + Account + SWIFT must all pass.</div><div class="bank-sum-chips" id="citiSummaryChips"></div><div class="table-wrap" style="max-height:330px;margin-top:10px"><table id="citiPaymentSummary"></table></div></div>
   </div>
   <div class="ref-note"><strong>Payment Reference = final E-form reference.</strong> It is searched in Customer Reference, Payment Details, Transaction Description and End-to-End Reference. A reference already found in prior bank history is blocked before ERP export and requires a unique manual override.</div>
   <div class="section-title">Transaction-level result <small>Amount, Beneficiary Name, Bank Account and SWIFT are checked against the Payment List — tick rows below and download the reconciliation result</small></div>
@@ -1067,8 +1075,50 @@ function downloadAllReady(){const groups=entityExportData().filter(g=>g.arr.leng
 
 function renderCiti(){
   derivePaymentReferences();const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";
-  const exported=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank)),statuses=["CREATED","NOT_CREATED","DIFF","NOT_CHECKED"];
-  document.getElementById("citiSummary").innerHTML=`<div class="validation-item"><span>Payment banks in selected result</span><strong>${new Set(exported.map(paymentBankLabel)).size}</strong></div><div class="validation-item"><span>Prior bank references loaded</span><strong>${bankUsedReferences.size}</strong></div><div class="validation-item"><span>Reference blocks before export</span><strong>${payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length}</strong></div>`+statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${exported.filter(p=>p.citi===s).length}</strong></div>`).join("");
+  const exported=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));
+  // ----- Summary total payment: every payment the uploaded bank result
+  // returned (p.bankCheck exists = the reference was found in the file),
+  // grouped by entity and currency with counts and total amounts. Amounts
+  // are never summed across currencies — the grand-total rows are per CCY.
+  const inResult=exported.filter(p=>p.bankCheck);
+  const chipsEl=document.getElementById("citiSummaryChips"),sumEl=document.getElementById("citiPaymentSummary");
+  if(chipsEl&&sumEl){
+    if(!inResult.length){
+      chipsEl.innerHTML="";
+      sumEl.innerHTML=`<thead><tr><th>Summary total payment</th></tr></thead><tbody><tr><td>No bank result imported yet — drop the bank creation / result workbook on the left to see totals by entity and currency.</td></tr></tbody>`;
+    }else{
+      const created=inResult.filter(p=>p.citi==="CREATED").length;
+      const diffN=inResult.filter(p=>p.citi==="DIFF").length;
+      const ccyN=new Set(inResult.map(p=>p.currency)).size;
+      const entN=new Set(inResult.map(p=>p.entity)).size;
+      chipsEl.innerHTML=`
+        <div class="chip dark"><div class="l">Payments in result</div><div class="v">${inResult.length}</div></div>
+        <div class="chip"><div class="l">Entities</div><div class="v">${entN}</div></div>
+        <div class="chip"><div class="l">Currencies</div><div class="v">${ccyN}</div></div>
+        <div class="chip"><div class="l">Matched (CREATED)</div><div class="v" style="color:var(--green)">${created}</div></div>
+        <div class="chip"><div class="l">Diff to review</div><div class="v" style="${diffN?"color:var(--red)":""}">${diffN}</div></div>`;
+      const groups=new Map(); // entity -> ccy -> {n, amount, matched, diff}
+      inResult.forEach(p=>{
+        if(!groups.has(p.entity))groups.set(p.entity,new Map());
+        const g=groups.get(p.entity);
+        if(!g.has(p.currency))g.set(p.currency,{n:0,amount:0,matched:0,diff:0});
+        const cell=g.get(p.currency);
+        cell.n++;cell.amount+=Number(p.amount||0);
+        p.citi==="CREATED"?cell.matched++:cell.diff++;
+      });
+      const ccyTotals=new Map();
+      inResult.forEach(p=>{
+        if(!ccyTotals.has(p.currency))ccyTotals.set(p.currency,{n:0,amount:0});
+        const t=ccyTotals.get(p.currency);t.n++;t.amount+=Number(p.amount||0);
+      });
+      const bodyRows=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).flatMap(([entity,byCcy])=>{
+        const ccys=[...byCcy.entries()].sort((a,b)=>b[1].amount-a[1].amount);
+        return ccys.map(([ccy,cell],i)=>`<tr><td class="ent">${i===0?escapeHtml(entity):""}</td><td><span class="currency-chip">${escapeHtml(ccy)}</span></td><td class="num">${cell.n}</td><td class="num" style="color:var(--green)">${cell.matched}</td><td class="num" style="${cell.diff?"color:var(--red);font-weight:750":""}">${cell.diff||"-"}</td><td class="num amount">${fmt(cell.amount,ccy)}</td></tr>`);
+      }).join("");
+      const totalRows=[...ccyTotals.entries()].sort((a,b)=>b[1].amount-a[1].amount).map(([ccy,t])=>`<tr class="ccy-total"><td>Total ${escapeHtml(ccy)}</td><td><span class="currency-chip">${escapeHtml(ccy)}</span></td><td class="num">${t.n}</td><td class="num" colspan="2"></td><td class="num amount">${fmt(t.amount,ccy)}</td></tr>`).join("");
+      sumEl.innerHTML=`<thead><tr><th>Entity</th><th>Currency</th><th class="num">Payments</th><th class="num">Matched</th><th class="num">Diff</th><th class="num">Total Amount</th></tr></thead><tbody>${bodyRows}${totalRows}</tbody>`;
+    }
+  }
   const rows=exported.map(p=>{
     const c=p.bankCheck||{};
     // Name the exact failing field(s) with both values — a generic "does
