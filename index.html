@@ -1073,7 +1073,7 @@ function renderCiti(){
     const diffBase=p.citi==="DIFF"?"Amount / beneficiary / account / SWIFT does not fully match":p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
     const diff=[diffBase,p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
     const c=p.bankCheck||{};
-    const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?"OK":"FAIL"}`:"Not checked against a bank result yet";
+    const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?(c.swiftNote?"OK ("+c.swiftNote+")":"OK"):"FAIL"}`:"Not checked against a bank result yet";
     const matchBadge=p.bankMatched?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`:p.bankCheck?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span>`:`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
     return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
@@ -1735,8 +1735,15 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             const amountOK = Math.abs(bankAmount - Number(p.amount || 0)) <= 0.01;
             const beneficiaryOK = namesMatchLoose(bankBeneficiary, p.beneName || p.beneficiary);
             const accountOK = accountsMatchLoose(bankVendorAccount, p.vendorAccount);
-            const swiftOK = swiftMatchLoose(bankSwift, p.swift);
-            p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK };
+            // Book transfers carry NO SWIFT on the bank side — nothing is
+            // routed between banks, so the bank's creation report leaves
+            // the routing-code field empty. An empty bank-side SWIFT is
+            // therefore a PASS (with a note shown in the tooltip), not a
+            // mismatch; a populated-but-different SWIFT still fails.
+            const bankSwiftBlank = !String(bankSwift || '').trim();
+            const swiftOK = bankSwiftBlank ? true : swiftMatchLoose(bankSwift, p.swift);
+            p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK,
+              swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '' };
             p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
             p.citi = p.bankMatched ? 'CREATED' : 'DIFF';
             p.exported = true;
