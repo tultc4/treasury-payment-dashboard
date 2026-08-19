@@ -1071,12 +1071,12 @@ function renderCiti(){
   document.getElementById("citiSummary").innerHTML=`<div class="validation-item"><span>Payment banks in selected result</span><strong>${new Set(exported.map(paymentBankLabel)).size}</strong></div><div class="validation-item"><span>Prior bank references loaded</span><strong>${bankUsedReferences.size}</strong></div><div class="validation-item"><span>Reference blocks before export</span><strong>${payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length}</strong></div>`+statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${exported.filter(p=>p.citi===s).length}</strong></div>`).join("");
   const rows=exported.map(p=>{
     const diffBase=p.citi==="DIFF"?"Amount / beneficiary / account / SWIFT does not fully match":p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
-    const diff=[diffBase,p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
     const c=p.bankCheck||{};
-    const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?(c.swiftNote?"OK ("+c.swiftNote+")":"OK"):"FAIL"}`:"Not checked against a bank result yet";
+    const diff=[diffBase,c.swiftBranchWarn?`SWIFT: ${c.swiftBranchWarn}`:"",p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
+    const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?(c.swiftNote?"OK ("+c.swiftNote+")":"OK"):"FAIL"}${c.swiftBranchWarn?" · CHECK: "+c.swiftBranchWarn:""}`:"Not checked against a bank result yet";
     const matchBadge=p.bankMatched?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`:p.bankCheck?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span>`:`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
-    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
+    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${c.swiftBranchWarn?`<span class="status warn" title="${escapeHtml(c.swiftBranchWarn)}">${escapeHtml(p.swift||"-")} ⚠</span>`:escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
   }).join("");
   document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
 }
@@ -1085,8 +1085,8 @@ function toggleAllCitiVisible(select){const selectedBank=document.getElementById
 function downloadCitiSelection(){
   const rows=payments.filter(p=>p.exported&&citiSelected.has(p.id));
   if(!rows.length){showToast("No reconciled row selected.");return;}
-  const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","Overall Match","Bank Status"];
-  const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",p.bankMatched?"TRUE":"FALSE",p.bankStatusRaw||""];});
+  const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","SWIFT Branch Note","Overall Match","Bank Status"];
+  const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",c.swiftBranchWarn||c.swiftNote||"",p.bankMatched?"TRUE":"FALSE",p.bankStatusRaw||""];});
   const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
   const csv=[cols.map(esc).join(","),...body.map(r=>r.map(esc).join(","))].join("\r\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
@@ -1742,8 +1742,24 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             // mismatch; a populated-but-different SWIFT still fails.
             const bankSwiftBlank = !String(bankSwift || '').trim();
             const swiftOK = bankSwiftBlank ? true : swiftMatchLoose(bankSwift, p.swift);
+            // The match itself only compares the 8-char BIC root. When a
+            // code is LONGER than 8 characters, the tail is a real branch
+            // code unless it's the placeholder "XXX" — an 8-char match can
+            // then hide a genuine branch difference, so flag it for a human
+            // to double-check (highlighted, but the row still matches).
+            // Two fully identical codes need no review.
+            const normFull = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const nb = normFull(bankSwift), np = normFull(p.swift);
+            let swiftBranchWarn = '';
+            if (!(nb && nb === np)) {
+              const odd = [];
+              if (nb.length > 8 && nb.slice(8) !== 'XXX') odd.push(`bank side ${nb} (branch ${nb.slice(8)})`);
+              if (np.length > 8 && np.slice(8) !== 'XXX') odd.push(`payment side ${np} (branch ${np.slice(8)})`);
+              if (odd.length) swiftBranchWarn = `branch code is not XXX — ${odd.join(' · ')} — verify the branch manually`;
+            }
             p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK,
-              swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '' };
+              swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '',
+              swiftBranchWarn };
             p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
             p.citi = p.bankMatched ? 'CREATED' : 'DIFF';
             p.exported = true;
