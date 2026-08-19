@@ -1083,21 +1083,51 @@ function renderCiti(){
       !c.swiftOK?`SWIFT: bank "${escapeHtml(c.bank.swift||"-")}" vs ours "${escapeHtml(p.swift||"-")}"`:""
     ].filter(Boolean).join(" · "):"";
     const diffBase=p.citi==="DIFF"?(fieldDiffs||"Amount / beneficiary / account / SWIFT does not fully match (re-import the bank result to see field-level detail)"):p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
-    const diff=[diffBase,c.swiftBranchWarn?`SWIFT: ${c.swiftBranchWarn}`:"",p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
+    const diff=[p.bankOverride?`Manual override: ${escapeHtml(p.bankOverride.reason)}`:"",diffBase,c.swiftBranchWarn?`SWIFT: ${c.swiftBranchWarn}`:"",p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
     const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?(c.swiftNote?"OK ("+c.swiftNote+")":"OK"):"FAIL"}${c.swiftBranchWarn?" · CHECK: "+c.swiftBranchWarn:""}`:"Not checked against a bank result yet";
-    const matchBadge=p.bankMatched?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`:p.bankCheck?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span>`:`<span class="status gray">-</span>`;
+    const matchBadge=p.bankMatched
+      ?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`
+      :p.bankOverride
+      ?`<span class="status warn" title="Manual override: ${escapeHtml(p.bankOverride.reason)} (${escapeHtml(p.bankOverride.at)}) · computed: ${escapeHtml(matchTitle)}">TRUE (manual)</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="undoBankOverride(${p.id})">Undo</button>`
+      :p.bankCheck
+      ?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="overrideBankMatch(${p.id})" title="Đã tự kiểm tra và chấp nhận dòng này — cần nhập lý do">Override</button>`
+      :`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
     return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><span class="vendor-main">${escapeHtml(p.beneficiary)}</span></td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${c.swiftBranchWarn?`<span class="status warn" title="${escapeHtml(c.swiftBranchWarn)}">${escapeHtml(p.swift||"-")} ⚠</span>`:escapeHtml(p.swift||"-")}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
   }).join("");
   document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
 }
 function toggleCitiRow(id,checked){checked?citiSelected.add(id):citiSelected.delete(id);}
-function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched)citiSelected.add(p.id);});renderCiti();}
+// Manual match override for a DIFF row the user has verified by hand (e.g.
+// the documented bank-side bundling of two payments into one debit, or an
+// FX-converted amount). Requires a reason; the computed per-field result
+// stays visible in the tooltip/CSV as the audit trail, and the override
+// survives re-imports (see importBankResults) until undone.
+function overrideBankMatch(id){
+  const p=payments.find(x=>x.id===id);if(!p||!p.bankCheck)return;
+  const reason=prompt("Manual override — lý do (bắt buộc), ví dụ: bank gộp 2 lệnh vào 1 giao dịch / đã đối chiếu với bank:");
+  if(reason===null)return;
+  if(!String(reason).trim()){showToast("Override cần lý do — chưa lưu.");return;}
+  p.bankOverride={reason:String(reason).trim(),at:new Date().toISOString().slice(0,16).replace("T"," ")};
+  p.citi="CREATED";
+  citiSelected.add(p.id);
+  showToast(`Đã override match cho ${p.paymentReference}.`);
+  window.refreshAll();
+}
+function undoBankOverride(id){
+  const p=payments.find(x=>x.id===id);if(!p)return;
+  delete p.bankOverride;
+  p.citi=p.bankMatched?"CREATED":"DIFF";
+  if(!p.bankMatched){citiSelected.delete(p.id);p.debit="NOT_CHECKED";}
+  showToast(`Đã bỏ override cho ${p.paymentReference}.`);
+  window.refreshAll();
+}
+function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched||p.bankOverride)citiSelected.add(p.id);});renderCiti();}
 function downloadCitiSelection(){
   const rows=payments.filter(p=>p.exported&&citiSelected.has(p.id));
   if(!rows.length){showToast("No reconciled row selected.");return;}
-  const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","SWIFT Branch Note","Overall Match","Bank Status"];
-  const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",c.swiftBranchWarn||c.swiftNote||"",p.bankMatched?"TRUE":"FALSE",p.bankStatusRaw||""];});
+  const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","SWIFT Branch Note","Overall Match","Manual Override","Bank Status"];
+  const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",c.swiftBranchWarn||c.swiftNote||"",p.bankMatched?"TRUE":p.bankOverride?"TRUE (manual)":"FALSE",p.bankOverride?`${p.bankOverride.reason} (${p.bankOverride.at})`:"",p.bankStatusRaw||""];});
   const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
   const csv=[cols.map(esc).join(","),...body.map(r=>r.map(esc).join(","))].join("\r\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
@@ -1784,6 +1814,10 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             p.bankRef = first(r, ['bank reference', 'reference id', 'file run id']) || p.bankRef || '';
             if (p.citi !== 'CREATED') p.debit = 'NOT_CHECKED';
             if (p.bankMatched) citiSelected.add(p.id);
+            // A manual override made earlier stays in force across
+            // re-imports: the computed result is refreshed above for the
+            // audit trail, but a human already accepted this row.
+            if (!p.bankMatched && p.bankOverride) { p.citi = 'CREATED'; citiSelected.add(p.id); }
           }
         });
       });
