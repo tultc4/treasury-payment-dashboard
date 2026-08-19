@@ -1070,8 +1070,19 @@ function renderCiti(){
   const exported=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank)),statuses=["CREATED","NOT_CREATED","DIFF","NOT_CHECKED"];
   document.getElementById("citiSummary").innerHTML=`<div class="validation-item"><span>Payment banks in selected result</span><strong>${new Set(exported.map(paymentBankLabel)).size}</strong></div><div class="validation-item"><span>Prior bank references loaded</span><strong>${bankUsedReferences.size}</strong></div><div class="validation-item"><span>Reference blocks before export</span><strong>${payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length}</strong></div>`+statuses.map(s=>`<div class="validation-item"><span>${s.replaceAll("_"," ")}</span><strong>${exported.filter(p=>p.citi===s).length}</strong></div>`).join("");
   const rows=exported.map(p=>{
-    const diffBase=p.citi==="DIFF"?"Amount / beneficiary / account / SWIFT does not fully match":p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
     const c=p.bankCheck||{};
+    // Name the exact failing field(s) with both values — a generic "does
+    // not fully match" told the user nothing about WHY a row is DIFF.
+    // Older persisted results (imported before this existed) have no
+    // c.bank values, so those fall back to the generic text until the bank
+    // result file is re-imported.
+    const fieldDiffs=(p.citi==="DIFF"&&c.bank)?[
+      !c.amountOK?`Amount: bank ${fmt(c.bank.amount,p.currency)} vs ours ${fmt(p.amount,p.currency)}`:"",
+      !c.beneficiaryOK?`Beneficiary: bank "${escapeHtml(c.bank.beneficiary||"-")}" vs ours "${escapeHtml(p.beneName||p.beneficiary||"-")}"`:"",
+      !c.accountOK?`Account: bank "${escapeHtml(c.bank.account||"-")}" vs ours "${escapeHtml(p.vendorAccount||"-")}"`:"",
+      !c.swiftOK?`SWIFT: bank "${escapeHtml(c.bank.swift||"-")}" vs ours "${escapeHtml(p.swift||"-")}"`:""
+    ].filter(Boolean).join(" · "):"";
+    const diffBase=p.citi==="DIFF"?(fieldDiffs||"Amount / beneficiary / account / SWIFT does not fully match (re-import the bank result to see field-level detail)"):p.citi==="NOT_CREATED"?"Payment Reference not found in bank result":"";
     const diff=[diffBase,c.swiftBranchWarn?`SWIFT: ${c.swiftBranchWarn}`:"",p.bankStatusRaw?`Bank status: ${p.bankStatusRaw}`:""].filter(Boolean).join(" · ")||"-",timing=processingInfo(p);
     const matchTitle=p.bankCheck?`Amount ${c.amountOK?"OK":"FAIL"} · Beneficiary ${c.beneficiaryOK?"OK":"FAIL"} · Account ${c.accountOK?"OK":"FAIL"} · SWIFT ${c.swiftOK?(c.swiftNote?"OK ("+c.swiftNote+")":"OK"):"FAIL"}${c.swiftBranchWarn?" · CHECK: "+c.swiftBranchWarn:""}`:"Not checked against a bank result yet";
     const matchBadge=p.bankMatched?`<span class="status good" title="${escapeHtml(matchTitle)}">TRUE</span>`:p.bankCheck?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span>`:`<span class="status gray">-</span>`;
@@ -1740,7 +1751,10 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             // the routing-code field empty. An empty bank-side SWIFT is
             // therefore a PASS (with a note shown in the tooltip), not a
             // mismatch; a populated-but-different SWIFT still fails.
-            const bankSwiftBlank = !String(bankSwift || '').trim();
+            // "Blank" includes the placeholder junk real exports write into
+            // an empty routing-code cell ("-", "--", "N/A", "."), not just
+            // a truly empty string.
+            const bankSwiftBlank = /^[\s\-–—.\/]*$/.test(String(bankSwift || '')) || /^N\/?A$/i.test(String(bankSwift || '').trim());
             const swiftOK = bankSwiftBlank ? true : swiftMatchLoose(bankSwift, p.swift);
             // The match itself only compares the 8-char BIC root. When a
             // code is LONGER than 8 characters, the tail is a real branch
@@ -1759,7 +1773,11 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
             }
             p.bankCheck = { amountOK, beneficiaryOK, accountOK, swiftOK,
               swiftNote: bankSwiftBlank ? 'bank has no SWIFT (book transfer) — auto-pass' : '',
-              swiftBranchWarn };
+              swiftBranchWarn,
+              // What the bank actually sent, so the Difference column can
+              // show "bank X vs ours Y" per failing field instead of a
+              // generic "does not fully match".
+              bank: { amount: bankAmount, beneficiary: String(bankBeneficiary || ''), account: String(bankVendorAccount || ''), swift: String(bankSwift || '') } };
             p.bankMatched = amountOK && beneficiaryOK && accountOK && swiftOK;
             p.citi = p.bankMatched ? 'CREATED' : 'DIFF';
             p.exported = true;
