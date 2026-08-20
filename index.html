@@ -2039,16 +2039,17 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       paymentBank: normalizeBankName(g.paymentBank || 'Citi Singapore')
     }));
     state.nextId = startId + newRows.length;
-    if (!state.importedAp) {
-      // First real AP upload — replace the built-in demo rows.
-      payments = newRows;
-    } else {
-      // Later uploads add in: keep every previously loaded row except ones
-      // from this same upload (re-uploading a file refreshes just its own
-      // rows instead of duplicating them alongside the earlier copy).
-      const keep = payments.filter(p => p.importFile !== file.name);
-      payments = [...keep, ...newRows];
-    }
+    // An AP upload REPLACES the whole Payment List. The workflow is one
+    // consolidated parser output per run day — merging by upload-file name
+    // (the old behavior) silently kept stale rows around whenever the new
+    // output had a different file name (e.g. "Payment list 1908.xlsx" vs
+    // "AP_PAYMENT_TEMPLATE_OUTPUT.xlsx", or a browser "(1)" download copy):
+    // a real batch showed 4 extra ZPI payments that were not in the
+    // uploaded file at all. Replacing everything makes the Payment List
+    // always equal exactly the file just uploaded.
+    const replaced = state.importedAp ? payments.length : 0;
+    payments = newRows;
+    if (replaced) showToast(`Replaced the previous ${replaced} payment line(s) with this upload.`);
     state.importedAp = true;
     state.pending = pending;
     preparePaymentData();
