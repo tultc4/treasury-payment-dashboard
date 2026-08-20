@@ -702,6 +702,9 @@ td.cell-diff{background:color-mix(in srgb,#e0a35a 26%,transparent)!important;col
 #wbTable .cell-select{max-width:100%}
 #wbTable .invoice-detail-row td{overflow:visible;text-overflow:clip;white-space:normal}
 
+#citiTable td,#citiTable th{overflow:hidden;text-overflow:ellipsis}
+#citiTable td .ref-input{max-width:100%}
+
 /* --- rail collapse --- */
 .rail-toggle,.rail-show{display:grid;place-items:center;width:24px;height:24px;padding:0;cursor:pointer;
   border:1px solid var(--border);border-radius:99px;background:var(--card);color:var(--text);
@@ -1531,7 +1534,7 @@ function wbSetFocus(kind){
   window.wbFocus = window.wbFocus===kind ? null : kind;
   renderWorkbench();renderReferenceKpis();
 }
-function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.filter(p=>p.invoiceCount>1).length,"Representative reference = last source E-form"],["Last-E-form rule",payments.filter(p=>p.referenceRule==="LAST_EFORM_IN_GROUP").length,"Single or multi-invoice groups"],["Auto-suffixed",payments.filter(p=>p.referenceStatus==="AUTO_SUFFIXED").length,"Repeated base references by payment group"],["Bank-history blocks",payments.filter(p=>p.referenceStatus==="DUPLICATE_IN_BANK").length,"Manual unique override required"],["Reference-ready",payments.filter(p=>!p.referenceBlocked).length,`${pct(payments.filter(p=>!p.referenceBlocked).length,payments.length)}% of payment groups`],
+function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.filter(p=>p.invoiceCount>1).length,"Representative reference = last source E-form"],["Last-E-form rule",payments.filter(p=>p.referenceRule==="LAST_EFORM_IN_GROUP").length,"Single or multi-invoice groups"],["Auto-suffixed",payments.filter(p=>p.referenceStatus==="AUTO_SUFFIXED").length,"Repeated base references by payment group"],["Blocked / duplicate",payments.filter(p=>p.referenceBlocked).length,"Manual override needed — click to see only these rows"],["Reference-ready",payments.filter(p=>!p.referenceBlocked).length,`${pct(payments.filter(p=>!p.referenceBlocked).length,payments.length)}% of payment groups`],
   ["Missing mapping",payments.filter(p=>missingMapping(p)).length,"Payment method or charge unset","mapping"]];
   items[3][3]="blocked";
   document.getElementById("referenceKpis").innerHTML=items.map(x=>{
@@ -1601,13 +1604,14 @@ window.wbColFilter = window.wbColFilter || {};
 
 function wbHeaders(){return [...document.querySelectorAll("#wbTable thead th")];}
 
-function initColResize(){
-  const ths=wbHeaders();
+function initColResize(tableId,defs){
+  const table=document.getElementById(tableId||"wbTable");
+  if(!table)return;
+  const ths=[...table.querySelectorAll("thead th")];
   if(!ths.length||ths[0].dataset.rsz)return;
-  const table=document.getElementById("wbTable");
   // Fixed default widths per column — measuring is unreliable here because the
   // table is compressed inside its scroll container before the widths are set.
-  const DEF=[44,88,112,124,88,200,124,66,236,152,196,124,112,260,152,112];
+  const DEF=defs||[44,88,112,124,88,200,124,66,236,152,196,124,112,260,152,112];
   const table_w=(i,th)=>DEF[i]||Math.max(90,Math.round(th.getBoundingClientRect().width));
   table.style.tableLayout="fixed";
   let total=0;
@@ -1850,6 +1854,13 @@ function renderCiti(){
     return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num ${p.bankCheck&&!c.amountOK?"cell-diff":""}" title="${p.bankCheck&&!c.amountOK?escapeHtml("Bank result "+fmt((p.bankCheck.bank&&p.bankCheck.bank.amount)||0,p.currency)+" vs payment list "+fmt(p.amount,p.currency)):""}">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><input class="ref-input" style="min-width:170px;margin-top:0${p.bankCheck&&!c.beneficiaryOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.beneName||p.beneficiary||"")}" title="${escapeHtml(reconFieldTitle(p,"beneficiary"))}" onchange="updateReconField(${p.id},'beneficiary',this.value)"></td><td><input class="ref-input" style="min-width:130px;margin-top:0${p.bankCheck&&!c.accountOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.vendorAccount||"")}" title="${escapeHtml(reconFieldTitle(p,"vendorAccount"))}" onchange="updateReconField(${p.id},'vendorAccount',this.value)"></td><td><input class="ref-input" style="min-width:105px;margin-top:0${p.bankCheck&&!c.swiftOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.swift||"")}" title="${escapeHtml(reconFieldTitle(p,"swift"))}" onchange="updateReconField(${p.id},'swift',this.value)">${c.swiftBranchWarn?`<span class="status warn" style="margin-left:4px" title="${escapeHtml(c.swiftBranchWarn)}">⚠</span>`:""}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
   }).join("");
   document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
+  requestAnimationFrame(initCitiColResize);
+}
+function initCitiColResize(){
+  const t=document.getElementById("citiTable");
+  if(!t)return;
+  [...t.querySelectorAll("thead th")].forEach(th=>{th.dataset.rsz="";const g=th.querySelector(".col-grip");if(g)g.remove();});
+  initColResize("citiTable",[38,92,132,168,132,132,142,180,150,120,96,132,120,110,220]);
 }
 function toggleCitiRow(id,checked){checked?citiSelected.add(id):citiSelected.delete(id);}
 // Inline correction of a SOURCE value (beneficiary / vendor account / SWIFT)
