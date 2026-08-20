@@ -829,6 +829,7 @@ body.rail-hidden header{padding-left:44px}
   </div>
 
   <div class="reference-kpi-grid" id="referenceKpis"></div>
+  <div id="wbActionList"></div>
 
   <div class="toolbar">
     <div class="field"><label>Entity</label><select id="filterEntity" onchange="renderWorkbench()"><option value="">All</option></select></div>
@@ -1570,12 +1571,37 @@ function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.fil
     const focus=x[3];
     const on=focus&&window.wbFocus===focus;
     return `<div class="reference-kpi ${focus?"kpi-fixable":""} ${on?"on "+focus:""}" ${focus?`onclick="wbSetFocus('${focus}')" title="Show only the rows that need this fix"`:""}><div class="label">${x[0]}${focus?'<svg class="kpi-arrow" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11.5 6.5 15 10l-3.5 3.5"/></svg>':""}</div><div class="value">${x[1]}</div><div class="sub">${x[2]}</div></div>`;
-  }).join("");}
+  }).join("");renderActionList();}
 function missingMapping(p){
+  return paymentIssues(p).some(i=>i.kind==="mapping");
+}
+// Every reason a payment still needs a manual fix before ERP export —
+// feeds the KPI cards, the wbFocus filters AND the action list below the
+// KPI row. Mirrors erpStatus(): reference blocked, or any of method /
+// charge / bank account / value date missing.
+function paymentIssues(p){
+  const issues=[];
+  if(p.referenceBlocked)issues.push({kind:"blocked",label:p.referenceStatus==="DUPLICATE_IN_BANK"?"Reference đã tồn tại trong bank history — cần override":p.referenceStatus==="MISSING_REFERENCE"?"Thiếu payment reference":"Reference bị block ("+String(p.referenceStatus||"").replaceAll("_"," ").toLowerCase()+")"});
   const bank=paymentBankLabel(p);
   const method=p.method||defaultMethodForBank(bank,p.currency,p.entity,p.swiftcode||p.swift);
   const charge=p.charge||chargeCodeFromRaw(p.bankCharge)||defaultCharge(p.currency);
-  return !method||!charge;
+  if(!method)issues.push({kind:"mapping",label:"Thiếu Payment Method"});
+  if(!charge)issues.push({kind:"mapping",label:"Thiếu Charges Indicator"});
+  if(!p.ordering)issues.push({kind:"mapping",label:"Thiếu Bank Account (ordering)"});
+  if(!p.valueDate)issues.push({kind:"mapping",label:"Thiếu Value Date"});
+  return issues;
+}
+// The "list down" panel: every payment that needs a manual fix, with its
+// reasons, rendered right under the KPI cards. Clicking a row searches for
+// that reference in the main table.
+function renderActionList(){
+  const el=document.getElementById("wbActionList");
+  if(!el)return;
+  const probs=payments.map(p=>({p,issues:paymentIssues(p)})).filter(x=>x.issues.length);
+  if(!probs.length){el.innerHTML="";return;}
+  const MAX=15;
+  const rows=probs.slice(0,MAX).map(({p,issues},i)=>`<div class="validation-item" style="cursor:pointer" onclick="document.getElementById('filterSearch').value='${escapeHtml(p.paymentReference||p.baseReference||"")}';renderWorkbench();" title="Bấm để lọc bảng theo lệnh này"><span><strong>${i+1}. ${escapeHtml(p.entity)}</strong> · <span class="payment-ref">${escapeHtml(p.paymentReference||p.baseReference||"(no ref)")}</span> · ${escapeHtml(p.beneName||p.beneficiary||"")} · ${fmt(p.amount,p.currency)}<br><span class="muted small">${issues.map(x=>escapeHtml(x.label)).join(" · ")}</span></span>${statusPill(p.referenceBlocked?"REFERENCE_BLOCKED":"CM_INPUT_REQUIRED")}</div>`).join("");
+  el.innerHTML=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--red)"><h3 style="margin:0 0 9px">Cần sửa tay · ${probs.length} lệnh</h3><div class="validation-list">${rows}${probs.length>MAX?`<div class="validation-item"><span class="muted">… và ${probs.length-MAX} lệnh nữa — bấm card đỏ ở trên để lọc toàn bộ</span></div>`:""}</div></div>`;
 }
 function renderInvoiceDetails(p){const rows=p.invoiceLines.map((x,i)=>`<tr><td>${x.sourceRow}</td><td>${escapeHtml(x.invoice)}</td><td><span class="source-ref-chip">${escapeHtml(x.originalEform||"(blank)")}</span>${i===p.invoiceLines.length-1?'<span class="detail-count">LAST ROW</span>':''}</td><td class="num">${fmt(x.amount,p.currency)}</td><td>${escapeHtml(x.description||p.description||"")}</td><td>${escapeHtml(p.paymentReference)}</td></tr>`).join("");return `<tr class="invoice-detail-row"><td colspan="21"><div class="invoice-detail-box"><div class="invoice-detail-title"><span>Invoice-line detail · ${escapeHtml(p.sourceFile)} · Group total ${fmt(p.amount,p.currency)}</span><span>${escapeHtml(referenceRuleLabel(p))}</span></div><table class="invoice-lines-table"><thead><tr><th>Source Row</th><th>AP Invoice</th><th>Original E-form</th><th class="num">Invoice Amount</th><th>Description</th><th>ERP EFORM_NUMBER</th></tr></thead><tbody>${rows}</tbody></table></div></td></tr>`;}
 
