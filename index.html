@@ -133,7 +133,8 @@ td.center,th.center{text-align:center}
 .currency-chip{display:inline-block;padding:2px 6px;border-radius:4px;background:#f3f4f6;color:var(--navy);font-size:10px;font-weight:700}
 .amount{font-weight:700;font-variant-numeric:tabular-nums}
 .mapping-badge{font-size:9px;border:1px solid #d1d5db;color:#4b5563;border-radius:3px;padding:1px 4px;margin-left:4px}
-.entity-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.entity-cards{display:flex;flex-wrap:wrap;gap:12px}
+.entity-cards .entity-card{flex:1 1 300px;min-width:280px;max-width:600px}
 .entity-card{background:white;border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:var(--shadow)}
 .entity-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .entity-card h4{margin:0;color:var(--navy);font-size:13px}
@@ -214,7 +215,7 @@ td.center,th.center{text-align:center}
 footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 @media(max-width:1250px){
   .kpi-grid{grid-template-columns:repeat(4,1fr)}
-  .entity-cards{grid-template-columns:repeat(2,1fr)}
+  .entity-cards .entity-card{flex-basis:46%}
   .bulk-fields{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:850px){
@@ -842,7 +843,6 @@ td.cell-diff{background:color-mix(in srgb,#e0a35a 26%,transparent)!important;col
 
 <section id="erp" class="tabpanel">
   <div class="page-head"><div><h2>ERP CSV Export</h2><p>Entity-level validation. Any selected group with an invalid payment reference, missing Payment Method, Bank Charge, Bank Account or Value Date, or pending approval blocks that entity.</p></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
-  <div class="primary-bank-note"><strong>Why this tab exists — Citi only:</strong> this tab builds the CSV files (one per entity, 13-column template) that are uploaded into ERP when the payment run goes through <strong>Citi bank</strong>. Payments routed through another Payment Bank (HSBC / Standard Chartered / Deutsche Bank) do <strong>not</strong> need an ERP CSV from here — they follow that bank's own submission process, so rows whose Payment Bank is not Citi are not meant for this upload even when they appear in an entity's file. Review the Payment Bank column on the Payment List before downloading.</div>
   <div class="entity-cards" id="entityExportCards"></div>
   <div class="section-title">Validation report <small>Reference checks run before ERP output is generated</small></div>
   <div class="grid-2">
