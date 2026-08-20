@@ -752,6 +752,8 @@ const orderings = ["0863645018","0863645026","0139143019","0139143027","01391430
 
 const BANK_OPTIONS = [
   { value: "Citi Singapore", label: "Citi" },
+  { value: "Citi Thailand", label: "Citi TH" },
+  { value: "Citi China", label: "Citi CN" },
   { value: "Deutsche Bank", label: "DB" },
   { value: "HSBC Singapore", label: "HSBC" },
   { value: "Standard Chartered", label: "SC" }
@@ -761,6 +763,8 @@ function bankDisplay(v){
   const s = String(v || "").trim();
   const map = {
     "Citi Singapore": "Citi",
+    "Citi Thailand": "Citi TH",
+    "Citi China": "Citi CN",
     "Citi": "Citi",
     "Deutsche Bank": "DB",
     "DB": "DB",
@@ -810,8 +814,10 @@ function defaultMethodForBank(bank, ccy, entity, swiftcode){
 // Non-Citi banks have exactly one possible "method" (the bank itself) — the
 // Payment Method cell is rendered disabled for those so it reads as locked.
 function methodOptionsForBank(bank){
-  const current = bankDisplay(bank);
-  return current === "Citi" ? methods : [current];
+  // Any Citi-family bank (Singapore / Thailand / China) uses the CITI
+  // routing-code list; only non-Citi banks lock to their bank code.
+  if (/^Citi/.test(String(bank || ""))) return methods;
+  return [bankDisplay(bank)];
 }
 
 // Maps the raw "Bank charge" text from the AP file (Our / Share / Ben) to the
@@ -958,6 +964,14 @@ let cashSelectedCurrency = "";
 let cashSelectedAccountKey = "";
 
 function normalizeReference(v){return String(v||"").trim().toUpperCase().replace(/\s+/g,"");}
+// References too generic to identify one payment — a row whose reference
+// normalizes to one of these must NEVER auto-match against a bank result or
+// statement ("TRANSFER".includes-matching once paired a 3.5M THB internal
+// transfer with an unrelated -5,000 SGD row). Treasury will suffix these in
+// the source data (e.g. INTERNALTRANSFER1908) — a suffixed form no longer
+// equals the bare token, so it matches normally.
+const GENERIC_REFERENCES = new Set(["TRANSFER","INTERNALTRANSFER","INTERNAL","PAYMENT","LOANREIMBURSEMENT","LOAN","NONREF"]);
+function isGenericReference(v){return GENERIC_REFERENCES.has(normalizeReference(v));}
 function fmt(n,currency=""){
   const value=Number(n||0); const abs=Math.abs(value);
   const s=abs.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -987,16 +1001,25 @@ function parseISO(v){if(!v)return null;const d=new Date(v+"T00:00:00");return is
 function dateLabel(v){const d=parseISO(v);return d?d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"-";}
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
 function countryFromSwift(swift){const code=String(swift||"").toUpperCase().slice(4,6);return ({SG:"Singapore",US:"United States",TH:"Thailand",CN:"China",ID:"Indonesia",HK:"Hong Kong",KR:"Korea"})[code]||"Any";}
+// GN TH and GAMECO bank with Citi THAILAND, KMZ with Citi CHINA — their
+// accounts sit at those branches (THAILAND-*/CHINA-* routing codes), not at
+// Citi Singapore. Everything Citi still shares one rule set (methods,
+// processing SLA, approval email) — the label is per branch.
+function citiBranchForEntity(entity){
+  if (entity === "GN TH" || entity === "GAMECO") return "Citi Thailand";
+  if (entity === "KMZ") return "Citi China";
+  return "Citi Singapore";
+}
 function paymentBankLabel(p){
   if(p.paymentBank)return p.paymentBank;
   const acct=normAccount(p.ordering||p.payFrom||"");
   const found=accounts.find(a=>normAccount(a.account)===acct);
-  if(found){if(found.bank==="Citi")return "Citi Singapore";if(found.bank==="HSBC")return "HSBC Singapore";return found.bank;}
-  return "Citi Singapore";
+  if(found){if(found.bank==="Citi")return citiBranchForEntity(found.entity);if(found.bank==="HSBC")return "HSBC Singapore";return found.bank;}
+  return citiBranchForEntity(p.entity);
 }
 function paymentDestination(p){return p.destinationCountry||countryFromSwift(p.swift)||"Any";}
 function findProcessingRule(p){
-  const bank=paymentBankLabel(p),destination=paymentDestination(p),currency=String(p.currency||"").toUpperCase();
+  let bank=paymentBankLabel(p);if(/^Citi/.test(bank))bank="Citi Singapore";const destination=paymentDestination(p),currency=String(p.currency||"").toUpperCase();
   let rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency&&(r.destination===destination||r.destination==="Any"));
   if(!rule)rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency===currency);
   if(!rule)rule=bankProcessingRules.find(r=>r.status==="ACTIVE"&&r.bank===bank&&r.currency==="ANY");
@@ -1382,7 +1405,7 @@ function toggleAllCitiVisible(select){const selectedBank=document.getElementById
 const APPROVAL_EMAIL_CONFIG = {
   signature: "LÊ THỊ CẨM TÚ ( Stella)",
   banks: {
-    "Citi Singapore": { bankLabel: "Citi bank", bodyBank: "CITI bank",
+    "Citi": { bankLabel: "Citi bank", bodyBank: "CITI bank",
       approvers: [ { name: "Ken", level: 1 }, { name: "Jeebar", level: 2 } ] },
     "HSBC Singapore": { bankLabel: "HSBC bank", bodyBank: "HSBC bank", approvers: [] },
     "Standard Chartered": { bankLabel: "Standard Chartered bank", bodyBank: "Standard Chartered bank", approvers: [] },
@@ -1394,7 +1417,10 @@ const APPROVAL_RECIPIENTS_KEY = "tpct_approval_recipients_v1";
 function approvalSelectedByBank(){
   const map = new Map();
   payments.filter(p => p.exported && citiSelected.has(p.id)).forEach(p => {
-    const bank = paymentBankLabel(p) || "Citi Singapore";
+    // All Citi branches (Singapore / Thailand / China) go into ONE approval
+    // email — the real email lists every Citi entity together.
+    let bank = paymentBankLabel(p) || "Citi Singapore";
+    if (/^Citi/.test(bank)) bank = "Citi";
     if (!map.has(bank)) map.set(bank, []);
     map.get(bank).push(p);
   });
@@ -1752,6 +1778,8 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
     const s = String(v || '').trim();
     const t = s.toLowerCase();
     if (!s) return 'Citi Singapore';
+    if (t.includes('citi') && (t.includes('thai') || t.includes(' th'))) return 'Citi Thailand';
+    if (t.includes('citi') && (t.includes('china') || t.includes(' cn'))) return 'Citi China';
     if (t.includes('citi')) return 'Citi Singapore';
     if (t.includes('hsbc')) return 'HSBC Singapore';
     if (t.includes('deutsche') || t === 'db') return 'Deutsche Bank';
@@ -1760,7 +1788,9 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
   }
   function inferBankFromAccount(account){
     const s = String(account || '').replace(/\s+/g,'');
-    if (/^(086364|013914|000105|000010|500010|181708|055324|068495)/.test(s)) return 'Citi Singapore';
+    if (/^(055324|000010|500010)/.test(s)) return 'Citi Thailand';
+    if (/^181708/.test(s)) return 'Citi China';
+    if (/^(086364|013914|000105|068495)/.test(s)) return 'Citi Singapore';
     if (/^(047-|260-503|260-521|147-127|260-875)/.test(s)) return 'HSBC Singapore';
     if (/^(010278|017072)/.test(s)) return 'Standard Chartered';
     if (/^(205028|205034|003919)/.test(s)) return 'Deutsche Bank';
@@ -2158,6 +2188,10 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
           // own Payment Reference (E-form, incl. auto-suffix like "-1"/"-3").
           const ref = first(r, ['transaction reference', 'reference', 'payment reference', 'customer reference', 'eform number', 'payment ref']) || first(r, ['eform']);
           if (!ref) return;
+          // A bare generic reference (TRANSFER / INTERNAL TRANSFER / ...)
+          // can belong to any of several internal transfers — never
+          // auto-match it; it stays for manual review.
+          if (isGenericReference(ref)) return;
           used.add(normalizeReference(ref));
           const entity = findCompanyAccountEntity(Object.values(r));
           if (entity) touchedEntities.add(entity);
@@ -2291,6 +2325,10 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
     payments.forEach(p => {
       const full = normalizeReference(p.paymentReference || '');
       if (!full) return;
+      // Generic references (TRANSFER / INTERNAL TRANSFER / ...) would
+      // includes()-match any statement row containing that word — skip them
+      // entirely; they stay for manual confirmation.
+      if (isGenericReference(full)) return;
       // Statement amounts follow debit=negative/credit=positive; AP
       // payment amounts are always stored positive — compare magnitude,
       // not sign, or every real match would wrongly show as DIFF. A row
@@ -2299,7 +2337,7 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       let cand = candidatesFor(full);
       if (!cand.length) {
         const base = normalizeReference(p.baseReference || '');
-        if (base && base !== full) cand = candidatesFor(base);
+        if (base && base !== full && !isGenericReference(base)) cand = candidatesFor(base);
       }
       if (cand.length) {
         const pick = cand.find(amountOK) !== undefined ? cand.find(amountOK) : cand[0];
