@@ -695,6 +695,13 @@ td.cell-diff{background:color-mix(in srgb,#e0a35a 26%,transparent)!important;col
 .xls-total{font-weight:500}
 .xls-note{font-size:11px;margin-top:10px;color:var(--muted)}
 
+/* keep fixed-layout cells from spilling over their neighbours */
+#wbTable td,#wbTable th{overflow:hidden;text-overflow:ellipsis}
+#wbTable td:has(.eform-cell){overflow:visible}
+#wbTable td .amount,#wbTable td .payment-ref{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+#wbTable .cell-select{max-width:100%}
+#wbTable .invoice-detail-row td{overflow:visible;text-overflow:clip;white-space:normal}
+
 @media(max-width:1100px){
   body{padding-left:0}
   .tabbar{position:static;width:auto;flex-direction:row;height:auto;bottom:auto;
@@ -1569,9 +1576,13 @@ function initColResize(){
   const ths=wbHeaders();
   if(!ths.length||ths[0].dataset.rsz)return;
   const table=document.getElementById("wbTable");
+  // Fixed default widths per column — measuring is unreliable here because the
+  // table is compressed inside its scroll container before the widths are set.
+  const DEF=[44,88,112,124,88,200,124,66,236,152,196,124,112,260,152,112];
+  const table_w=(i,th)=>DEF[i]||Math.max(90,Math.round(th.getBoundingClientRect().width));
   table.style.tableLayout="fixed";
   let total=0;
-  ths.forEach(th=>{const w=Math.max(46,Math.round(th.getBoundingClientRect().width));th.dataset.w=w;th.style.width=w+"px";total+=w;});
+  ths.forEach((th,i)=>{const w=table_w(i,th);th.dataset.w=w;th.style.width=w+"px";total+=w;});
   table.style.width=total+"px";
   ths.forEach(th=>{
     th.dataset.rsz="1";
