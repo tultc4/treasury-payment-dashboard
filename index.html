@@ -800,7 +800,12 @@ function computeDefaultCitiMethod(entity, ccy, swiftcode){
 }
 
 function defaultMethodForBank(bank, ccy, entity, swiftcode){
-  return bankDisplay(bank) === "Citi" ? computeDefaultCitiMethod(entity, ccy, swiftcode) : bankDisplay(bank);
+  const b = String(bank || "");
+  // Treasury rule: Citi China defaults to ACH (still editable per row).
+  if (b === "Citi China") return "CHINA-ACH - NURG - CITI400";
+  // Any Citi branch gets a computed CITI routing-code default; only
+  // non-Citi banks fall back to their bank code.
+  return /^Citi/.test(b) ? computeDefaultCitiMethod(entity, ccy, swiftcode) : bankDisplay(bank);
 }
 
 // Non-Citi banks have exactly one possible "method" (the bank itself) — the
@@ -1160,7 +1165,7 @@ function renderOverview(){
 }
 
 function currentFilters(){return{entity:document.getElementById("filterEntity").value,bank:document.getElementById("filterBank").value,currency:document.getElementById("filterCurrency").value,paymentDate:document.getElementById("filterPaymentDate").value,valueDate:document.getElementById("filterValueDate").value,timing:document.getElementById("filterTiming").value,citi:document.getElementById("filterCiti").value,search:document.getElementById("filterSearch").value.trim().toLowerCase()};}
-function filteredPayments(){const f=currentFilters();return payments.filter(p=>{const timing=processingInfo(p);if(f.entity&&p.entity!==f.entity)return false;if(f.bank&&paymentBankLabel(p)!==f.bank)return false;if(f.currency&&p.currency!==f.currency)return false;if(f.paymentDate&&p.paymentDate!==f.paymentDate)return false;if(f.valueDate&&p.valueDate!==f.valueDate)return false;if(f.timing&&timing.status!==f.timing)return false;if(f.citi&&p.citi!==f.citi)return false;const hay=`${p.entity} ${p.supplier} ${p.supplierNumber||""} ${p.invoice||p.invoiceNumber||""} ${p.beneficiary} ${p.beneName||""} ${p.paymentReference} ${p.baseReference} ${p.sourceEforms.join(" ")} ${p.invoiceLines.map(x=>x.invoice).join(" ")} ${p.detail||p.description||""} ${paymentBankLabel(p)} ${p.ordering}`.toLowerCase();if(f.search&&!hay.includes(f.search))return false;return true;});}
+function filteredPayments(){const f=currentFilters();return payments.filter(p=>{const timing=processingInfo(p);if(f.entity&&p.entity!==f.entity)return false;if(f.bank&&paymentBankLabel(p)!==f.bank)return false;if(f.currency&&p.currency!==f.currency)return false;const payKey=String(p.paymentDate||p.valueDate||"").slice(0,10);if(f.paymentDate&&payKey!==f.paymentDate)return false;if(f.valueDate&&String(p.valueDate||"").slice(0,10)!==f.valueDate)return false;if(f.timing&&timing.status!==f.timing)return false;if(f.citi&&p.citi!==f.citi)return false;const hay=`${p.entity} ${p.supplier} ${p.supplierNumber||""} ${p.invoice||p.invoiceNumber||""} ${p.beneficiary} ${p.beneName||""} ${p.paymentReference} ${p.baseReference} ${p.sourceEforms.join(" ")} ${p.invoiceLines.map(x=>x.invoice).join(" ")} ${p.detail||p.description||""} ${paymentBankLabel(p)} ${p.ordering}`.toLowerCase();if(f.search&&!hay.includes(f.search))return false;return true;});}
 function initFilters(){const entities=[...new Set(payments.map(p=>p.entity))],currencies=[...new Set(payments.map(p=>p.currency))];document.getElementById("filterEntity").innerHTML='<option value="">All</option>'+entities.map(x=>`<option>${x}</option>`).join("");document.getElementById("filterBank").innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");document.getElementById("filterCurrency").innerHTML='<option value="">All</option>'+currencies.map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkMethod").innerHTML='<option value="">-- No change --</option>'+[...new Set([...methods, ...BANK_OPTIONS.map(x=>x.label)])].map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkOrdering").innerHTML='<option value="">-- No change --</option>'+orderings.map(x=>`<option>${x}</option>`).join("");document.getElementById("reconBank").innerHTML='<option value="">All payment banks</option>'+optionHtmlPairs(BANK_OPTIONS,"");[["calendarEntity",entities],["calendarCurrency",currencies]].forEach(([id,vals])=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">All</option>'+vals.map(x=>`<option>${x}</option>`).join("");});const calBank=document.getElementById("calendarBank");if(calBank)calBank.innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");}
 function clearFilters(){["filterEntity","filterBank","filterCurrency","filterPaymentDate","filterValueDate","filterTiming","filterCiti","filterSearch"].forEach(id=>document.getElementById(id).value="");renderWorkbench();}
 
@@ -1221,8 +1226,7 @@ function updatePaymentBank(id,value){
   const p=payments.find(x=>x.id===id);
   if(!p)return;
   p.paymentBank=value;
-  const display=bankDisplay(value);
-  p.method = display==="Citi" ? computeDefaultCitiMethod(p.entity,p.currency,p.swiftcode||p.swift) : display;
+  p.method = defaultMethodForBank(value, p.currency, p.entity, p.swiftcode||p.swift);
   p.mapping="CM";
   if(p.exported){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}
   renderWorkbench();renderOverview();renderCalendar();
@@ -1941,7 +1945,12 @@ const startTab=location.hash.replace("#","");if(startTab&&document.getElementByI
       // vendor's account — inferBankFromAccount's prefixes are our own
       // account-number ranges and will never match an external vendor account.
       const paymentBankRaw = normalizeBankName(first(r, ['Payment Bank', 'Payment Bank Name']) || inferBankFromAccount(orderingAccountFor(rowEntity, currency)));
-      const paymentMethod = paymentBankRaw === 'Citi Singapore' ? computeDefaultCitiMethod(rowEntity, currency, swiftcode) : bankDisplay(paymentBankRaw);
+      // Single source of truth for the default method — routes Citi China
+      // to ACH, any Citi branch to computeDefaultCitiMethod(), non-Citi
+      // banks to their locked bank code. (This line used to be an inlined
+      // copy comparing === 'Citi Singapore', which handed Citi Thailand /
+      // Citi China rows the literal label "Citi TH"/"Citi CN" as a method.)
+      const paymentMethod = defaultMethodForBank(paymentBankRaw, currency, rowEntity, swiftcode);
 
       const useful = [paymentDate, supplierNumber, invoiceNumber, valueDate, beneName, amount, currency, eformNo, bankCharge, detail, accountNumber, swiftcode].some(v => String(v ?? '').trim() !== '' && String(v) !== '0');
       if (!useful) return;
