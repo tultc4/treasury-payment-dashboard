@@ -531,14 +531,6 @@ tbody tr:hover td{background:var(--mint-soft)}
   </div>
 
   <div class="reference-kpi-grid" id="referenceKpis"></div>
-  <div class="rule-grid">
-    <div class="rule-step"><div class="num">1</div><strong>Keep invoice lines only</strong><span>The AP parser removes subtotal / control / summary lines and keeps real invoice rows only.</span></div>
-    <div class="rule-step"><div class="num">2</div><strong>Check E-form duplicates</strong><span>Unique E-form numbers are shown in green; duplicates and blocked references are shown in red.</span></div>
-    <div class="rule-step"><div class="num">3</div><strong>Manual E-form override</strong><span>Use the blank field below the E-form No. to replace the representative E-form on the dashboard.</span></div>
-    <div class="rule-step"><div class="num">4</div><strong>Export-ready mapping</strong><span>Payment Method and Charges Indicator feed the ERP CSV export directly.</span></div>
-  </div>
-
-  <div class="primary-bank-note"><strong>Multi-bank design:</strong> Citi Singapore is the current primary payment bank and therefore drives the first production rule set. The data model keeps Payment Bank, Bank Account, Processing Rule and Holiday Calendar as configurable master data so HSBC, Deutsche Bank, Standard Chartered, Bangkok Bank or another bank can be added without redesigning the dashboard.</div>
 
   <div class="toolbar">
     <div class="field"><label>Entity</label><select id="filterEntity" onchange="renderWorkbench()"><option value="">All</option></select></div>
