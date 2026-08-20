@@ -804,20 +804,20 @@ body.rail-hidden header{padding-left:44px}
 <main class="container">
 <section id="overview" class="tabpanel active">
   <div class="page-head">
-    <div><h2>Payment Batch Overview</h2><p>End-to-end monitoring from parsed AP submissions until the payment is confirmed as debited on the bank statement.</p></div>
+    <div><h2>Payment Batch Overview</h2></div>
     <div class="inline-actions"><button class="btn" onclick="demoAction('Refresh dashboard')">↻ Refresh</button><button class="btn primary" onclick="activateTab('workbench')">Open Payment List →</button></div>
   </div>
   <div class="kpi-grid" id="kpiGrid"></div>
-  <div class="section-title">Management view <small>Status by entity, including payment-reference controls</small></div>
+  <div class="section-title">Management view</div>
   <div class="grid-2">
-    <div class="card"><h3>Entity status</h3><div class="card-sub">Payment-group status for the current batch.</div><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
+    <div class="card"><h3>Entity status</h3><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
     <div class="card">
-      <h3>Batch completion</h3><div class="card-sub">A payment is complete only after ERP export, bank creation and statement debit confirmation.</div>
+      <h3>Batch completion</h3>
       <div class="donut-wrap"><div class="donut" id="completionDonut"><span id="completionPct">0%<small>Fully completed</small></span></div><div class="legend" id="completionLegend"></div></div>
       <div class="note">Balance movement alone is never used to confirm a specific payment. Debit confirmation requires transaction-level statement data.</div>
     </div>
   </div>
-  <div class="section-title">Outstanding actions <small>Reference blocks and bank creation issues receive the highest priority</small></div>
+  <div class="section-title">Outstanding actions</div>
   <div class="table-wrap"><table id="topExceptions"></table></div>
 </section>
 
@@ -850,8 +850,6 @@ body.rail-hidden header{padding-left:44px}
       <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
     </div>
   </div>
-
-  <div class="reference-callout"><strong>Representative reference example:</strong> supplier 36480 has two invoices with source E-forms FA-PM260703076 and FA-AV260706016. The dashboard uses <strong>FA-AV260706016</strong>, the last E-form in source-row order, as the bank payment reference and repeats it on both ERP invoice lines.</div>
   <div class="wb-shell" id="wbShell">
   <div class="wb-toolbar">
     <strong>Payment groups</strong>
@@ -879,12 +877,12 @@ body.rail-hidden header{padding-left:44px}
 
 
 <section id="erp" class="tabpanel">
-  <div class="page-head"><div><h2>ERP CSV Export</h2><p>Entity-level validation. Any selected group with an invalid payment reference, missing Payment Method, Bank Charge, Bank Account or Value Date, or pending approval blocks that entity.</p></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
+  <div class="page-head"><div><h2>ERP CSV Export</h2></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
   <div class="entity-cards" id="entityExportCards"></div>
-  <div class="section-title">Validation report <small>Reference checks run before ERP output is generated</small></div>
+  <div class="section-title">Validation report</div>
   <div class="grid-2">
     <div class="card"><div class="validation-list" id="validationList"></div></div>
-    <div class="card"><h3>ERP output schema</h3><div class="card-sub">The output keeps the existing 13-column ERP template.</div><div class="table-wrap" style="max-height:350px"><table><thead><tr><th>#</th><th>Column</th><th>Source</th></tr></thead><tbody>
+    <div class="card"><h3>ERP output schema</h3><div class="table-wrap" style="max-height:350px"><table><thead><tr><th>#</th><th>Column</th><th>Source</th></tr></thead><tbody>
       <tr><td>1</td><td>ORG_ID</td><td>Entity master</td></tr><tr><td>2</td><td>SUPPLIER_NUM</td><td>AP file</td></tr><tr><td>3</td><td>AP_INVOICE_NUMBER</td><td>AP invoice line</td></tr>
       <tr><td>4</td><td>EFORM_NUMBER</td><td>Final group payment reference: last E-form / auto suffix / manual override</td></tr><tr><td>5</td><td>PAYMENT_AMOUNT</td><td>AP invoice-line amount</td></tr><tr><td>6</td><td>DESCRIPTION</td><td>AP invoice-line description</td></tr>
       <tr><td>7</td><td>PAYMENT_METHOD</td><td>Treasury selection / bank master mapping</td></tr><tr><td>8</td><td>CHARGES_INDICATOR</td><td>Treasury selection / AP charge mapping</td></tr><tr><td>9</td><td>ORDERING_PARTY</td><td>Company's own paying account (entity + currency, from the account master) — not the vendor's account</td></tr>
@@ -895,34 +893,30 @@ body.rail-hidden header{padding-left:44px}
 
 
 <section id="citi" class="tabpanel">
-  <div class="page-head"><div><h2>Bank Creation Reconciliation</h2><p>The final Payment Reference is the primary key across AP, ERP, the payment bank and transaction-level statements. Bank-internal references are not required in the management view.</p></div><div class="inline-actions"><div class="field"><label>Payment Bank</label><select id="reconBank" onchange="renderCiti()"></select></div></div></div>
-  <div class="primary-bank-note"><strong>Current operating model:</strong> Citi Singapore is the primary payment bank. The reconciliation screen is intentionally bank-neutral; each future bank will supply its own normalized result parser and matching configuration while retaining Payment Reference as the shared control key.</div>
+  <div class="page-head"><div><h2>Bank Creation Reconciliation</h2></div><div class="inline-actions"><div class="field"><label>Payment Bank</label><select id="reconBank" onchange="renderCiti()"></select></div></div></div>
   <div class="grid-3">
-    <div class="card"><h3>Import payment-bank result and history</h3><div class="card-sub">The parsed layer retains prior payment references so uniqueness can be validated before export. Upload the bank result workbook to check Amount, Beneficiary Name, Bank Account and SWIFT.</div><div class="upload-zone" id="citiDropZone" onclick="openBankImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCitiDrop(event)"><strong>Drop bank result workbook here</strong>Upload the bank creation / payment result workbook (.xlsx, .xls or .csv). This file is used to reconcile Amount, Beneficiary Name, Bank Account and SWIFT against the Payment List.</div></div>
-    <div class="card" style="grid-column:span 2"><h3>Summary total payment — bank result</h3><div class="card-sub">Every payment the uploaded bank result returned, grouped by entity and currency: how many orders and the total amount. Match rule: Reference is the key; Amount + Beneficiary + Account + SWIFT must all pass.</div><div class="bank-sum-chips" id="citiSummaryChips"></div><div class="table-wrap" style="max-height:330px;margin-top:10px"><table id="citiPaymentSummary"></table></div></div>
+    <div class="card"><h3>Import payment-bank result and history</h3><div class="upload-zone" id="citiDropZone" onclick="openBankImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCitiDrop(event)"><strong>Drop bank result workbook here</strong></div></div>
+    <div class="card" style="grid-column:span 2"><h3>Summary total payment — bank result</h3><div class="bank-sum-chips" id="citiSummaryChips"></div><div class="table-wrap" style="max-height:330px;margin-top:10px"><table id="citiPaymentSummary"></table></div></div>
   </div>
-  <div class="ref-note"><strong>Payment Reference = final E-form reference.</strong> It is searched in Customer Reference, Payment Details, Transaction Description and End-to-End Reference. A reference already found in prior bank history is blocked before ERP export and requires a unique manual override.</div>
-  <div class="section-title">Transaction-level result <small>Amount, Beneficiary Name, Bank Account and SWIFT are checked against the Payment List — tick rows below and download the reconciliation result</small></div>
+  <div class="section-title">Transaction-level result</div>
   <div class="inline-actions" style="margin-bottom:10px"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><button class="btn primary" onclick="downloadCitiSelection()">⇩ Download Selected</button><button class="btn primary" onclick="openApprovalEmail()">✉ Approval Email</button></div>
   <div class="table-wrap"><table id="citiTable"></table></div>
 </section>
 
 
 <section id="statement" class="tabpanel">
-  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2><p>The final Payment Reference is searched in transaction-level statement fields to confirm whether the payment has been debited.</p></div></div>
-  <div class="primary-bank-note"><strong>Daily flow (T−1):</strong> the bank statement you download each morning covers <strong>yesterday's</strong> transactions. Upload the parser's <code>bank_transaction_detail.xlsx</code> here and one import does three things at once: ① confirms which previously-submitted payments were actually debited (by reference + amount), ② lists every statement transaction below so you can see exactly what the parser extracted, and ③ refreshes each bank account's closing balance — the sufficiency table below shows whether what's left still covers the batches you're about to submit (same numbers as the Cash Position tab).</div>
-  <div class="card"><h3>Transaction detail</h3><div class="card-sub">Upload the statement detail file used to confirm actual debit / credit transactions.</div><div class="upload-zone" id="statementDropZone" onclick="openStatementImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleStatementDrop(event)"><strong>Drop transaction-level statement here</strong>Upload the bank statement detail file (.csv or .xlsx) used to confirm debits by reference and amount.</div></div>
-  <div class="section-title">Balance & sufficiency by account <small>Closing balance from the uploaded statement vs. pending payments paid from that account</small></div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
-  <div class="section-title">Payment debit follow-up <small>Debit follow-up starts only after Bank Status = CREATED</small></div><div class="table-wrap"><table id="debitTable"></table></div>
-  <div class="section-title">Statement transactions <small>Every transaction row imported from the parser output — matched payment shown when a reference paired</small></div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
+  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2></div></div>
+  <div class="card"><h3>Transaction detail</h3><div class="upload-zone" id="statementDropZone" onclick="openStatementImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleStatementDrop(event)"><strong>Drop transaction-level statement here</strong></div></div>
+  <div class="section-title">Balance & sufficiency by account</div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
+  <div class="section-title">Payment debit follow-up</div><div class="table-wrap"><table id="debitTable"></table></div>
+  <div class="section-title">Statement transactions</div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
 </section>
 
 
 <section id="calendar" class="tabpanel">
-  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2><p>Payment-run days (đi lệnh): every Wednesday, except a Wednesday falling inside a book-closing window — month-start (first 4 working days) or month-end (last day − 3 → last day). Expected Completion = Value Date + processing working days per currency.</p></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
-  <div class="primary-bank-note"><strong>Run-day rule:</strong> payments are submitted on <strong>Wednesdays</strong> only, except during the two book-closing windows: <strong>month-start close</strong> — the first 4 <em>working</em> days of the month (weekends don't consume the count) — and <strong>month-end close</strong> — from (last calendar day − 3) to month-end. A Wednesday inside either window is <strong>blocked</strong>; when a window misses Wednesday, that week runs normally. Working day = Mon–Fri; bank holidays follow the destination-calendar master below.</div>
+  <div class="page-head"><div><h2>Processing Calendar & Settlement Forecast</h2></div><button class="btn" onclick="renderCalendar()">↻ Recalculate Forecast</button></div>
 
-  <div class="section-title">Payment-run calendar 2026 <small>Ngày đi lệnh trong tháng — green = run day, red = blocked Wednesday, amber = month-end lock window</small></div>
+  <div class="section-title">Payment-run calendar 2026</div>
   <div class="rc-hero" id="rcHero"></div>
   <div class="rc-legend">
     <span><span class="sw" style="background:#1f2937"></span>Run day (Wednesday)</span>
@@ -933,7 +927,7 @@ body.rail-hidden header{padding-left:44px}
   </div>
   <div class="rc-year" id="rcYear"></div>
 
-  <div class="section-title">Currency processing rules <small>Working days from Value Date until processing is done (weekends skipped, destination holidays applied)</small></div>
+  <div class="section-title">Currency processing rules</div>
   <div class="rc-ccy" id="rcCcyRules"></div>
 
   <div class="alert-strip" id="settlementAlerts"></div>
@@ -944,13 +938,13 @@ body.rail-hidden header{padding-left:44px}
     <div class="field"><label>Currency</label><select id="calendarCurrency" onchange="renderCalendar()"><option value="">All</option></select></div>
     <div class="field"><label>Timing Status</label><select id="calendarStatus" onchange="renderCalendar()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option><option>NO_VALUE_DATE</option></select></div>
   </div>
-  <div class="card" style="margin-bottom:14px"><h3>Illustrative IDR case</h3><div class="card-sub">This example shows the user note requested for Value Date 03 Jul. It is not a statement of the actual 2026 Citi SLA or Indonesia holiday calendar.</div><div id="idrExample"></div></div>
-  <div class="section-title">Expected completion calendar <small>Payments are grouped by calculated settlement date</small></div><div class="calendar-grid" id="processingCalendar"></div>
-  <div class="section-title">Settlement control detail <small>Holiday and weekend adjustments remain visible in the audit trail</small></div><div class="table-wrap"><table id="processingTable"></table></div>
+  <div class="card" style="margin-bottom:14px"><h3>Illustrative IDR case</h3><div id="idrExample"></div></div>
+  <div class="section-title">Expected completion calendar</div><div class="calendar-grid" id="processingCalendar"></div>
+  <div class="section-title">Settlement control detail</div><div class="table-wrap"><table id="processingTable"></table></div>
 </section>
 
 <section id="exceptions" class="tabpanel">
-  <div class="page-head"><div><h2>Exception Center</h2><p>Reference, AP/CM, ERP, bank creation, settlement and bank-statement issues are consolidated into one action queue.</p></div><button class="btn" onclick="demoAction('Export exception list')">⇩ Export Exceptions</button></div>
+  <div class="page-head"><div><h2>Exception Center</h2></div><button class="btn" onclick="demoAction('Export exception list')">⇩ Export Exceptions</button></div>
   <div class="exception-grid" id="exceptionCards"></div>
   <div class="toolbar"><div class="field"><label>Stage</label><select id="exStage" onchange="renderExceptions()"><option value="">All</option><option>REFERENCE</option><option>AP / CM</option><option>ERP</option><option>BANK CREATE</option><option>BANK DEBIT</option><option>SETTLEMENT</option></select></div><div class="field"><label>Severity</label><select id="exSeverity" onchange="renderExceptions()"><option value="">All</option><option>BLOCKER</option><option>HIGH</option><option>MEDIUM</option></select></div><div class="field search"><label>Search</label><input id="exSearch" oninput="renderExceptions()" placeholder="Reference, entity or issue"></div></div>
   <div class="table-wrap"><table id="exceptionTable"></table></div>
@@ -958,25 +952,25 @@ body.rail-hidden header{padding-left:44px}
 
 
 <section id="cash" class="tabpanel">
-  <div class="page-head"><div><h2>Cash Sufficiency & Funding Forecast</h2><p>Liquidity is controlled by Entity → Bank Account → Account Currency. Selected payment groups, minimum buffer and expected debit dates are assessed without netting unrelated entities or currencies.</p></div><button class="btn" onclick="demoAction('Refresh balance summary')">↻ Refresh Balance</button></div>
+  <div class="page-head"><div><h2>Cash Sufficiency & Funding Forecast</h2></div><button class="btn" onclick="demoAction('Refresh balance summary')">↻ Refresh Balance</button></div>
   <div class="cash-toolbar"><div class="field"><label>Entity</label><select id="cashEntity" onchange="cashEntityChanged()"></select></div><div class="field"><label>Currency</label><select id="cashCurrency" onchange="cashCurrencyChanged()"></select></div><div class="field" style="min-width:280px"><label>Bank Account</label><select id="cashAccount" onchange="cashAccountChanged()"></select></div><div class="small muted" style="margin-left:auto;padding-bottom:8px">Selected Payments = payment groups with INCLUDE_ERP = Y</div></div>
   <div class="cash-entity-cards" id="cashEntityCards"></div><div id="cashStatusBanner"></div><div class="cash-kpi-grid" id="cashKpiGrid"></div>
-  <div class="grid-2"><div class="card"><h3>Entity funding by currency</h3><div class="card-sub">Balances and payments are aggregated only when the entity and account currency are the same.</div><table class="entity-currency-table"><tbody id="entityCurrencySummary"></tbody></table></div><div class="card"><h3>Statement coverage</h3><div class="card-sub">Freshness and continuity for the selected entity.</div><div class="validation-list" id="coverageSummary"></div><div class="note" style="margin-top:10px">A balance summary supports liquidity planning but does not prove that a specific payment was debited.</div></div></div>
+  <div class="grid-2"><div class="card"><h3>Entity funding by currency</h3><table class="entity-currency-table"><tbody id="entityCurrencySummary"></tbody></table></div><div class="card"><h3>Statement coverage</h3><div class="validation-list" id="coverageSummary"></div><div class="note" style="margin-top:10px">A balance summary supports liquidity planning but does not prove that a specific payment was debited.</div></div></div>
   <div class="section-title">Bank account funding control <small id="cashTableScope">All entities</small></div><div class="table-wrap"><table id="cashTable"></table></div>
-  <div class="section-title">Expected debit schedule for the selected account <small>Projected balance is shown after each expected settlement date and minimum buffer</small></div><div class="table-wrap"><table id="cashForecastTable"></table></div>
-  <div class="section-title">Payments allocated to the selected account <small>Group totals are counted once; invoice lines can share the same representative reference</small></div><div class="table-wrap"><table id="cashPaymentTable"></table></div>
+  <div class="section-title">Expected debit schedule for the selected account</div><div class="table-wrap"><table id="cashForecastTable"></table></div>
+  <div class="section-title">Payments allocated to the selected account</div><div class="table-wrap"><table id="cashPaymentTable"></table></div>
 </section>
 
 
 
 <section id="master" class="tabpanel">
-  <div class="page-head"><div><h2>Master Data & Audit</h2><p>Bank accounts, multi-bank configuration, processing SLA, holiday calendars, parsed-data pipeline and user actions.</p></div><button class="btn" onclick="demoAction('Open settings')">⚙ Settings</button></div>
+  <div class="page-head"><div><h2>Master Data & Audit</h2></div><button class="btn" onclick="demoAction('Open settings')">⚙ Settings</button></div>
   <div class="grid-3">
-    <div class="card"><h3>Account master</h3><div class="card-sub">Coverage from the full bank-account master.</div><div class="validation-list"><div class="validation-item"><span>Active bank accounts</span><strong>49</strong></div><div class="validation-item"><span>Entity coverage</span><strong>8</strong></div><div class="validation-item"><span>Unmapped statement accounts</span><strong>0</strong></div></div></div>
-    <div class="card"><h3>Payment-reference control</h3><div class="card-sub">Fields retained in the parsed layer.</div><div class="validation-list"><div class="validation-item"><span>PAYMENT_GROUP_ID</span><span class="status good">Required</span></div><div class="validation-item"><span>SOURCE_FILE / SOURCE_ROW</span><span class="status good">Required</span></div><div class="validation-item"><span>ORIGINAL_EFORM</span><span class="status good">Required</span></div><div class="validation-item"><span>MANUAL_REFERENCE_OVERRIDE</span><span class="status info">Optional</span></div></div></div>
-    <div class="card"><h3>Parsed data pipeline</h3><div class="card-sub">Normalized inputs from the lower parser layer.</div><div class="validation-list"><div class="validation-item"><span>AP_PAYMENT_DETAIL</span><span class="status good">PASS</span></div><div class="validation-item"><span>BANK_PAYMENT_RESULT</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_TRANSACTION_DETAIL</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_BALANCE_SUMMARY</span><span class="status good">PASS</span></div></div></div>
+    <div class="card"><h3>Account master</h3><div class="validation-list"><div class="validation-item"><span>Active bank accounts</span><strong>49</strong></div><div class="validation-item"><span>Entity coverage</span><strong>8</strong></div><div class="validation-item"><span>Unmapped statement accounts</span><strong>0</strong></div></div></div>
+    <div class="card"><h3>Payment-reference control</h3><div class="validation-list"><div class="validation-item"><span>PAYMENT_GROUP_ID</span><span class="status good">Required</span></div><div class="validation-item"><span>SOURCE_FILE / SOURCE_ROW</span><span class="status good">Required</span></div><div class="validation-item"><span>ORIGINAL_EFORM</span><span class="status good">Required</span></div><div class="validation-item"><span>MANUAL_REFERENCE_OVERRIDE</span><span class="status info">Optional</span></div></div></div>
+    <div class="card"><h3>Parsed data pipeline</h3><div class="validation-list"><div class="validation-item"><span>AP_PAYMENT_DETAIL</span><span class="status good">PASS</span></div><div class="validation-item"><span>BANK_PAYMENT_RESULT</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_TRANSACTION_DETAIL</span><span class="status warn">UAT</span></div><div class="validation-item"><span>BANK_BALANCE_SUMMARY</span><span class="status good">PASS</span></div></div></div>
   </div>
-  <div class="section-title">Multi-bank configuration <small>Citi is active now; additional banks are add-ins, not redesigns</small></div>
+  <div class="section-title">Multi-bank configuration</div>
   <div class="card"><div class="bank-master-grid">
     <div class="bank-tile"><strong>Citi Singapore</strong><span>ACTIVE · Primary payment bank<br>ERP, bank-result and statement rules configured</span></div>
     <div class="bank-tile"><strong>HSBC</strong><span>READY FOR ADD-IN<br>Account master exists; bank-result parser and SLA mapping to be activated</span></div>
@@ -984,9 +978,9 @@ body.rail-hidden header{padding-left:44px}
     <div class="bank-tile"><strong>Standard Chartered</strong><span>READY FOR ADD-IN<br>Account master exists; result schema can be mapped to the same contract</span></div>
     <div class="bank-tile"><strong>Bangkok Bank</strong><span>READY FOR ADD-IN<br>Account master exists; local payment and holiday rules can be added</span></div>
   </div></div>
-  <div class="section-title">Processing SLA & Holiday Calendar <small>All values shown below are draft master-data examples</small></div>
-  <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="card-sub">Production must source official bank and destination-country calendars. UAT examples are clearly labelled.</div><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
-  <div class="section-title">Audit timeline <small>Production actions will be stored in SQLite</small></div>
+  <div class="section-title">Processing SLA & Holiday Calendar</div>
+  <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
+  <div class="section-title">Audit timeline</div>
   <div><div class="card"><div class="audit-timeline">
     <div class="audit-item"><div class="audit-time">22 Jul · 09:18</div><div class="audit-dot"></div><div class="audit-body"><strong>AP batch refreshed</strong><br><span class="muted">7 entities · parser contract passed · user: CM01</span></div></div>
     <div class="audit-item"><div class="audit-time">22 Jul · 09:19</div><div class="audit-dot"></div><div class="audit-body"><strong>Payment references derived</strong><br><span class="muted">Last-E-form rule applied · repeated bases suffixed · prior bank history checked</span></div></div>
