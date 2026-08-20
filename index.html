@@ -133,7 +133,8 @@ td.center,th.center{text-align:center}
 .currency-chip{display:inline-block;padding:2px 6px;border-radius:4px;background:#f3f4f6;color:var(--navy);font-size:10px;font-weight:700}
 .amount{font-weight:700;font-variant-numeric:tabular-nums}
 .mapping-badge{font-size:9px;border:1px solid #d1d5db;color:#4b5563;border-radius:3px;padding:1px 4px;margin-left:4px}
-.entity-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.entity-cards{display:flex;flex-wrap:wrap;gap:12px}
+.entity-cards .entity-card{flex:1 1 300px;min-width:280px;max-width:600px}
 .entity-card{background:white;border:1px solid var(--border);border-radius:11px;padding:14px;box-shadow:var(--shadow)}
 .entity-card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
 .entity-card h4{margin:0;color:var(--navy);font-size:13px}
@@ -214,7 +215,7 @@ td.center,th.center{text-align:center}
 footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 @media(max-width:1250px){
   .kpi-grid{grid-template-columns:repeat(4,1fr)}
-  .entity-cards{grid-template-columns:repeat(2,1fr)}
+  .entity-cards .entity-card{flex-basis:46%}
   .bulk-fields{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:850px){
@@ -460,13 +461,13 @@ header{position:sticky;top:0;z-index:40;padding:12px 22px;border-bottom:0;
 /* --- tables --- */
 .table-wrap{overflow:auto}
 table{font-size:12.5px}
-th{background:#f7f8fd;color:#8b8fa3;font-weight:500;font-size:10px;letter-spacing:.1em;
-  padding:6px 10px;box-shadow:inset 0 -1px 0 var(--divider);text-transform:uppercase}
+th{background:#f7f8fd;color:var(--text);font-weight:800;font-size:12.5px;letter-spacing:.06em;
+  padding:10px;box-shadow:inset 0 -2px 0 var(--divider);text-transform:uppercase}
 td{padding:7px 10px;border-bottom:1px solid rgba(26,28,40,.07);font-size:12px}
 tbody tr:hover td{background:#fafbff}
 .entity-name{font-weight:500;color:var(--text)}
 .invoice-lines-table{border:0;box-shadow:inset 0 0 0 1px var(--divider)}
-.invoice-lines-table th{background:#f7f8fd;color:#8b8fa3;font-weight:500}
+.invoice-lines-table th{background:#f7f8fd;color:var(--text);font-weight:800;font-size:11px}
 .invoice-detail-row td{background:#fafbff!important}
 .invoice-detail-box{border-bottom:1px solid var(--divider)}
 .row-alert td{background:color-mix(in srgb,#e0a35a 9%,transparent)}
@@ -769,7 +770,6 @@ body.rail-hidden header{padding-left:44px}
     </div>
   </div>
 </header>
-<div class="upload-help-strip">Upload guide: AP Summary = the consolidated payment-list workbook exported by the parser · Bank Result = normalized bank creation workbook · Statement = transaction-level debit detail file.</div>
 <div class="demo-ribbon">INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation / payment result workbook · Statement = upload the transaction-level bank statement detail file.</div>
 <button class="rail-show" id="railShow" onclick="toggleRail()" title="Show the rail" aria-label="Show the rail">
   <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6l4 4-4 4"/></svg>
@@ -824,7 +824,7 @@ body.rail-hidden header{padding-left:44px}
 
 <section id="workbench" class="tabpanel">
   <div class="page-head">
-    <div><h2>Payment List</h2><p>Imported AP rows are shown here. E-form No. is checked for duplicates, can be overridden inline, and PAYMENT_METHOD / CHARGES_INDICATOR can be selected directly on the dashboard.</p></div>
+    <div><h2>Payment List</h2></div>
     <div class="inline-actions"><button class="btn" onclick="clearFilters()">Clear Filters</button><button class="btn primary" onclick="activateTab('erp')">Review ERP Export →</button></div>
   </div>
 
@@ -842,7 +842,7 @@ body.rail-hidden header{padding-left:44px}
   </div>
 
   <div class="bulk-panel">
-    <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong><span class="small muted">Apply Selected affects checked rows. Apply Filtered affects every visible row.</span></div>
+    <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong></div>
     <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr auto auto">
       <div class="field"><label>Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
       <div class="field"><label>Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
@@ -880,7 +880,6 @@ body.rail-hidden header{padding-left:44px}
 
 <section id="erp" class="tabpanel">
   <div class="page-head"><div><h2>ERP CSV Export</h2><p>Entity-level validation. Any selected group with an invalid payment reference, missing Payment Method, Bank Charge, Bank Account or Value Date, or pending approval blocks that entity.</p></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
-  <div class="primary-bank-note"><strong>Why this tab exists — Citi only:</strong> this tab builds the CSV files (one per entity, 13-column template) that are uploaded into ERP when the payment run goes through <strong>Citi bank</strong>. Payments routed through another Payment Bank (HSBC / Standard Chartered / Deutsche Bank) do <strong>not</strong> need an ERP CSV from here — they follow that bank's own submission process, so rows whose Payment Bank is not Citi are not meant for this upload even when they appear in an entity's file. Review the Payment Bank column on the Payment List before downloading.</div>
   <div class="entity-cards" id="entityExportCards"></div>
   <div class="section-title">Validation report <small>Reference checks run before ERP output is generated</small></div>
   <div class="grid-2">
