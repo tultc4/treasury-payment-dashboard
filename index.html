@@ -705,6 +705,20 @@ td.cell-diff{background:color-mix(in srgb,#e0a35a 26%,transparent)!important;col
 #citiTable td,#citiTable th{overflow:hidden;text-overflow:ellipsis}
 #citiTable td .ref-input{max-width:100%}
 
+/* icon-only rail + quieter explanatory copy */
+.tabbtn svg{flex:none}
+body.rail-mini{padding-left:66px}
+body.rail-mini .tabbar{width:66px;padding-left:9px;padding-right:9px;transform:none}
+body.rail-mini .rail-label,body.rail-mini .rail-group,body.rail-mini .rail-foot,
+body.rail-mini .rail-brand small,body.rail-mini .rail-brand strong{display:none}
+body.rail-mini .rail-brand{justify-content:center;padding:4px 0 14px}
+body.rail-mini .tabbtn{justify-content:center;padding-left:0;padding-right:0}
+body.rail-mini header{padding-left:22px}
+body.rail-mini .rail-show{display:none}
+.primary-bank-note,.ref-note,.reference-callout,.reference-block-callout,.note,.demo-ribbon{display:none}
+.section-title small{display:none}
+.rc-legend{display:flex}
+
 /* --- rail collapse --- */
 .rail-toggle,.rail-show{display:grid;place-items:center;width:24px;height:24px;padding:0;cursor:pointer;
   border:1px solid var(--border);border-radius:99px;background:var(--card);color:var(--text);
@@ -1513,12 +1527,34 @@ function saveEformEditor(btn,id){
   updateManualReference(id,input?input.value:"");
 }
 
+const RAIL_ICONS={
+  overview:'M3 3h6v6H3zM11 3h6v4h-6zM11 9h6v8h-6zM3 11h6v6H3z',
+  workbench:'M4 5h12M4 10h12M4 15h8',
+  erp:'M5 3h7l3.5 3.5V17H5zM12 3v4h3.5M7.5 12.5h5',
+  citi:'M4 7h9l-2.2-2.2M16 13H7l2.2 2.2',
+  statement:'M3 6.5h14v9H3zM3 9.5h14M6 13h3',
+  cash:'M10 4v12M6.5 7.2h5a2 2 0 010 4h-3a2 2 0 000 4h5',
+  calendar:'M4 5h12v11H4zM4 8.5h12M7 3v3M13 3v3M9 12h2',
+  exceptions:'M10 4l6.5 12H3.5zM10 8.5v3.2M10 14h.01',
+  master:'M10 3l6 3v4.5c0 3.5-2.5 5.5-6 6.5-3.5-1-6-3-6-6.5V6z'
+};
+function initRailIcons(){
+  document.querySelectorAll(".tabbtn").forEach(b=>{
+    if(b.querySelector("svg"))return;
+    const label=b.textContent.trim();
+    const d=RAIL_ICONS[b.dataset.tab]||"M4 10h12";
+    b.title=label;
+    b.innerHTML='<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="'+d+'"/></svg><span class="rail-label">'+label+'</span>';
+  });
+}
 function toggleRail(){
-  const hidden=document.body.classList.toggle("rail-hidden");
-  try{localStorage.setItem("tpct-rail",hidden?"hidden":"open");}catch(e){}
+  const mini=document.body.classList.toggle("rail-mini");
+  try{localStorage.setItem("tpct-rail",mini?"mini":"open");}catch(e){}
 }
 (function restoreRail(){
-  try{ if(localStorage.getItem("tpct-rail")==="hidden")document.body.classList.add("rail-hidden"); }catch(e){}
+  try{ if(localStorage.getItem("tpct-rail")==="mini")document.body.classList.add("rail-mini"); }catch(e){}
+  document.addEventListener("DOMContentLoaded",initRailIcons);
+  if(document.readyState!=="loading")initRailIcons();
 })();
 
 function toggleKpiEntities(){window.kpiByEntity=!window.kpiByEntity;renderOverview();}
