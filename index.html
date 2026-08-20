@@ -199,6 +199,18 @@ td.center,th.center{text-align:center}
 .note{background:#fff8e8;border:1px solid #ecd796;border-radius:9px;padding:10px 12px;color:#735910;font-size:11.5px;line-height:1.45}
 .toast{position:fixed;right:22px;bottom:22px;background:#111827;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 8px 25px rgba(0,0,0,.22);font-size:12px;z-index:999;opacity:0;transform:translateY(15px);pointer-events:none;transition:.25s}
 .toast.show{opacity:1;transform:translateY(0)}
+/* Approval-email composer modal */
+.ap-mail-overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:900;display:none;align-items:flex-start;justify-content:center;padding:38px 16px}
+.ap-mail-overlay.open{display:flex}
+.ap-mail{background:#fff;border-radius:14px;box-shadow:0 18px 50px rgba(16,24,40,.25);width:min(860px,100%);max-height:88vh;overflow:auto;padding:20px 22px}
+.ap-mail h3{margin:0 0 2px;font-size:15px;color:var(--navy)}
+.ap-mail .sub{font-size:11px;color:var(--muted);margin-bottom:13px}
+.ap-mail label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:750;margin:10px 0 4px}
+.ap-mail input[type=text],.ap-mail textarea{width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font:inherit;font-size:12px;box-sizing:border-box;background:#fff;color:var(--text)}
+.ap-mail textarea{min-height:250px;line-height:1.5;resize:vertical;font-family:Consolas,monospace;font-size:11.5px}
+.ap-mail .row{display:flex;gap:10px}.ap-mail .row>div{flex:1}
+.ap-mail .foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.ap-mail .hint{font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.45;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 @media(max-width:1250px){
   .kpi-grid{grid-template-columns:repeat(4,1fr)}
@@ -585,7 +597,7 @@ tbody tr:hover td{background:var(--mint-soft)}
   </div>
   <div class="ref-note"><strong>Payment Reference = final E-form reference.</strong> It is searched in Customer Reference, Payment Details, Transaction Description and End-to-End Reference. A reference already found in prior bank history is blocked before ERP export and requires a unique manual override.</div>
   <div class="section-title">Transaction-level result <small>Amount, Beneficiary Name, Bank Account and SWIFT are checked against the Payment List — tick rows below and download the reconciliation result</small></div>
-  <div class="inline-actions" style="margin-bottom:10px"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><button class="btn primary" onclick="downloadCitiSelection()">⇩ Download Selected</button></div>
+  <div class="inline-actions" style="margin-bottom:10px"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><button class="btn primary" onclick="downloadCitiSelection()">⇩ Download Selected</button><button class="btn primary" onclick="openApprovalEmail()">✉ Approval Email</button></div>
   <div class="table-wrap"><table id="citiTable"></table></div>
 </section>
 
@@ -679,6 +691,30 @@ tbody tr:hover td{background:var(--mint-soft)}
 </section>
 
 </main>
+<div class="ap-mail-overlay" id="apMailOverlay" onclick="if(event.target===this)closeApprovalEmail()">
+  <div class="ap-mail">
+    <h3>Approval email</h3>
+    <div class="sub">Soạn sẵn email xin approve cho các lệnh đã tick ở Bank Reconcile — chỉnh sửa thoải mái trước khi gửi.</div>
+    <div class="row">
+      <div><label>Bank</label><select id="apMailBank" class="cell-select" style="width:100%" onchange="refreshApprovalDraft()"></select></div>
+      <div><label>Subject</label><input type="text" id="apMailSubject"></div>
+    </div>
+    <div class="row">
+      <div><label>To (email, cách nhau bằng ;)</label><input type="text" id="apMailTo" placeholder="ken@vng.com.vn; jeebar@vng.com.vn" oninput="saveApprovalRecipients()"></div>
+      <div><label>Cc</label><input type="text" id="apMailCc" placeholder="sunny@...; rosie@...; pim@...; sol@...; ethan@..." oninput="saveApprovalRecipients()"></div>
+    </div>
+    <label>Body</label>
+    <textarea id="apMailBody"></textarea>
+    <div class="foot">
+      <button class="btn primary" onclick="downloadApprovalAttachment()">⇩ Download attachment (.xlsx)</button>
+      <button class="btn" onclick="copyApprovalField('apMailSubject','Subject')">Copy subject</button>
+      <button class="btn" onclick="copyApprovalField('apMailBody','Body')">Copy body</button>
+      <button class="btn primary" onclick="openApprovalMailApp()">✉ Open in mail app</button>
+      <button class="btn" onclick="closeApprovalEmail()" style="margin-left:auto">Close</button>
+    </div>
+    <div class="hint"><strong>Lưu ý:</strong> mail app không thể tự đính kèm file — bấm <strong>Download attachment</strong> trước, rồi kéo file .xlsx vào email sau khi "Open in mail app" mở bản nháp (hoặc Copy subject/body dán vào Outlook). File đính kèm gồm sheet <strong>PAYMENT LIST</strong> (chi tiết từng lệnh) và sheet <strong>SUMMARY</strong> (số lệnh + tổng tiền theo từng currency, theo entity). Địa chỉ To/Cc được nhớ lại cho lần sau.</div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <footer>Treasury Payment Control Tower · Interactive UI draft v0.4 Gray · Multi-bank local/offline concept</footer>
 
@@ -1337,6 +1373,129 @@ function undoBankOverride(id){
   window.refreshAll();
 }
 function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched||p.bankOverride)citiSelected.add(p.id);});renderCiti();}
+// ===== Approval email composer =====
+// Builds the approval-request email for the ticked Bank Reconcile rows,
+// one draft per Payment Bank (per treasury's own template: subject
+// "[Oversea] - Approval Payment - <date> - <bank>", body listing payment
+// counts per entity, Level 1/Level 2 approvers, and an .xlsx attachment
+// with the payment detail + an entity x currency totals SUMMARY sheet).
+const APPROVAL_EMAIL_CONFIG = {
+  signature: "LÊ THỊ CẨM TÚ ( Stella)",
+  banks: {
+    "Citi Singapore": { bankLabel: "Citi bank", bodyBank: "CITI bank",
+      approvers: [ { name: "Ken", level: 1 }, { name: "Jeebar", level: 2 } ] },
+    "HSBC Singapore": { bankLabel: "HSBC bank", bodyBank: "HSBC bank", approvers: [] },
+    "Standard Chartered": { bankLabel: "Standard Chartered bank", bodyBank: "Standard Chartered bank", approvers: [] },
+    "Deutsche Bank": { bankLabel: "Deutsche Bank", bodyBank: "Deutsche Bank", approvers: [] }
+  }
+};
+const APPROVAL_RECIPIENTS_KEY = "tpct_approval_recipients_v1";
+
+function approvalSelectedByBank(){
+  const map = new Map();
+  payments.filter(p => p.exported && citiSelected.has(p.id)).forEach(p => {
+    const bank = paymentBankLabel(p) || "Citi Singapore";
+    if (!map.has(bank)) map.set(bank, []);
+    map.get(bank).push(p);
+  });
+  return map;
+}
+function approvalBankCfg(bank){
+  return APPROVAL_EMAIL_CONFIG.banks[bank] || { bankLabel: bank, bodyBank: bank, approvers: [] };
+}
+function loadApprovalRecipients(bank){
+  try { return (JSON.parse(localStorage.getItem(APPROVAL_RECIPIENTS_KEY) || "{}"))[bank] || {}; }
+  catch(e){ return {}; }
+}
+function saveApprovalRecipients(){
+  const bank = document.getElementById("apMailBank").value;
+  try {
+    const all = JSON.parse(localStorage.getItem(APPROVAL_RECIPIENTS_KEY) || "{}");
+    all[bank] = { to: document.getElementById("apMailTo").value, cc: document.getElementById("apMailCc").value };
+    localStorage.setItem(APPROVAL_RECIPIENTS_KEY, JSON.stringify(all));
+  } catch(e) {}
+}
+function approvalEntityCounts(rows){
+  const counts = new Map();
+  rows.forEach(p => counts.set(p.entity, (counts.get(p.entity) || 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+}
+function buildApprovalDraft(bank, rows){
+  const cfg = approvalBankCfg(bank);
+  const today = dateLabel(AS_OF_DATE);
+  const subject = `[Oversea] - Approval Payment - ${today} - ${cfg.bankLabel}`;
+  const dear = cfg.approvers.length ? `Dear ${cfg.approvers.map(a => "anh " + a.name).join(", ")},` : "Dear all,";
+  const approverLines = cfg.approvers.map(a => `\t• Mr. ${a.name}: Level ${a.level} approval`).join("\n");
+  const detailLines = approvalEntityCounts(rows).map(([e, n], i) => `\t${i + 1}. ${e}: ${n} payment${n === 1 ? "" : "s"}`).join("\n");
+  const body = `${dear}\n\nPlease assist in approving the following transfer from ${cfg.bodyBank} today: - ${rows.length} payments\n${approverLines}${approverLines ? "\n" : ""}\nDetails of Payments:\n${detailLines}\n\nThank you for your support.\n\nThanks and Regards,\n${APPROVAL_EMAIL_CONFIG.signature}`;
+  return { subject, body };
+}
+function refreshApprovalDraft(){
+  const bank = document.getElementById("apMailBank").value;
+  const rows = approvalSelectedByBank().get(bank) || [];
+  const draft = buildApprovalDraft(bank, rows);
+  document.getElementById("apMailSubject").value = draft.subject;
+  document.getElementById("apMailBody").value = draft.body;
+  const saved = loadApprovalRecipients(bank);
+  document.getElementById("apMailTo").value = saved.to || "";
+  document.getElementById("apMailCc").value = saved.cc || "";
+}
+function openApprovalEmail(){
+  const byBank = approvalSelectedByBank();
+  if (!byBank.size) { showToast("Chưa có lệnh nào được tick ở Bank Reconcile."); return; }
+  const sel = document.getElementById("apMailBank");
+  sel.innerHTML = [...byBank.entries()].map(([b, rows]) => `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${rows.length} lệnh)</option>`).join("");
+  document.getElementById("apMailOverlay").classList.add("open");
+  refreshApprovalDraft();
+}
+function closeApprovalEmail(){ document.getElementById("apMailOverlay").classList.remove("open"); }
+function copyApprovalField(id, label){
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.value).then(() => showToast(label + " đã copy vào clipboard."));
+}
+function downloadApprovalAttachment(){
+  const bank = document.getElementById("apMailBank").value;
+  const rows = approvalSelectedByBank().get(bank) || [];
+  if (!rows.length) { showToast("Không có lệnh nào cho bank này."); return; }
+  const detail = rows.slice().sort((a, b) => a.entity.localeCompare(b.entity) || String(a.paymentReference).localeCompare(String(b.paymentReference)))
+    .map(p => ({ "Entity": p.entity, "Payment Reference": p.paymentReference, "Beneficiary": p.beneName || p.beneficiary || "",
+      "Vendor Bank Account": p.vendorAccount || "", "SWIFT": p.swift || "", "Currency": p.currency,
+      "Amount": Number(p.amount || 0), "Value Date": p.valueDate || "", "Payment Method": p.method || "", "Charges": p.charge || "" }));
+  // SUMMARY: entity x currency totals + payment counts, TOTAL row per currency.
+  const ccys = [...new Set(rows.map(p => p.currency))].sort();
+  const byEntity = new Map();
+  rows.forEach(p => {
+    if (!byEntity.has(p.entity)) byEntity.set(p.entity, { n: 0, amt: {} });
+    const e = byEntity.get(p.entity); e.n++;
+    e.amt[p.currency] = (e.amt[p.currency] || 0) + Number(p.amount || 0);
+  });
+  const summary = [...byEntity.entries()].sort((a, b) => b[1].n - a[1].n).map(([entity, v]) => {
+    const row = { "Entity": entity, "Payments": v.n };
+    ccys.forEach(c => row["Total " + c] = v.amt[c] ? Number(v.amt[c].toFixed(2)) : "");
+    return row;
+  });
+  const totalRow = { "Entity": "TOTAL", "Payments": rows.length };
+  ccys.forEach(c => totalRow["Total " + c] = Number(rows.filter(p => p.currency === c).reduce((s, p) => s + Number(p.amount || 0), 0).toFixed(2)));
+  summary.push(totalRow);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail), "PAYMENT LIST");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "SUMMARY");
+  const cfg = approvalBankCfg(bank);
+  const d = AS_OF_DATE; // YYYY-MM-DD
+  const fname = `Payment list_${cfg.bankLabel.toUpperCase()}_${d.slice(8, 10)}${d.slice(5, 7)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  showToast(`Đã tải ${fname} (${rows.length} lệnh, ${summary.length - 1} entity).`);
+}
+function openApprovalMailApp(){
+  saveApprovalRecipients();
+  const to = document.getElementById("apMailTo").value.split(";").map(x => x.trim()).filter(Boolean).join(";");
+  const cc = document.getElementById("apMailCc").value.split(";").map(x => x.trim()).filter(Boolean).join(";");
+  const subject = encodeURIComponent(document.getElementById("apMailSubject").value);
+  const body = encodeURIComponent(document.getElementById("apMailBody").value);
+  window.location.href = `mailto:${to}?${cc ? "cc=" + encodeURIComponent(cc) + "&" : ""}subject=${subject}&body=${body}`;
+  showToast("Đã mở bản nháp trong mail app — nhớ đính kèm file .xlsx đã tải.");
+}
+
 function downloadCitiSelection(){
   const rows=payments.filter(p=>p.exported&&citiSelected.has(p.id));
   if(!rows.length){showToast("No reconciled row selected.");return;}
