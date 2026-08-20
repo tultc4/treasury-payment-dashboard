@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Treasury Payment Control Tower - Web Draft v0.4 Gray</title>
+<title>Treasury Payment Control Tower</title>
 <style>
 :root{
   /* Monochrome white/charcoal theme - color is reserved for STATUS meaning
@@ -322,6 +322,124 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 </style>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* ---- Mint reskin layer (v0.5) -------------------------------------------
+   Overrides only. The original token block and every rule above stay intact,
+   so no logic, parser or render function is touched. ---------------------- */
+:root{
+  --navy:#12241f; --navy-2:#1f6f63; --navy-3:#14544b;
+  --bg:#eef6f3; --card:#ffffff; --text:#12241f; --muted:#5f7873;
+  --border:#dbe9e4;
+  --green:#157a63; --green-bg:#e9f6f1;
+  --blue:#4a615c; --blue-bg:#eaf1ee;
+  --purple:#4a615c; --purple-bg:#eaf1ee;
+  --gray:#5f7873;
+  --shadow:0 1px 2px rgba(18,36,31,.05);
+  --mint-accent:#1f6f63; --mint-tint:#e7f4f0; --mint-soft:#f3faf7;
+}
+body{font-family:Inter,"Segoe UI",Arial,sans-serif;padding-left:240px}
+
+/* --- left rail replaces the 9-tab strip --- */
+.tabbar{position:fixed;left:0;top:0;bottom:0;width:240px;flex-direction:column;gap:1px;
+  padding:0 10px 24px;overflow-y:auto;overflow-x:hidden;border-right:1px solid var(--border);
+  border-bottom:0;z-index:60}
+.rail-brand{padding:20px 8px 15px;border-bottom:1px solid #e8f2ee;margin-bottom:14px}
+.rail-brand small{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.rail-brand strong{display:block;margin-top:5px;font-size:16px;font-weight:500;line-height:1.15;letter-spacing:-.02em}
+.rail-group{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8aa39d;padding:16px 8px 7px}
+.rail-group:first-of-type{padding-top:0}
+.tabbtn{width:100%;text-align:left;border-radius:7px;padding:8px 9px;border-bottom:0;
+  font-size:13px;font-weight:400;color:#334a45;display:flex;align-items:center;gap:9px}
+.tabbtn:before{content:"";width:3px;height:14px;border-radius:2px;background:transparent;flex:none}
+.tabbtn:hover{background:var(--mint-soft);color:var(--text)}
+.tabbtn.active{background:var(--mint-tint);color:var(--navy-3);font-weight:500;border-bottom-color:transparent}
+.tabbtn.active:before{background:var(--mint-accent)}
+.tabbtn:focus-visible{outline:2px solid var(--mint-accent);outline-offset:2px}
+.rail-foot{margin-top:auto;padding:14px 9px 0;border-top:1px solid #e8f2ee}
+.rail-foot small{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.rail-foot strong{display:block;margin-top:3px;font-size:14px;font-weight:500}
+.rail-foot span{display:block;margin-top:2px;font-size:11px;color:var(--muted)}
+
+/* --- header: slim bar, brand now lives in the rail --- */
+header{position:sticky;top:0;z-index:40;padding:12px 26px;
+  background:rgba(255,255,255,.94);backdrop-filter:blur(8px)}
+.header-row{max-width:none;align-items:center}
+.brand{display:none}
+.demo-ribbon{display:none}
+.upload-help-strip{padding:7px 26px;font-size:11px;background:var(--mint-soft);text-align:left}
+.batch-box{background:transparent;border:0;border-right:1px solid var(--border);
+  border-radius:0;padding:0 14px 0 0;min-width:0}
+.batch-box small{font-size:9.5px;letter-spacing:.12em}
+.batch-box strong{font-weight:500;font-variant-numeric:tabular-nums}
+#cutoffBox strong{font-size:14px}
+
+/* --- icon buttons that reveal their label on hover --- */
+.header-btn{display:flex;align-items:center;gap:7px;height:34px;padding:0 9px;
+  white-space:nowrap;overflow:hidden;font-weight:500;font-size:12.5px}
+.header-btn svg{flex:none}
+.header-btn>span{max-width:0;opacity:0;overflow:hidden;
+  transition:max-width .22s ease,opacity .16s ease}
+.header-btn:hover>span,.header-btn:focus-visible>span{max-width:180px;opacity:1}
+.header-btn:hover{background:var(--mint-soft);border-color:#c3d8d2}
+.header-btn.primary-ghost{border-color:var(--mint-accent);color:var(--mint-accent)}
+.header-btn.primary-ghost:hover{background:#eef8f5}
+.header-btn:focus-visible{outline:2px solid var(--mint-accent);outline-offset:2px}
+
+/* --- surfaces, rules and type weights --- */
+.container{max-width:none;padding:22px 26px 60px}
+.card,.kpi-card,.entity-card,.cash-kpi,.cash-entity-card,.exception-card,.table-wrap,
+.toolbar,.cash-toolbar,.bulk-panel{border-radius:12px}
+.card h3{font-weight:500;font-size:14.5px}
+.page-head h2{font-weight:500;letter-spacing:-.02em;font-size:20px}
+.section-title{font-weight:500;border-bottom-width:1px;border-bottom-color:var(--border)}
+.kpi-value,.cash-kpi .value,.stage-num,.exception-card strong{font-weight:500;letter-spacing:-.025em}
+.kpi-label,.cash-kpi .label,.stage-name{font-weight:500;letter-spacing:.12em}
+th{background:var(--mint-soft);color:var(--muted);font-weight:500;letter-spacing:.12em}
+td{border-bottom-color:#e8f2ee}
+tbody tr:hover td{background:var(--mint-soft)}
+.entity-name{font-weight:500}
+.stage{background:var(--mint-soft);border-color:var(--border)}
+.stage:not(:last-child):after{color:#a8bdb7}
+.mini-progress{background:#e8f2ee}
+.mini-progress span{background:var(--mint-accent)}
+.bar-track{background:#e8f2ee}
+.bar-fill{background:var(--mint-accent)}
+.donut{--c:var(--mint-accent)}
+.audit-dot{background:var(--mint-accent)}
+.audit-dot:after{background:#c3d8d2}
+.btn{font-weight:500}
+.btn:hover{background:var(--mint-soft);border-color:#c3d8d2}
+.btn.primary,.btn.success{background:transparent;color:var(--mint-accent);border-color:var(--mint-accent)}
+.btn.primary:hover,.btn.success:hover{background:#eef8f5;color:var(--navy-3)}
+.btn:focus-visible,.tabbtn:focus-visible,.exception-card:focus-visible{outline:2px solid var(--mint-accent);outline-offset:2px}
+.upload-zone{background:var(--mint-soft);border-color:#c3d8d2}
+.upload-zone:hover{border-color:var(--mint-accent);background:#eef8f5}
+.upload-zone.drag-over{border-color:var(--mint-accent);background:var(--mint-tint)}
+.upload-zone strong{font-weight:500}
+.bulk-panel{background:#fff;border-left:2px solid var(--mint-accent);box-shadow:var(--shadow)}
+.bulk-head strong{font-weight:500}
+.currency-chip{background:var(--mint-soft);color:var(--muted);font-weight:500}
+.payment-ref{font-weight:500}
+.field input:focus,.field select:focus,.cell-select:focus{outline:2px solid var(--mint-accent);border-color:var(--mint-accent)}
+.checkbox{accent-color:var(--mint-accent)}
+.cash-entity-card:hover{border-color:#c3d8d2}
+.cash-entity-card.active{border:1px solid var(--mint-accent);box-shadow:0 0 0 1px var(--mint-accent)}
+.cash-row-selected td{background:var(--mint-tint)!important}
+.exception-card:hover{border-color:#c3d8d2}
+.ref-note,.primary-bank-note,.reference-callout{background:var(--mint-soft);border-color:var(--border);color:#334a45}
+.toast{background:#123833}
+::selection{background:var(--mint-tint)}
+@media(max-width:1100px){
+  body{padding-left:0}
+  .tabbar{position:static;width:auto;flex-direction:row;height:auto;bottom:auto;
+    overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:0 12px}
+  .rail-brand,.rail-group,.rail-foot{display:none}
+  .tabbtn{width:auto}
+}
+</style>
 </head>
 <body>
 <header>
@@ -332,24 +450,43 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
     </div>
     <div class="header-actions">
       <div class="batch-box"><small>Payment Batch</small><strong id="batchDateDisplay">–</strong></div>
+      <div class="batch-box" id="cutoffBox"><small>Next cut-off</small><strong id="cutoffCountdown">–</strong></div>
       <div class="batch-box"><small>Last Refresh</small><strong id="lastRefreshDisplay">–</strong></div>
-      <button class="header-btn" onclick="openApImport()">＋ Import AP Summary</button>
-      <button class="header-btn" onclick="activateTab('erp')">⇩ Export ERP</button>
+      <button class="header-btn" onclick="openApImport()" aria-label="Import AP Summary">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v8"/><path d="M13.2 7.8 10 11 6.8 7.8"/><path d="M3.6 12.4v2.2a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8v-2.2"/></svg>
+        <span>Import AP Summary</span>
+      </button>
+      <button class="header-btn primary-ghost" onclick="activateTab('erp')" aria-label="Export ERP">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.2V4.2"/><path d="M6.8 7.4 10 4.2l3.2 3.2"/><path d="M3.6 12.4v2.2a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8v-2.2"/></svg>
+        <span>Export ERP</span>
+      </button>
     </div>
   </div>
 </header>
 <div class="upload-help-strip">Upload guide: AP Summary = the consolidated payment-list workbook exported by the parser · Bank Result = normalized bank creation workbook · Statement = transaction-level debit detail file.</div>
 <div class="demo-ribbon">INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation / payment result workbook · Statement = upload the transaction-level bank statement detail file.</div>
 <nav class="tabbar" id="tabbar">
+  <div class="rail-brand">
+    <small>VNG Group Treasury</small>
+    <strong>Payment<br>Control Tower</strong>
+  </div>
+  <div class="rail-group">Payment cycle</div>
   <button class="tabbtn active" data-tab="overview">Overview</button>
   <button class="tabbtn" data-tab="workbench">Payment List</button>
   <button class="tabbtn" data-tab="erp">ERP Export</button>
   <button class="tabbtn" data-tab="citi">Bank Reconcile</button>
   <button class="tabbtn" data-tab="statement">Bank Debit</button>
-  <button class="tabbtn" data-tab="calendar">Processing Calendar</button>
-  <button class="tabbtn" data-tab="exceptions">Exceptions</button>
+  <div class="rail-group">Position</div>
   <button class="tabbtn" data-tab="cash">Cash Position</button>
-  <button class="tabbtn" data-tab="master">Master Data & Audit</button>
+  <button class="tabbtn" data-tab="calendar">Processing Calendar</button>
+  <div class="rail-group">Control</div>
+  <button class="tabbtn" data-tab="exceptions">Exceptions</button>
+  <button class="tabbtn" data-tab="master">Master Data &amp; Audit</button>
+  <div class="rail-foot">
+    <small>Next run day</small>
+    <strong id="railRunDay">–</strong>
+    <span id="railRunNote">Wednesdays · cut-off 14:00 ICT</span>
+  </div>
 </nav>
 
 <main class="container">
@@ -2127,5 +2264,38 @@ function openApImport(){ document.getElementById('apImportInput').click(); }
 })();
 </script>
 
+
+<script>
+/* Cut-off countdown: next Wednesday 14:00 ICT. Independent of batch data. */
+(function(){
+  function nextCutoff(){
+    var now = new Date();
+    var ict = new Date(now.getTime() + 7*3600e3);      // shift into ICT wall clock
+    var d = new Date(Date.UTC(ict.getUTCFullYear(), ict.getUTCMonth(), ict.getUTCDate(), 14, 0, 0));
+    var delta = (3 - d.getUTCDay() + 7) % 7;           // 3 = Wednesday
+    d.setUTCDate(d.getUTCDate() + delta);
+    if (d.getTime() <= ict.getTime()) d.setUTCDate(d.getUTCDate() + 7);
+    return d;
+  }
+  var MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function tick(){
+    var el = document.getElementById("cutoffCountdown");
+    if (!el) return;
+    var target = nextCutoff();
+    var ict = new Date(Date.now() + 7*3600e3);
+    var ms = target.getTime() - ict.getTime();
+    var days = Math.floor(ms/86400e3), hrs = Math.floor((ms%86400e3)/3600e3), min = Math.floor((ms%3600e3)/60e3);
+    el.textContent = days > 0 ? days + "d " + hrs + "h " + min + "m" : hrs + "h " + min + "m";
+    el.style.color = days < 1 ? "var(--red)" : days < 2 ? "var(--amber)" : "";
+    var box = document.getElementById("cutoffBox");
+    if (box) box.querySelector("small").textContent =
+      "Cut-off Wed " + target.getUTCDate() + " " + MON[target.getUTCMonth()] + " 14:00 ICT";
+    var rail = document.getElementById("railRunDay");
+    if (rail) rail.textContent = "Wed " + target.getUTCDate() + " " + MON[target.getUTCMonth()] + " " + target.getUTCFullYear();
+  }
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
 </body>
 </html>
