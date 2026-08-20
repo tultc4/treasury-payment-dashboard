@@ -556,7 +556,7 @@ tbody tr:hover td{background:var(--mint-soft)}
   <div class="reference-callout"><strong>Representative reference example:</strong> supplier 36480 has two invoices with source E-forms FA-PM260703076 and FA-AV260706016. The dashboard uses <strong>FA-AV260706016</strong>, the last E-form in source-row order, as the bank payment reference and repeats it on both ERP invoice lines.</div>
   <div class="table-wrap" style="max-height:690px"><table>
     <thead><tr>
-      <th>Due Date(Payment date)</th><th>Supplier Number</th><th>Invoice Number</th><th>Due Date(Value date)</th><th>Bene name</th><th class="num">Amount</th>
+      <th class="num">#</th><th>Pay Date</th><th>Supplier Number</th><th>Invoice Number</th><th>Value Date</th><th>Bene name</th><th class="num">Amount</th>
       <th>Currency</th><th>E-form No.</th><th>Payment Bank</th><th>Payment Method</th><th>Charges Indicator</th><th>Bank charge</th><th>Detail</th><th>Account number</th><th>Swiftcode</th>
     </tr></thead><tbody id="workbenchBody"></tbody>
   </table></div>
@@ -1171,14 +1171,17 @@ function renderWorkbench(){
   const rows=filteredPayments();
   document.getElementById("visibleCount").textContent=rows.length;
   document.getElementById("selectedCount").textContent=0;
-  document.getElementById("workbenchBody").innerHTML=rows.map(p=>{
+  document.getElementById("workbenchBody").innerHTML=rows.map((p,rowIdx)=>{
     const eform=eformDisplayValue(p);
     const eformCls=eformClass(p);
     const bankValue=paymentBankLabel(p);
-    const methodLocked=bankDisplay(bankValue)!=="Citi";
+    // Any Citi branch (Singapore / Thailand / China) keeps the routing-code
+    // dropdown editable — only non-Citi banks lock the method.
+    const methodLocked=!/^Citi/.test(String(bankValue||""));
     const methodValue=p.method||defaultMethodForBank(bankValue,p.currency,p.entity,p.swiftcode||p.swift);
     const chargeValue=p.charge||chargeCodeFromRaw(p.bankCharge)||defaultCharge(p.currency);
     return `<tr>
+      <td class="num muted">${rowIdx+1}</td>
       <td>${dateLabel(p.paymentDate||p.valueDate||"")}</td>
       <td>${escapeHtml(p.supplierNumber||p.supplier||"")}</td>
       <td>${escapeHtml(p.invoiceNumber||p.invoice||"")}</td>
