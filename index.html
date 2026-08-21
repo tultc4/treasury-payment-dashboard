@@ -929,14 +929,6 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
         <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 3a4.5 4.5 0 00-4.5 4.5c0 4-1.5 5-1.5 5h12s-1.5-1-1.5-5A4.5 4.5 0 0010 3zM8.4 15.5a1.7 1.7 0 003.2 0"/></svg>
         <span class="attn-count" id="attnCount">0</span>
       </button>
-      <button class="header-btn" onclick="openApImport()" aria-label="Import AP Summary">
-        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3v8"/><path d="M13.2 7.8 10 11 6.8 7.8"/><path d="M3.6 12.4v2.2a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8v-2.2"/></svg>
-        <span>Import AP Summary</span>
-      </button>
-      <button class="header-btn primary-ghost" onclick="activateTab('erp')" aria-label="Export ERP">
-        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.2V4.2"/><path d="M6.8 7.4 10 4.2l3.2 3.2"/><path d="M3.6 12.4v2.2a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8v-2.2"/></svg>
-        <span>Export ERP</span>
-      </button>
     </div>
   </div>
 </header>
@@ -1079,10 +1071,10 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 
 
 <section id="statement" class="tabpanel" ondragover="event.preventDefault()" ondrop="handleStatementDrop(event)">
-  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2></div><div class="wb-tools"><button class="btn icon" onclick="openStatementImport()" title="Upload the T-1 transaction-level statement (.xlsx, .xls or .csv) — or drop the file anywhere on this page"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button></div></div>
-  <div class="section-title">Balance & sufficiency by account</div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
-  <div class="section-title">Payment debit follow-up</div><div class="table-wrap"><table id="debitTable"></table></div>
-  <div class="section-title">Statement transactions</div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
+  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2></div></div>
+  <div class="section-title">Balance & sufficiency by account<div class="wb-tools"><button class="btn icon" onclick="openStatementImport()" title="Upload the T-1 statement workbook (.xlsx, .xls or .csv) — feeds all three tables; or drop the file anywhere on this page"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="tblExportCsv('stmtBalanceTable','balance_sufficiency')" title="Export this table to CSV"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 4v9m0 0L6.8 9.8M10 13l3.2-3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="event.stopPropagation();tblExpandById('stmtBalanceTable')" title="Expand to a full window"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4h4v4M8 16H4v-4M16 4l-5 5M4 16l5-5"/></svg></button></div></div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
+  <div class="section-title">Payment debit follow-up<div class="wb-tools"><button class="btn icon" onclick="openStatementImport()" title="Upload the T-1 statement workbook (.xlsx, .xls or .csv) — feeds all three tables; or drop the file anywhere on this page"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="tblExportCsv('debitTable','payment_debit_followup')" title="Export this table to CSV"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 4v9m0 0L6.8 9.8M10 13l3.2-3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="event.stopPropagation();tblExpandById('debitTable')" title="Expand to a full window"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4h4v4M8 16H4v-4M16 4l-5 5M4 16l5-5"/></svg></button></div></div><div class="table-wrap"><table id="debitTable"></table></div>
+  <div class="section-title">Statement transactions<div class="wb-tools"><button class="btn icon" onclick="openStatementImport()" title="Upload the T-1 statement workbook (.xlsx, .xls or .csv) — feeds all three tables; or drop the file anywhere on this page"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="tblExportCsv('stmtTxTable','statement_transactions')" title="Export this table to CSV"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 4v9m0 0L6.8 9.8M10 13l3.2-3.2M4 13.5V16h12v-2.5"/></svg></button><button class="btn icon" onclick="event.stopPropagation();tblExpandById('stmtTxTable')" title="Expand to a full window"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4h4v4M8 16H4v-4M16 4l-5 5M4 16l5-5"/></svg></button></div></div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
 </section>
 
 
@@ -2042,6 +2034,28 @@ function tblToggleExpand(host){
   }
 }
 window.tblToggleExpand=tblToggleExpand;
+function tblExpandById(id){const t=document.getElementById(id);const h=t&&t.closest(".tbl-host");if(h)tblToggleExpand(h);}
+window.tblExpandById=tblExpandById;
+// Export any dashboard table to CSV exactly as displayed (inputs/selects
+// read by their current value; the leading checkbox column is skipped).
+function tblExportCsv(tableId,name){
+  const t=document.getElementById(tableId);if(!t)return;
+  const data=[...t.querySelectorAll("tr")].map(tr=>[...tr.children].map(c=>{
+    const inp=c.querySelector("select, input:not([type=checkbox])");
+    let v=inp?(inp.tagName==="SELECT"?(inp.selectedOptions[0]?inp.selectedOptions[0].textContent:inp.value):inp.value):c.textContent;
+    return String(v||"").replace(/\s+/g," ").trim();
+  }));
+  if(!data.length||data.every(r=>!r.length)){if(window.showToast)showToast("Nothing to export.");return;}
+  const esc=v=>'"'+String(v??"").replaceAll('"','""')+'"';
+  const csv=data.map(r=>r.map(esc).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const d=new Date(),ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=(name||tableId)+"_"+ds+".csv";a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  if(window.showToast)showToast("Exported "+Math.max(0,data.length-1)+" row(s) to CSV.");
+}
+window.tblExportCsv=tblExportCsv;
 function enhanceTables(){
   document.querySelectorAll(".table-wrap>table").forEach(t=>{
     if(!t.id)return;
