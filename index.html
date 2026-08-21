@@ -101,6 +101,7 @@ header{
 .legend-label{display:flex;align-items:center;gap:7px;color:var(--muted)}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
 .table-wrap{border:1px solid var(--border);border-radius:10px;overflow:auto;background:white;max-height:570px}
+.entity-currency-table{display:block;overflow-x:auto;max-width:100%}
 table{border-collapse:collapse;width:100%;font-size:12px}
 th{background:#f9fafb;color:#111827;text-align:left;padding:12px 10px;position:sticky;top:0;z-index:2;white-space:nowrap;font-size:12px;letter-spacing:.3px;text-transform:uppercase;font-weight:800;box-shadow:inset 0 -2px 0 #d1d5db}
 td{padding:7px 9px;border-bottom:1px solid #f0f1f3;vertical-align:middle;white-space:nowrap}
@@ -1891,7 +1892,7 @@ function initColResize(tableId,defs){
   table.style.width=total+"px";
   ths.forEach(th=>{
     th.dataset.rsz="1";
-    th.style.position="relative";
+    th.style.position="sticky"; // NOT "relative" — the base CSS pins headers (position:sticky;top:0) and sticky still anchors the absolute grip
     th.style.overflow="hidden";
     const grip=document.createElement("span");
     grip.className="col-grip";
@@ -2137,13 +2138,16 @@ function enhanceTables(){
           [...t.querySelectorAll(".tbl-drag-src,.tbl-drag-over")].forEach(x=>x.classList.remove("tbl-drag-src","tbl-drag-over"));
         });
       });
-      // resizable columns for every other table (wb/citi have their own defaults);
-      // measure natural widths only when the tab is actually visible
-      if(!["wbTable","citiTable"].includes(t.id)&&!ths[0].dataset.rsz&&t.offsetWidth){
-        initColResize(t.id,ths.map(th=>Math.max(56,Math.round(th.getBoundingClientRect().width))));
-      }
       const ord=window.tblOrder[t.id];
       if(ord&&ord.length===ths.length)tblApplyOrder(t,ord);
+    }
+    // resizable columns — OUTSIDE the attach-once block above, because a pass
+    // that runs while the tab is hidden (offsetWidth 0) must retry on the next
+    // pass once the tab is visible. wb/citi re-init with their own defaults.
+    if(!ths[0].dataset.rsz&&t.offsetWidth){
+      if(t.id==="wbTable")initColResize();
+      else if(t.id==="citiTable"){if(typeof initCitiColResize==="function")initCitiColResize();}
+      else initColResize(t.id,ths.map(th=>Math.max(56,Math.round(th.getBoundingClientRect().width))));
     }
   });
 }
