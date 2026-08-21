@@ -651,6 +651,16 @@ body.wb-veil:before{content:"";position:fixed;inset:0;z-index:55;background:colo
   flex-direction:column;padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-lg)}
 .wb-shell.expanded .table-wrap{flex:1;min-height:0;box-shadow:none}
 
+/* global table toolkit: expand fab + column drag-reorder (every .table-wrap table) */
+.tbl-host{position:relative}
+.tbl-host>.tbl-expand{position:absolute;top:5px;right:5px;z-index:6;opacity:0;transition:opacity .15s;background:var(--card);box-shadow:var(--shadow)}
+.tbl-host:hover>.tbl-expand,.tbl-host.tw-expanded>.tbl-expand{opacity:.94}
+.tbl-host.tw-expanded{position:fixed;z-index:56;inset:22px;display:flex;flex-direction:column;background:var(--card);border-radius:14px;box-shadow:var(--shadow-lg);padding:14px}
+.tbl-host.tw-expanded .table-wrap{flex:1;min-height:0}
+.table-wrap th[draggable="true"]{cursor:grab}
+.table-wrap th.tbl-drag-src{opacity:.45}
+.table-wrap th.tbl-drag-over{box-shadow:inset 3px 0 0 var(--accent)}
+
 .eform-cell{position:relative;overflow:visible}
 .ref-click{cursor:pointer;text-decoration:underline dashed;text-underline-offset:3px}
 .eform-pop{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:258px;padding:11px 12px;
@@ -1068,9 +1078,8 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 </section>
 
 
-<section id="statement" class="tabpanel">
-  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2></div></div>
-  <div class="card"><h3>Transaction detail</h3><div class="upload-zone" id="statementDropZone" onclick="openStatementImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleStatementDrop(event)"><strong>Drop transaction-level statement here</strong></div></div>
+<section id="statement" class="tabpanel" ondragover="event.preventDefault()" ondrop="handleStatementDrop(event)">
+  <div class="page-head"><div><h2>Bank Debit Reconciliation</h2></div><div class="wb-tools"><button class="btn icon" onclick="openStatementImport()" title="Upload the T-1 transaction-level statement (.xlsx, .xls or .csv) — or drop the file anywhere on this page"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button></div></div>
   <div class="section-title">Balance & sufficiency by account</div><div class="table-wrap"><table id="stmtBalanceTable"></table></div>
   <div class="section-title">Payment debit follow-up</div><div class="table-wrap"><table id="debitTable"></table></div>
   <div class="section-title">Statement transactions</div><div class="table-wrap" style="max-height:420px"><table id="stmtTxTable"></table></div>
@@ -1887,7 +1896,8 @@ function initColResize(tableId,defs){
   // Fixed default widths per column — measuring is unreliable here because the
   // table is compressed inside its scroll container before the widths are set.
   const DEF=defs||[44,88,112,124,88,200,124,66,236,152,196,124,112,260,152,112];
-  const table_w=(i,th)=>DEF[i]||Math.max(90,Math.round(th.getBoundingClientRect().width));
+  const saved=(window.tblW||{})[table.id]||{};
+  const table_w=(i,th)=>saved[i]||DEF[i]||Math.max(90,Math.round(th.getBoundingClientRect().width));
   table.style.tableLayout="fixed";
   let total=0;
   ths.forEach((th,i)=>{const w=table_w(i,th);th.dataset.w=w;th.style.width=w+"px";total+=w;});
@@ -1908,7 +1918,11 @@ function initColResize(tableId,defs){
         th.style.width=w+"px";
         table.style.width=Math.round(base+(w-startW))+"px";
       };
-      const up=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);document.body.style.cursor="";document.body.style.userSelect="";};
+      const up=()=>{document.removeEventListener("mousemove",move);document.removeEventListener("mouseup",up);document.body.style.cursor="";document.body.style.userSelect="";
+        // keep the user's widths across re-renders, keyed by original column index
+        window.tblW=window.tblW||{};const o={};
+        [...table.querySelectorAll("thead th")].forEach((h,j)=>{const oi=h.dataset.oi!==undefined?Number(h.dataset.oi):j;const w=parseFloat(h.style.width);if(w)o[oi]=w;});
+        window.tblW[table.id]=o;};
       document.body.style.cursor="col-resize";document.body.style.userSelect="none";
       document.addEventListener("mousemove",move);document.addEventListener("mouseup",up);
     });
@@ -1990,7 +2004,98 @@ function wbToggleExpand(){
   const wrap=shell.querySelector(".table-wrap");
   if(wrap)wrap.style.maxHeight=on?"none":"690px";
 }
+/* ---- global table toolkit: every .table-wrap table gets an expand icon,
+   resizable columns and drag-to-reorder columns. Re-applied automatically
+   after each render via a debounced MutationObserver (renders replace the
+   table's innerHTML, wiping the previous pass). Column order and widths are
+   remembered per table id (in-memory, keyed by original column index). ---- */
+window.tblW=window.tblW||{};window.tblOrder=window.tblOrder||{};
+const TBL_EXPAND_SVG='<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4h4v4M8 16H4v-4M16 4l-5 5M4 16l5-5"/></svg>';
+function tblApplyOrder(t,ord){
+  [...t.querySelectorAll("tr")].forEach(tr=>{const cells=[...tr.children];if(cells.length!==ord.length)return;ord.forEach(oi=>tr.appendChild(cells[oi]));});
+}
+function tblSaveOrder(t){
+  const ord=[...t.querySelector("thead tr").children].map(th=>Number(th.dataset.oi));
+  window.tblOrder[t.id]=ord.some((v,i)=>v!==i)?ord:null;
+}
+function tblMoveCol(t,fromIdx,toIdx){
+  if(fromIdx===toIdx||fromIdx<0||toIdx<0)return;
+  const n=t.querySelector("thead tr").children.length;
+  [...t.querySelectorAll("tr")].forEach(tr=>{
+    const cells=tr.children;if(cells.length!==n)return; // skip colspan detail rows
+    const c=cells[fromIdx];
+    toIdx<fromIdx?tr.insertBefore(c,cells[toIdx]):tr.insertBefore(c,cells[toIdx].nextSibling);
+  });
+  tblSaveOrder(t);
+}
+function tblToggleExpand(host){
+  const on=!host.classList.contains("tw-expanded");
+  document.querySelectorAll(".tbl-host.tw-expanded").forEach(h=>{
+    h.classList.remove("tw-expanded");
+    const w=h.querySelector(".table-wrap");if(w)w.style.maxHeight=h.dataset.mh||"";
+  });
+  document.body.classList.remove("wb-veil");
+  if(on){
+    host.classList.add("tw-expanded");document.body.classList.add("wb-veil");
+    const w=host.querySelector(".table-wrap");
+    if(w){host.dataset.mh=w.style.maxHeight||"";w.style.maxHeight="none";}
+  }
+}
+window.tblToggleExpand=tblToggleExpand;
+function enhanceTables(){
+  document.querySelectorAll(".table-wrap>table").forEach(t=>{
+    if(!t.id)return;
+    const wrap=t.parentElement;
+    let host=wrap.parentElement;
+    if(!host.classList.contains("tbl-host")){
+      host=document.createElement("div");host.className="tbl-host";
+      wrap.parentNode.insertBefore(host,wrap);host.appendChild(wrap);
+      if(t.id!=="wbTable"){ // the workbench already has its own expand button
+        const b=document.createElement("button");
+        b.type="button";b.className="btn icon tbl-expand";b.title="Expand to a full window";
+        b.innerHTML=TBL_EXPAND_SVG;
+        b.onclick=e=>{e.stopPropagation();tblToggleExpand(host);};
+        host.appendChild(b);
+      }
+    }
+    const headRow=t.querySelector("thead tr");if(!headRow)return;
+    const ths=[...headRow.children];if(!ths.length)return;
+    if(!ths[0].dataset.drag){
+      ths.forEach((th,i)=>{
+        th.dataset.drag="1";th.dataset.oi=i;th.draggable=true;
+        th.addEventListener("dragstart",e=>{
+          window._tblDrag={t:t.id,from:[...th.parentElement.children].indexOf(th)};
+          th.classList.add("tbl-drag-src");
+          try{e.dataTransfer.setData("text/plain",th.textContent.trim());e.dataTransfer.effectAllowed="move";}catch(_){}
+        });
+        th.addEventListener("dragend",()=>{window._tblDrag=null;[...t.querySelectorAll(".tbl-drag-src,.tbl-drag-over")].forEach(x=>x.classList.remove("tbl-drag-src","tbl-drag-over"));});
+        th.addEventListener("dragover",e=>{const d=window._tblDrag;if(d&&d.t===t.id){e.preventDefault();e.dataTransfer.dropEffect="move";th.classList.add("tbl-drag-over");}});
+        th.addEventListener("dragleave",()=>th.classList.remove("tbl-drag-over"));
+        th.addEventListener("drop",e=>{
+          const d=window._tblDrag;if(!d||d.t!==t.id)return;e.preventDefault();
+          tblMoveCol(t,d.from,[...th.parentElement.children].indexOf(th));
+          window._tblDrag=null;
+          [...t.querySelectorAll(".tbl-drag-src,.tbl-drag-over")].forEach(x=>x.classList.remove("tbl-drag-src","tbl-drag-over"));
+        });
+      });
+      // resizable columns for every other table (wb/citi have their own defaults);
+      // measure natural widths only when the tab is actually visible
+      if(!["wbTable","citiTable"].includes(t.id)&&!ths[0].dataset.rsz&&t.offsetWidth){
+        initColResize(t.id,ths.map(th=>Math.max(56,Math.round(th.getBoundingClientRect().width))));
+      }
+      const ord=window.tblOrder[t.id];
+      if(ord&&ord.length===ths.length)tblApplyOrder(t,ord);
+    }
+  });
+}
+window.enhanceTables=enhanceTables;
+new MutationObserver(()=>{clearTimeout(window._tblEnhT);window._tblEnhT=setTimeout(()=>{try{enhanceTables();}catch(_){}},140);})
+  .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+setTimeout(enhanceTables,250);
+
 document.addEventListener("click",e=>{
+  const eh=document.querySelector(".tbl-host.tw-expanded");
+  if(eh&&!eh.contains(e.target))tblToggleExpand(eh);
   const shell=document.getElementById("wbShell");
   if(shell&&shell.classList.contains("expanded")&&!shell.contains(e.target))wbToggleExpand();
   const pop=document.getElementById("wbFilterPop");
