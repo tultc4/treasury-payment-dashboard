@@ -646,10 +646,6 @@ footer{color:#9296aa;font-size:10.5px;padding:22px}
   background:linear-gradient(to right,transparent 4px,var(--divider) 4px,var(--divider) 5px,transparent 5px)}
 .col-grip:hover{background:linear-gradient(to right,transparent 3px,var(--accent) 3px,var(--accent) 6px,transparent 6px)}
 
-body.wb-veil:before{content:"";position:fixed;inset:0;z-index:55;background:color-mix(in srgb,#0b0c14 74%,transparent)}
-.wb-shell.expanded{position:fixed;z-index:56;top:22px;right:22px;bottom:22px;left:22px;display:flex;
-  flex-direction:column;padding:16px 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow-lg)}
-.wb-shell.expanded .table-wrap{flex:1;min-height:0;box-shadow:none}
 
 /* global table toolkit: expand fab + column drag-reorder (every .table-wrap table) */
 .tbl-host{position:relative}
@@ -1983,17 +1979,6 @@ function downloadWorkbenchCsv(){
   showToast("Exported "+trs.length+" visible row(s).");
 }
 
-function wbToggleExpand(){
-  const shell=document.getElementById("wbShell");
-  if(!shell)return;
-  const on=!shell.classList.contains("expanded");
-  shell.classList.toggle("expanded",on);
-  document.body.classList.toggle("wb-veil",on);
-  const btn=document.getElementById("wbExpandBtn");
-  if(btn)btn.title=on?"Collapse":"Expand to a full window";
-  const wrap=shell.querySelector(".table-wrap");
-  if(wrap)wrap.style.maxHeight=on?"none":"690px";
-}
 /* ---- global table toolkit: every .table-wrap table gets an expand icon,
    resizable columns and drag-to-reorder columns. Re-applied automatically
    after each render via a debounced MutationObserver (renders replace the
@@ -2023,6 +2008,8 @@ function tblMoveCol(t,fromIdx,toIdx){
 // fixed left rail. The snapshot is read-only: inline handlers are stripped
 // and current input/select values are frozen into the markup.
 function tblTitleFor(t){
+  const sh=t.closest(".wb-shell");
+  if(sh){const st=sh.querySelector(".wb-toolbar strong");if(st)return st.textContent.trim();}
   const host=t.closest(".tbl-host");
   let el=host&&host.previousElementSibling;
   while(el&&!((el.classList&&el.classList.contains("section-title"))||el.tagName==="H3"))el=el.previousElementSibling;
@@ -2034,7 +2021,7 @@ function tblOpenWindow(t){
   if(typeof t==="string")t=document.getElementById(t);
   if(!t)return;
   const title=tblTitleFor(t);
-  const w=window.open("","_blank","width=1440,height=860");
+  const w=window.open("","_blank","width="+(screen.availWidth||1440)+",height="+(screen.availHeight||860)+",left=0,top=0,scrollbars=yes,resizable=yes");
   if(!w){if(window.showToast)showToast("Popup blocked — allow popups for this page to open tables in a window.");return;}
   const clone=t.cloneNode(true);
   const liveInputs=t.querySelectorAll("input,select"),cloneInputs=clone.querySelectorAll("input,select");
@@ -2048,7 +2035,7 @@ function tblOpenWindow(t){
   clone.querySelectorAll("th").forEach(th=>th.removeAttribute("draggable"));
   const css=[...document.querySelectorAll("style")].map(st=>st.textContent).join("\n");
   const esc=v=>String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;");
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+' — Treasury Payment Control Tower</title><style>'+css+'</style></head><body style="padding:18px" class="'+document.body.className.replace("wb-veil","")+'"><h2 style="margin:0 0 12px;font-size:16px;color:var(--navy)">'+esc(title)+'</h2><div class="table-wrap" style="max-height:none">'+clone.outerHTML+'</div></body></html>');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(title)+' — Treasury Payment Control Tower</title><style>'+css+'</style><style>body{margin:0;padding:16px 18px;background:var(--bg)}</style></head><body><h2 style="margin:0 0 12px;font-size:16px;color:var(--navy)">'+esc(title)+'</h2><div class="table-wrap" style="max-height:calc(100vh - 76px)">'+clone.outerHTML+'</div></body></html>');
   w.document.close();
 }
 window.tblOpenWindow=tblOpenWindow;
@@ -2126,8 +2113,6 @@ new MutationObserver(()=>{clearTimeout(window._tblEnhT);window._tblEnhT=setTimeo
 setTimeout(enhanceTables,250);
 
 document.addEventListener("click",e=>{
-  const shell=document.getElementById("wbShell");
-  if(shell&&shell.classList.contains("expanded")&&!shell.contains(e.target))wbToggleExpand();
   const pop=document.getElementById("wbFilterPop");
   if(pop&&pop.classList.contains("open")&&!pop.contains(e.target)&&!e.target.closest("#wbFilterBtn"))pop.classList.remove("open");
   const cell=e.target.closest(".eform-cell");
