@@ -1055,11 +1055,14 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 <section id="citi" class="tabpanel">
   <div class="page-head"><div><h2>Bank Creation Reconciliation</h2></div><div class="inline-actions"><div class="field"><label>Payment Bank</label><select id="reconBank" onchange="renderCiti()"></select></div></div></div>
   <div class="grid-3">
-    <div class="card"><h3>Import payment-bank result and history</h3><div class="upload-zone" id="citiDropZone" onclick="openBankImport()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCitiDrop(event)"><strong>Drop bank result workbook here</strong></div></div>
-    <div class="card" style="grid-column:span 2"><h3>Summary total payment — bank result</h3><div class="bank-sum-chips" id="citiSummaryChips"></div><div class="table-wrap" style="max-height:330px;margin-top:10px"><table id="citiPaymentSummary"></table></div></div>
+    <div class="card" style="grid-column:span 3" ondragover="event.preventDefault()" ondrop="handleCitiDrop(event)"><h3>Summary total payment — bank result</h3><div class="bank-sum-chips" id="citiSummaryChips"></div><div class="table-wrap" style="max-height:330px;margin-top:10px"><table id="citiPaymentSummary"></table></div></div>
   </div>
   <div class="section-title">Transaction-level result</div>
-  <div class="inline-actions" style="margin-bottom:10px"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><button class="btn primary" onclick="downloadCitiSelection()">⇩ Download Selected</button><button class="btn primary" onclick="openApprovalEmail()">✉ Approval Email</button></div>
+  <div class="inline-actions" style="margin-bottom:10px;align-items:center"><button class="btn" onclick="toggleAllCitiVisible(true)">Select all matched</button><button class="btn" onclick="toggleAllCitiVisible(false)">Clear selection</button><div class="wb-tools" style="margin-left:auto">
+      <button class="btn icon" onclick="openBankImport()" title="Upload the bank creation / result workbook (.xlsx, .xls or .csv)"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V4m0 0L6.8 7.2M10 4l3.2 3.2M4 13.5V16h12v-2.5"/></svg></button>
+      <button class="btn icon" onclick="downloadCitiSelection()" title="Download the selected reconciliation rows (CSV)"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4v9m0 0L6.8 9.8M10 13l3.2-3.2M4 13.5V16h12v-2.5"/></svg></button>
+      <button class="btn icon" onclick="openApprovalEmail()" title="Compose the approval email for the ticked payments"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.6"/><path d="m3.5 6 6.5 5 6.5-5"/></svg></button>
+    </div></div>
   <div class="table-wrap"><table id="citiTable"></table></div>
 </section>
 
@@ -2064,7 +2067,7 @@ function renderCiti(){
   if(chipsEl&&sumEl){
     if(!inResult.length){
       chipsEl.innerHTML="";
-      sumEl.innerHTML=`<thead><tr><th>Summary total payment</th></tr></thead><tbody><tr><td>No bank result imported yet — drop the bank creation / result workbook on the left to see totals by entity and currency.</td></tr></tbody>`;
+      sumEl.innerHTML=`<thead><tr><th>Summary total payment</th></tr></thead><tbody><tr><td>No bank result imported yet — click the upload icon below (or drop the workbook on this card) to see totals by entity and currency.</td></tr></tbody>`;
     }else{
       const created=inResult.filter(p=>p.citi==="CREATED").length;
       const diffN=inResult.filter(p=>p.citi==="DIFF").length;
