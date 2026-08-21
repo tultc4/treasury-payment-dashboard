@@ -1154,13 +1154,13 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 <div class="ap-mail-overlay" id="apMailOverlay" onclick="if(event.target===this)closeApprovalEmail()">
   <div class="ap-mail">
     <h3>Approval email</h3>
-    <div class="sub">Soạn sẵn email xin approve cho các lệnh đã tick ở Bank Reconcile — chỉnh sửa thoải mái trước khi gửi.</div>
+    <div class="sub">Pre-drafted approval email for the payments ticked on Bank Reconcile — edit anything before sending.</div>
     <div class="row">
       <div><label>Bank</label><select id="apMailBank" class="cell-select" style="width:100%" onchange="refreshApprovalDraft()"></select></div>
       <div><label>Subject</label><input type="text" id="apMailSubject"></div>
     </div>
     <div class="row">
-      <div><label>To (email, cách nhau bằng ;)</label><input type="text" id="apMailTo" placeholder="ken@vng.com.vn; jeebar@vng.com.vn" oninput="saveApprovalRecipients()"></div>
+      <div><label>To (emails, separated by ;)</label><input type="text" id="apMailTo" placeholder="ken@vng.com.vn; jeebar@vng.com.vn" oninput="saveApprovalRecipients()"></div>
       <div><label>Cc</label><input type="text" id="apMailCc" placeholder="sunny@...; rosie@...; pim@...; sol@...; ethan@..." oninput="saveApprovalRecipients()"></div>
     </div>
     <label>Body</label>
@@ -1173,7 +1173,7 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
       <button class="btn primary" onclick="openApprovalMailApp()">✉ Open in mail app</button>
       <button class="btn" onclick="closeApprovalEmail()" style="margin-left:auto">Close</button>
     </div>
-    <div class="hint"><strong>Lưu ý:</strong> mail app không thể tự đính kèm file — bấm <strong>Download attachment</strong> trước, rồi kéo file .xlsx vào email sau khi "Open in mail app" mở bản nháp (hoặc Copy subject/body dán vào Outlook). File đính kèm gồm sheet <strong>PAYMENT LIST</strong> (chi tiết từng lệnh) và sheet <strong>SUMMARY</strong> (số lệnh + tổng tiền theo từng currency, theo entity). Địa chỉ To/Cc được nhớ lại cho lần sau.</div>
+    <div class="hint"><strong>Note:</strong> mail apps cannot attach files automatically — click <strong>Download attachment</strong> first, then drag the .xlsx into the draft after "Open in mail app" (or copy subject/body into Outlook). The attachment holds a <strong>PAYMENT LIST</strong> sheet (every order) and a <strong>SUMMARY</strong> sheet (payment count + totals per currency, by entity). To/Cc addresses are remembered per bank.</div>
   </div>
 </div>
 <div class="xls-overlay" id="xlsOverlay" onclick="if(event.target===this)closeAttachmentPreview()">
@@ -1192,7 +1192,7 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
       <div id="xlsTabSummary" class="xls-tab" onclick="showAttachmentSheet('summary')">SUMMARY</div>
     </div>
     <div class="xls-grid" id="xlsGrid"></div>
-    <div class="xls-note">Mail app không tự đính kèm được — tải workbook trước, rồi kéo vào bản nháp sau khi bấm "Open in mail app".</div>
+    <div class="xls-note">Mail apps cannot auto-attach — download the workbook first, then drag it into the draft after "Open in mail app".</div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -1724,9 +1724,11 @@ function wbSetFocus(kind){
   window.wbFocus = window.wbFocus===kind ? null : kind;
   renderWorkbench();renderReferenceKpis();
 }
-function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.filter(p=>p.invoiceCount>1).length,"Representative reference = last source E-form"],["Last-E-form rule",payments.filter(p=>p.referenceRule==="LAST_EFORM_IN_GROUP").length,"Single or multi-invoice groups"],["Auto-suffixed",payments.filter(p=>p.referenceStatus==="AUTO_SUFFIXED").length,"Repeated base references by payment group"],["Blocked / duplicate",payments.filter(p=>p.referenceBlocked).length,"Manual override needed — click to see only these rows"],["Reference-ready",payments.filter(p=>!p.referenceBlocked).length,`${pct(payments.filter(p=>!p.referenceBlocked).length,payments.length)}% of payment groups`],
-  ["Missing mapping",payments.filter(p=>missingMapping(p)).length,"Payment method or charge unset","mapping"]];
-  items[3][3]="blocked";
+function renderReferenceKpis(){const items=[
+    ["Payment groups",payments.length,"In this batch"],
+    ["Ready for ERP",payments.filter(p=>!p.referenceBlocked&&!missingMapping(p)).length,`${pct(payments.filter(p=>!p.referenceBlocked&&!missingMapping(p)).length,payments.length)}% of the batch`],
+    ["Blocked / duplicate",payments.filter(p=>p.referenceBlocked).length,"Manual override needed — click to filter","blocked"],
+    ["Missing mapping",payments.filter(p=>missingMapping(p)).length,"Method, charge, account or value date unset","mapping"]];
   document.getElementById("referenceKpis").innerHTML=items.map(x=>{
     const focus=x[3];
     const on=focus&&window.wbFocus===focus;
@@ -1738,24 +1740,24 @@ function renderIssueBox(){
   const el=document.getElementById("wbIssueBox");if(!el)return;
   const probs=payments.map(p=>({p,issues:paymentIssues(p)})).filter(x=>x.issues.length);
   if(!probs.length){
-    el.innerHTML=`<div class="issue-box clean"><div class="ib-lead"><div class="ib-label">Cần sửa tay</div><div class="ib-count">0</div></div><span class="muted" style="font-size:12px">Không có lệnh nào bị chặn — sẵn sàng sang ERP Export.</span></div>`;
+    el.innerHTML=`<div class="issue-box clean"><div class="ib-lead"><div class="ib-label">Needs manual fix</div><div class="ib-count">0</div></div><span class="muted" style="font-size:12px">No payment is blocked — ready for ERP Export.</span></div>`;
     return;
   }
-  const kinds=[["blocked","Reference bị chặn"],["mapping","Thiếu thông tin bắt buộc"]];
+  const kinds=[["blocked","Reference blocked"],["mapping","Missing required info"]];
   const chips=kinds.map(([k,label])=>{
     const n=probs.filter(x=>x.issues.some(i=>i.kind===k)).length;
     if(!n)return "";
-    return `<span class="ib-chip" onclick="event.stopPropagation();wbSetFocus('${k}')" title="Lọc bảng theo nhóm lỗi này"><b>${n}</b> ${label}</span>`;
+    return `<span class="ib-chip" onclick="event.stopPropagation();wbSetFocus('${k}')" title="Filter the table to this issue type"><b>${n}</b> ${label}</span>`;
   }).join("");
   const open=window.wbIssueOpen;
-  el.innerHTML=`<div class="issue-box" onclick="wbJumpNextIssue()" title="Bấm để nhảy tới lệnh cần sửa tiếp theo">
-    <div class="ib-lead"><div class="ib-label">Cần sửa tay</div><div class="ib-count">${probs.length}</div></div>
+  el.innerHTML=`<div class="issue-box" onclick="wbJumpNextIssue()" title="Click to jump to the next payment that needs fixing">
+    <div class="ib-lead"><div class="ib-label">Needs manual fix</div><div class="ib-count">${probs.length}</div></div>
     <div class="ib-chips">${chips}</div>
     <div class="ib-actions">
-      <span class="ib-jump">Tới chỗ cần sửa
+      <span class="ib-jump">Go to next fix
         <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11.5 6.5 15 10l-3.5 3.5"/></svg></span>
-      <span class="ib-ghost" onclick="event.stopPropagation();wbToggleIssueList()">${open?"Ẩn danh sách":"Xem danh sách"}</span>
-      ${window.wbFocus?'<span class="ib-ghost" onclick="event.stopPropagation();wbSetFocus(window.wbFocus)">Bỏ lọc</span>':""}
+      <span class="ib-ghost" onclick="event.stopPropagation();wbToggleIssueList()">${open?"Hide list":"Show list"}</span>
+      ${window.wbFocus?'<span class="ib-ghost" onclick="event.stopPropagation();wbSetFocus(window.wbFocus)">Clear filter</span>':""}
     </div>
   </div>`;
   document.getElementById("wbActionList").style.display=open?"":"none";
@@ -1783,7 +1785,7 @@ function wbJumpNextIssue(){
   document.querySelectorAll("tr.wb-flash").forEach(r=>r.classList.remove("wb-flash"));
   row.classList.add("wb-flash");
   setTimeout(()=>row.classList.remove("wb-flash"),1400);
-  showToast(`Lệnh ${window.wbIssueCursor+1}/${probs.length} · ${paymentIssues(target).map(i=>i.label).join(" · ")}`);
+  showToast(`Payment ${window.wbIssueCursor+1}/${probs.length} · ${paymentIssues(target).map(i=>i.label).join(" · ")}`);
 }
 function missingMapping(p){
   return paymentIssues(p).some(i=>i.kind==="mapping");
@@ -1794,14 +1796,14 @@ function missingMapping(p){
 // charge / bank account / value date missing.
 function paymentIssues(p){
   const issues=[];
-  if(p.referenceBlocked)issues.push({kind:"blocked",label:p.referenceStatus==="DUPLICATE_IN_BANK"?"Reference đã tồn tại trong bank history — cần override":p.referenceStatus==="MISSING_REFERENCE"?"Thiếu payment reference":"Reference bị block ("+String(p.referenceStatus||"").replaceAll("_"," ").toLowerCase()+")"});
+  if(p.referenceBlocked)issues.push({kind:"blocked",label:p.referenceStatus==="DUPLICATE_IN_BANK"?"Reference already exists in bank history — override needed":p.referenceStatus==="MISSING_REFERENCE"?"Missing payment reference":"Reference blocked ("+String(p.referenceStatus||"").replaceAll("_"," ").toLowerCase()+")"});
   const bank=paymentBankLabel(p);
   const method=p.method||defaultMethodForBank(bank,p.currency,p.entity,p.swiftcode||p.swift);
   const charge=p.charge||chargeCodeFromRaw(p.bankCharge)||defaultCharge(p.currency);
-  if(!method)issues.push({kind:"mapping",label:"Thiếu Payment Method"});
-  if(!charge)issues.push({kind:"mapping",label:"Thiếu Charges Indicator"});
-  if(!p.ordering)issues.push({kind:"mapping",label:"Thiếu Bank Account (ordering)"});
-  if(!p.valueDate)issues.push({kind:"mapping",label:"Thiếu Value Date"});
+  if(!method)issues.push({kind:"mapping",label:"Missing Payment Method"});
+  if(!charge)issues.push({kind:"mapping",label:"Missing Charges Indicator"});
+  if(!p.ordering)issues.push({kind:"mapping",label:"Missing Bank Account (ordering)"});
+  if(!p.valueDate)issues.push({kind:"mapping",label:"Missing Value Date"});
   return issues;
 }
 // The "list down" panel: every payment that needs a manual fix, with its
@@ -1813,8 +1815,8 @@ function renderActionList(){
   const probs=payments.map(p=>({p,issues:paymentIssues(p)})).filter(x=>x.issues.length);
   if(!probs.length){el.innerHTML="";return;}
   const MAX=15;
-  const rows=probs.slice(0,MAX).map(({p,issues},i)=>`<div class="validation-item" style="cursor:pointer" onclick="document.getElementById('filterSearch').value='${escapeHtml(p.paymentReference||p.baseReference||"")}';renderWorkbench();" title="Bấm để lọc bảng theo lệnh này"><span><strong>${i+1}. ${escapeHtml(p.entity)}</strong> · <span class="payment-ref">${escapeHtml(p.paymentReference||p.baseReference||"(no ref)")}</span> · ${escapeHtml(p.beneName||p.beneficiary||"")} · ${fmt(p.amount,p.currency)}<br><span class="muted small">${issues.map(x=>escapeHtml(x.label)).join(" · ")}</span></span>${statusPill(p.referenceBlocked?"REFERENCE_BLOCKED":"CM_INPUT_REQUIRED")}</div>`).join("");
-  el.innerHTML=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--red)"><h3 style="margin:0 0 9px">Cần sửa tay · ${probs.length} lệnh</h3><div class="validation-list">${rows}${probs.length>MAX?`<div class="validation-item"><span class="muted">… và ${probs.length-MAX} lệnh nữa — bấm card đỏ ở trên để lọc toàn bộ</span></div>`:""}</div></div>`;
+  const rows=probs.slice(0,MAX).map(({p,issues},i)=>`<div class="validation-item" style="cursor:pointer" onclick="document.getElementById('filterSearch').value='${escapeHtml(p.paymentReference||p.baseReference||"")}';renderWorkbench();" title="Click to filter the table to this payment"><span><strong>${i+1}. ${escapeHtml(p.entity)}</strong> · <span class="payment-ref">${escapeHtml(p.paymentReference||p.baseReference||"(no ref)")}</span> · ${escapeHtml(p.beneName||p.beneficiary||"")} · ${fmt(p.amount,p.currency)}<br><span class="muted small">${issues.map(x=>escapeHtml(x.label)).join(" · ")}</span></span>${statusPill(p.referenceBlocked?"REFERENCE_BLOCKED":"CM_INPUT_REQUIRED")}</div>`).join("");
+  el.innerHTML=`<div class="card" style="margin-bottom:12px;border-left:3px solid var(--red)"><h3 style="margin:0 0 9px">Needs manual fix · ${probs.length} payment${probs.length===1?"":"s"}</h3><div class="validation-list">${rows}${probs.length>MAX?`<div class="validation-item"><span class="muted">… and ${probs.length-MAX} more — click a red KPI card above to filter them all</span></div>`:""}</div></div>`;
 }
 function renderInvoiceDetails(p){const rows=p.invoiceLines.map((x,i)=>`<tr><td>${x.sourceRow}</td><td>${escapeHtml(x.invoice)}</td><td><span class="source-ref-chip">${escapeHtml(x.originalEform||"(blank)")}</span>${i===p.invoiceLines.length-1?'<span class="detail-count">LAST ROW</span>':''}</td><td class="num">${fmt(x.amount,p.currency)}</td><td>${escapeHtml(x.description||p.description||"")}</td><td>${escapeHtml(p.paymentReference)}</td></tr>`).join("");return `<tr class="invoice-detail-row"><td colspan="21"><div class="invoice-detail-box"><div class="invoice-detail-title"><span>Invoice-line detail · ${escapeHtml(p.sourceFile)} · Group total ${fmt(p.amount,p.currency)}</span><span>${escapeHtml(referenceRuleLabel(p))}</span></div><table class="invoice-lines-table"><thead><tr><th>Source Row</th><th>AP Invoice</th><th>Original E-form</th><th class="num">Invoice Amount</th><th>Description</th><th>ERP EFORM_NUMBER</th></tr></thead><tbody>${rows}</tbody></table></div></td></tr>`;}
 
@@ -1959,7 +1961,7 @@ function downloadWorkbenchCsv(){
   const heads=wbHeaders().map(th=>th.textContent.trim());
   const trs=[...document.querySelectorAll("#workbenchBody tr")]
     .filter(tr=>!tr.classList.contains("invoice-detail-row")&&tr.style.display!=="none");
-  if(!trs.length){showToast("Không có dòng nào đang hiện để export.");return;}
+  if(!trs.length){showToast("No visible rows to export.");return;}
   const cell=td=>{
     const sel=td.querySelector("select"),inp=td.querySelector("input:not([type=checkbox])");
     return String(sel?sel.value:(inp?inp.value:td.textContent)||"").replace(/\s+/g," ").trim();
@@ -1970,7 +1972,7 @@ function downloadWorkbenchCsv(){
   const a=document.createElement("a");
   a.href=url;a.download="payment_list_"+AS_OF_DATE+".csv";a.click();
   setTimeout(()=>URL.revokeObjectURL(url),2000);
-  showToast("Đã export "+trs.length+" dòng đang hiện.");
+  showToast("Exported "+trs.length+" visible row(s).");
 }
 
 function wbToggleExpand(){
@@ -2117,7 +2119,7 @@ function renderCiti(){
       :p.bankOverride
       ?`<span class="status warn" title="Manual override: ${escapeHtml(p.bankOverride.reason)} (${escapeHtml(p.bankOverride.at)}) · computed: ${escapeHtml(matchTitle)}">TRUE (manual)</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="undoBankOverride(${p.id})">Undo</button>`
       :p.bankCheck
-      ?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="overrideBankMatch(${p.id})" title="Đã tự kiểm tra và chấp nhận dòng này — cần nhập lý do">Override</button>`
+      ?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="overrideBankMatch(${p.id})" title="I checked this row myself and accept it — a reason is required">Override</button>`
       :`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
     return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num ${p.bankCheck&&!c.amountOK?"cell-diff":""}" title="${p.bankCheck&&!c.amountOK?escapeHtml("Bank result "+fmt((p.bankCheck.bank&&p.bankCheck.bank.amount)||0,p.currency)+" vs payment list "+fmt(p.amount,p.currency)):""}">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><input class="ref-input" style="min-width:170px;margin-top:0${p.bankCheck&&!c.beneficiaryOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.beneName||p.beneficiary||"")}" title="${escapeHtml(reconFieldTitle(p,"beneficiary"))}" onchange="updateReconField(${p.id},'beneficiary',this.value)"></td><td><input class="ref-input" style="min-width:130px;margin-top:0${p.bankCheck&&!c.accountOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.vendorAccount||"")}" title="${escapeHtml(reconFieldTitle(p,"vendorAccount"))}" onchange="updateReconField(${p.id},'vendorAccount',this.value)"></td><td><input class="ref-input" style="min-width:105px;margin-top:0${p.bankCheck&&!c.swiftOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.swift||"")}" title="${escapeHtml(reconFieldTitle(p,"swift"))}" onchange="updateReconField(${p.id},'swift',this.value)">${c.swiftBranchWarn?`<span class="status warn" style="margin-left:4px" title="${escapeHtml(c.swiftBranchWarn)}">⚠</span>`:""}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
@@ -2151,12 +2153,12 @@ function updateReconField(id,field,value){
   if(field==="beneficiary"){p.beneName=v;p.beneficiary=v;}
   else p[field]=v;
   if(window.recomputeBankCheck)window.recomputeBankCheck(p);
-  showToast(`Đã sửa ${field==="beneficiary"?"Beneficiary":field==="vendorAccount"?"Vendor Bank Account":"SWIFT"} của ${p.paymentReference} — match tính lại: ${p.bankMatched?"TRUE":"vẫn FALSE"}.`);
+  showToast(`${field==="beneficiary"?"Beneficiary":field==="vendorAccount"?"Vendor Bank Account":"SWIFT"} updated for ${p.paymentReference} — match recomputed: ${p.bankMatched?"TRUE":"still FALSE"}.`);
   window.refreshAll();
 }
 function reconFieldTitle(p,field){
   const edits=(p.fieldEdits||[]).filter(e=>e.field===field);
-  return edits.length?`Edited ${edits.length}x — last: "${edits[edits.length-1].from}" → "${edits[edits.length-1].to}" (${edits[edits.length-1].at})`:"Sửa trực tiếp — match sẽ tính lại với giá trị bank đã gửi";
+  return edits.length?`Edited ${edits.length}x — last: "${edits[edits.length-1].from}" → "${edits[edits.length-1].to}" (${edits[edits.length-1].at})`:"Edit inline — the match recomputes against what the bank sent";
 }
 // Manual match override for a DIFF row the user has verified by hand (e.g.
 // the documented bank-side bundling of two payments into one debit, or an
@@ -2165,13 +2167,13 @@ function reconFieldTitle(p,field){
 // survives re-imports (see importBankResults) until undone.
 function overrideBankMatch(id){
   const p=payments.find(x=>x.id===id);if(!p||!p.bankCheck)return;
-  const reason=prompt("Manual override — lý do (bắt buộc), ví dụ: bank gộp 2 lệnh vào 1 giao dịch / đã đối chiếu với bank:");
+  const reason=prompt("Manual override — reason (required), e.g. bank bundled two payments into one debit / verified with the bank:");
   if(reason===null)return;
-  if(!String(reason).trim()){showToast("Override cần lý do — chưa lưu.");return;}
+  if(!String(reason).trim()){showToast("Override needs a reason — not saved.");return;}
   p.bankOverride={reason:String(reason).trim(),at:new Date().toISOString().slice(0,16).replace("T"," ")};
   p.citi="CREATED";
   citiSelected.add(p.id);
-  showToast(`Đã override match cho ${p.paymentReference}.`);
+  showToast(`Match manually overridden for ${p.paymentReference}.`);
   window.refreshAll();
 }
 function undoBankOverride(id){
@@ -2179,7 +2181,7 @@ function undoBankOverride(id){
   delete p.bankOverride;
   p.citi=p.bankMatched?"CREATED":"DIFF";
   if(!p.bankMatched){citiSelected.delete(p.id);p.debit="NOT_CHECKED";}
-  showToast(`Đã bỏ override cho ${p.paymentReference}.`);
+  showToast(`Override removed for ${p.paymentReference}.`);
   window.refreshAll();
 }
 function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched||p.bankOverride)citiSelected.add(p.id);});renderCiti();}
@@ -2255,16 +2257,16 @@ function refreshApprovalDraft(){
 }
 function openApprovalEmail(){
   const byBank = approvalSelectedByBank();
-  if (!byBank.size) { showToast("Chưa có lệnh nào được tick ở Bank Reconcile."); return; }
+  if (!byBank.size) { showToast("No payments are ticked on Bank Reconcile yet."); return; }
   const sel = document.getElementById("apMailBank");
-  sel.innerHTML = [...byBank.entries()].map(([b, rows]) => `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${rows.length} lệnh)</option>`).join("");
+  sel.innerHTML = [...byBank.entries()].map(([b, rows]) => `<option value="${escapeHtml(b)}">${escapeHtml(b)} (${rows.length} payment${rows.length===1?"":"s"})</option>`).join("");
   document.getElementById("apMailOverlay").classList.add("open");
   refreshApprovalDraft();
 }
 function closeApprovalEmail(){ document.getElementById("apMailOverlay").classList.remove("open"); }
 function copyApprovalField(id, label){
   const el = document.getElementById(id);
-  navigator.clipboard.writeText(el.value).then(() => showToast(label + " đã copy vào clipboard."));
+  navigator.clipboard.writeText(el.value).then(() => showToast(label + " copied to clipboard."));
 }
 function approvalAttachmentData(bank){
   const rows = approvalSelectedByBank().get(bank) || [];
@@ -2298,18 +2300,18 @@ function approvalAttachmentData(bank){
 function downloadApprovalAttachment(){
   const bank = document.getElementById("apMailBank").value;
   const data = approvalAttachmentData(bank);
-  if (!data) { showToast("Không có lệnh nào cho bank này."); return; }
+  if (!data) { showToast("No payments for this bank."); return; }
   const { rows, detail, summary, fname } = data;
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detail), "PAYMENT LIST");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "SUMMARY");
   XLSX.writeFile(wb, fname);
-  showToast(`Đã tải ${fname} (${rows.length} lệnh, ${summary.length - 1} entity).`);
+  showToast(`Downloaded ${fname} (${rows.length} payments, ${summary.length - 1} entities).`);
 }
 function openAttachmentPreview(){
   const bank = document.getElementById("apMailBank").value;
   const data = approvalAttachmentData(bank);
-  if (!data) { showToast("Không có lệnh nào cho bank này."); return; }
+  if (!data) { showToast("No payments for this bank."); return; }
   window._xlsData = data;
   document.getElementById("xlsName").textContent = data.fname;
   document.getElementById("xlsOverlay").classList.add("open");
@@ -2326,7 +2328,7 @@ function showAttachmentSheet(which){
   const letters = cols.map((_, i) => String.fromCharCode(65 + i));
   document.getElementById("xlsMeta").textContent = which === "summary"
     ? `Sheet SUMMARY · ${data.summary.length - 1} entity · payment count and total per currency`
-    : `Sheet PAYMENT LIST · ${data.detail.length} lệnh · reference, beneficiary, amount, account and SWIFT`;
+    : `Sheet PAYMENT LIST · ${data.detail.length} payments · reference, beneficiary, amount, account and SWIFT`;
   const isNum = v => typeof v === "number";
   const body = rows.map((r, i) => `<tr><td class="xls-rowhead">${i + 2}</td>${cols.map(c => `<td class="${isNum(r[c]) ? "xls-num" : ""}${String(r[c]) === "TOTAL" || r["Entity"] === "TOTAL" ? " xls-total" : ""}">${escapeHtml(isNum(r[c]) ? r[c].toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(r[c] == null ? "" : r[c]))}</td>`).join("")}</tr>`).join("");
   document.getElementById("xlsGrid").innerHTML = `<table class="xls-table">
@@ -2341,7 +2343,7 @@ function openApprovalMailApp(){
   const subject = encodeURIComponent(document.getElementById("apMailSubject").value);
   const body = encodeURIComponent(document.getElementById("apMailBody").value);
   window.location.href = `mailto:${to}?${cc ? "cc=" + encodeURIComponent(cc) + "&" : ""}subject=${subject}&body=${body}`;
-  showToast("Đã mở bản nháp trong mail app — nhớ đính kèm file .xlsx đã tải.");
+  showToast("Draft opened in your mail app — remember to attach the downloaded .xlsx.");
 }
 
 function downloadCitiSelection(){
