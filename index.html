@@ -320,6 +320,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 .bank-sum-chips .chip .l{font-size:9.6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:750}
 .bank-sum-chips .chip .v{font-size:17px;color:var(--navy);font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
 .bank-sum-chips .chip.dark{background:#1f2937;border-color:#1f2937}
+.bank-sum-chips .chip.go{cursor:pointer;transition:box-shadow .15s}.bank-sum-chips .chip.go:hover{box-shadow:0 0 0 1.5px var(--red) inset}.bank-sum-chips .chip.go .l::after{content:" 93";color:var(--red);font-weight:800}
 .bank-sum-chips .chip.dark .l{color:#9ca3af}.bank-sum-chips .chip.dark .v{color:#fff}
 #citiPaymentSummary td.ent{font-weight:750;color:var(--navy)}
 #citiPaymentSummary tr.ccy-total td{background:#f9fafb;font-weight:750;border-top:1px solid var(--border)}
@@ -2078,7 +2079,7 @@ function renderCiti(){
         <div class="chip"><div class="l">Entities</div><div class="v">${entN}</div></div>
         <div class="chip"><div class="l">Currencies</div><div class="v">${ccyN}</div></div>
         <div class="chip"><div class="l">Matched (CREATED)</div><div class="v" style="color:var(--green)">${created}</div></div>
-        <div class="chip"><div class="l">Diff to review</div><div class="v" style="${diffN?"color:var(--red)":""}">${diffN}</div></div>`;
+        <div class="chip${diffN?" go":""}" ${diffN?'onclick="citiJumpNextDiff()" title="Click to jump to the next DIFF row in the table below (click again for the next one)"':""}><div class="l">Diff to review</div><div class="v" style="${diffN?"color:var(--red)":""}">${diffN}</div></div>`;
       const groups=new Map(); // entity -> ccy -> {n, amount, matched, diff}
       inResult.forEach(p=>{
         if(!groups.has(p.entity))groups.set(p.entity,new Map());
@@ -2095,7 +2096,7 @@ function renderCiti(){
       });
       const bodyRows=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).flatMap(([entity,byCcy])=>{
         const ccys=[...byCcy.entries()].sort((a,b)=>b[1].amount-a[1].amount);
-        return ccys.map(([ccy,cell],i)=>`<tr><td class="ent">${i===0?escapeHtml(entity):""}</td><td><span class="currency-chip">${escapeHtml(ccy)}</span></td><td class="num">${cell.n}</td><td class="num" style="color:var(--green)">${cell.matched}</td><td class="num" style="${cell.diff?"color:var(--red);font-weight:750":""}">${cell.diff||"-"}</td><td class="num amount">${fmt(cell.amount,ccy)}</td></tr>`);
+        return ccys.map(([ccy,cell],i)=>`<tr><td class="ent">${i===0?escapeHtml(entity):""}</td><td><span class="currency-chip">${escapeHtml(ccy)}</span></td><td class="num">${cell.n}</td><td class="num" style="color:var(--green)">${cell.matched}</td><td class="num" style="${cell.diff?"color:var(--red);font-weight:750;cursor:pointer;text-decoration:underline dotted":""}" ${cell.diff?`onclick="citiJumpNextDiff('${escapeHtml(entity)}')" title="Jump to the next ${escapeHtml(entity)} DIFF row"`:""}>${cell.diff||"-"}</td><td class="num amount">${fmt(cell.amount,ccy)}</td></tr>`);
       }).join("");
       const totalRows=[...ccyTotals.entries()].sort((a,b)=>b[1].amount-a[1].amount).map(([ccy,t])=>`<tr class="ccy-total"><td>Total ${escapeHtml(ccy)}</td><td><span class="currency-chip">${escapeHtml(ccy)}</span></td><td class="num">${t.n}</td><td class="num" colspan="2"></td><td class="num amount">${fmt(t.amount,ccy)}</td></tr>`).join("");
       sumEl.innerHTML=`<thead><tr><th>Entity</th><th>Currency</th><th class="num">Payments</th><th class="num">Matched</th><th class="num">Diff</th><th class="num">Total Amount</th></tr></thead><tbody>${bodyRows}${totalRows}</tbody>`;
@@ -2125,7 +2126,7 @@ function renderCiti(){
       ?`<span class="status bad" title="${escapeHtml(matchTitle)}">FALSE</span><br><button class="btn" style="padding:2px 7px;font-size:9.5px;margin-top:4px" onclick="overrideBankMatch(${p.id})" title="I checked this row myself and accept it — a reason is required">Override</button>`
       :`<span class="status gray">-</span>`;
     const checked=citiSelected.has(p.id)?"checked":"";
-    return `<tr><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num ${p.bankCheck&&!c.amountOK?"cell-diff":""}" title="${p.bankCheck&&!c.amountOK?escapeHtml("Bank result "+fmt((p.bankCheck.bank&&p.bankCheck.bank.amount)||0,p.currency)+" vs payment list "+fmt(p.amount,p.currency)):""}">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><input class="ref-input" style="min-width:170px;margin-top:0${p.bankCheck&&!c.beneficiaryOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.beneName||p.beneficiary||"")}" title="${escapeHtml(reconFieldTitle(p,"beneficiary"))}" onchange="updateReconField(${p.id},'beneficiary',this.value)"></td><td><input class="ref-input" style="min-width:130px;margin-top:0${p.bankCheck&&!c.accountOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.vendorAccount||"")}" title="${escapeHtml(reconFieldTitle(p,"vendorAccount"))}" onchange="updateReconField(${p.id},'vendorAccount',this.value)"></td><td><input class="ref-input" style="min-width:105px;margin-top:0${p.bankCheck&&!c.swiftOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.swift||"")}" title="${escapeHtml(reconFieldTitle(p,"swift"))}" onchange="updateReconField(${p.id},'swift',this.value)">${c.swiftBranchWarn?`<span class="status warn" style="margin-left:4px" title="${escapeHtml(c.swiftBranchWarn)}">⚠</span>`:""}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
+    return `<tr id="citirow-${p.id}"><td><input type="checkbox" ${checked} onchange="toggleCitiRow(${p.id},this.checked)"></td><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${statusPill(p.referenceStatus)}</td><td class="num ${p.bankCheck&&!c.amountOK?"cell-diff":""}" title="${p.bankCheck&&!c.amountOK?escapeHtml("Bank result "+fmt((p.bankCheck.bank&&p.bankCheck.bank.amount)||0,p.currency)+" vs payment list "+fmt(p.amount,p.currency)):""}">${fmt(p.amount,p.currency)}</td><td>${escapeHtml(p.ordering||p.payFrom||"-")}</td><td><input class="ref-input" style="min-width:170px;margin-top:0${p.bankCheck&&!c.beneficiaryOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.beneName||p.beneficiary||"")}" title="${escapeHtml(reconFieldTitle(p,"beneficiary"))}" onchange="updateReconField(${p.id},'beneficiary',this.value)"></td><td><input class="ref-input" style="min-width:130px;margin-top:0${p.bankCheck&&!c.accountOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.vendorAccount||"")}" title="${escapeHtml(reconFieldTitle(p,"vendorAccount"))}" onchange="updateReconField(${p.id},'vendorAccount',this.value)"></td><td><input class="ref-input" style="min-width:105px;margin-top:0${p.bankCheck&&!c.swiftOK?";border-color:var(--red);background:var(--red-bg)":""}" value="${escapeHtml(p.swift||"")}" title="${escapeHtml(reconFieldTitle(p,"swift"))}" onchange="updateReconField(${p.id},'swift',this.value)">${c.swiftBranchWarn?`<span class="status warn" style="margin-left:4px" title="${escapeHtml(c.swiftBranchWarn)}">⚠</span>`:""}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(timing.expected)}</td><td>${statusPill(p.citi)}</td><td>${matchBadge}</td><td>${diff}</td></tr>`;
   }).join("");
   document.getElementById("citiTable").innerHTML=`<thead><tr><th></th><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Reference Control</th><th class="num">ERP Group Amount</th><th>Bank Account</th><th>Beneficiary Name</th><th>Vendor Bank Account</th><th>SWIFT Code</th><th>Value Date</th><th>Expected Completion</th><th>Bank Status</th><th>Match</th><th>Difference</th></tr></thead><tbody>${rows||'<tr><td colspan="15">No exported payment data.</td></tr>'}</tbody>`;
   requestAnimationFrame(initCitiColResize);
@@ -2137,6 +2138,29 @@ function initCitiColResize(){
   initColResize("citiTable",[38,92,132,168,132,132,142,180,150,120,96,132,120,110,220]);
 }
 function toggleCitiRow(id,checked){checked?citiSelected.add(id):citiSelected.delete(id);}
+// Clicking the "Diff to review" chip (or an entity's red Diff count in the
+// summary table) scrolls straight to the next DIFF row below and flashes it
+// — no manual scrolling. Repeated clicks cycle through all DIFF rows; the
+// same set the chip counts (bank-result rows with citi === "DIFF").
+function citiJumpNextDiff(entity){
+  const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";
+  const probs=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank)&&p.bankCheck&&p.citi==="DIFF"&&(!entity||p.entity===entity));
+  if(!probs.length){showToast("No DIFF rows to review.");return;}
+  const key=entity||"__all";
+  if(window.citiDiffKey!==key){window.citiDiffKey=key;window.citiDiffCursor=-1;}
+  window.citiDiffCursor=((window.citiDiffCursor??-1)+1)%probs.length;
+  const t=probs[window.citiDiffCursor];
+  const row=document.getElementById("citirow-"+t.id);
+  if(!row)return;
+  row.scrollIntoView({behavior:"smooth",block:"center"});
+  document.querySelectorAll("tr.wb-flash").forEach(r=>r.classList.remove("wb-flash"));
+  row.classList.add("wb-flash");
+  setTimeout(()=>row.classList.remove("wb-flash"),1600);
+  const c=t.bankCheck||{};
+  const fields=[!c.amountOK?"Amount":"",!c.beneficiaryOK?"Beneficiary":"",!c.accountOK?"Account":"",!c.swiftOK?"SWIFT":""].filter(Boolean).join(" / ");
+  showToast(`DIFF ${window.citiDiffCursor+1}/${probs.length} · ${t.entity} ${t.paymentReference}${fields?" · check "+fields:""}`);
+}
+window.citiJumpNextDiff=citiJumpNextDiff;
 // Inline correction of a SOURCE value (beneficiary / vendor account / SWIFT)
 // straight from the Bank Reconcile row — for when the diff is a typo or
 // stale value in the AP file rather than a bank problem. The edit updates
