@@ -742,6 +742,165 @@ body.rail-hidden header{padding-left:44px}
   .tabbtn.active{box-shadow:none}
 }
 </style>
+
+<style>
+/* ---- Nocturne air layer (v0.7) ------------------------------------------
+   CSS-only round on top of v0.6: looser density, re-arranged blocks,
+   louder status, fading rules. No markup, no JS, no business logic touched.
+   ------------------------------------------------------------------------ */
+:root{
+  --divider:rgba(26,28,40,.11);
+  --rule:linear-gradient(90deg,transparent,rgba(26,28,40,.13) 48px,rgba(26,28,40,.13) calc(100% - 48px),transparent);
+  --shadow:0 0 0 1px rgba(26,28,40,.07);
+  --shadow-md:0 0 0 1px rgba(26,28,40,.07),0 10px 26px rgba(26,28,40,.07);
+  --radius:14px;
+  --st-good:#2f9c6f; --st-warn:#d3903f; --st-bad:#c9563a;
+}
+body{font-size:13.5px}
+
+/* --- rails and rules fade at their ends --- */
+header{
+  box-shadow:none;
+  background-color:color-mix(in srgb,#fff 62%,var(--bg));
+  background-image:var(--rule);
+  background-repeat:no-repeat;background-position:bottom left;background-size:100% 1px;
+  padding:14px 32px}
+.upload-help-strip{box-shadow:none;background:transparent;background-image:var(--rule);
+  background-repeat:no-repeat;background-position:bottom left;background-size:100% 1px;padding:9px 32px}
+.section-title{
+  box-shadow:none;border-bottom:0;
+  background-image:var(--rule);background-repeat:no-repeat;
+  background-position:bottom left;background-size:100% 1px;
+  margin:34px 0 15px;padding-bottom:10px;font-size:13.5px;letter-spacing:.005em}
+
+/* --- more air in the frame --- */
+.container{max-width:1680px;padding:26px 32px 72px}
+.page-head{
+  position:sticky;top:62px;z-index:35;margin:0 0 22px;padding:14px 18px 14px 20px;
+  border-radius:0;background:color-mix(in srgb,#fff 72%,var(--bg));backdrop-filter:blur(8px);
+  box-shadow:inset 3px 0 0 var(--accent),0 0 0 1px rgba(26,28,40,.06);align-items:center}
+.page-head h2{font-size:20px;letter-spacing:-.02em}
+.inline-actions{gap:10px}
+.card{padding:20px;border-radius:var(--radius)}
+.card h3{font-size:15px;margin-bottom:14px}
+.grid-2{gap:20px}
+.grid-3{gap:20px}
+
+/* --- blocks re-flow instead of fixed column counts --- */
+.kpi-grid{grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px}
+.reference-kpi-grid{grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:14px;margin-bottom:18px}
+.exception-grid{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;margin-bottom:18px}
+.cash-kpi-grid,.calendar-kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.cash-entity-cards{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-bottom:18px}
+.bank-master-grid{grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+.rule-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.alert-strip{grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:18px}
+.pipeline{gap:12px}
+.entity-cards{gap:16px}
+@media(min-width:1500px){.grid-2{grid-template-columns:1fr 1fr}}
+
+/* Bank Reconcile: drop-zone shrinks, the summary takes the room */
+#citi .grid-3{grid-template-columns:minmax(250px,.85fr) 2fr}
+#citi .grid-3 .card:last-child{grid-column:auto}
+
+/* --- KPI and stat cards --- */
+.kpi-card,.cash-kpi,.reference-kpi{padding:18px 18px;border-radius:var(--radius)}
+.kpi-card:before,.cash-kpi:before{width:3px}
+.kpi-card.bad,.cash-kpi.bad{background:color-mix(in srgb,var(--st-bad) 4%,#fff)}
+.kpi-card.warn,.cash-kpi.warn{background:color-mix(in srgb,var(--st-warn) 5%,#fff)}
+.kpi-value{font-size:27px;margin-top:10px}
+.kpi-sub,.cash-kpi .sub,.reference-kpi .sub{margin-top:7px;line-height:1.45}
+.reference-kpi .value{font-size:23px;margin-top:8px}
+.exception-card{padding:16px;border-radius:var(--radius)}
+.exception-card strong{font-size:23px;margin-top:7px}
+
+/* --- tables breathe --- */
+.table-wrap{border-radius:var(--radius)}
+th{padding:13px 14px}
+td{padding:11px 14px;line-height:1.5}
+.invoice-lines-table th{padding:9px 11px}
+.invoice-lines-table td{padding:9px 11px}
+tbody tr:hover td{background:#f8f9ff}
+.entity-currency-table td{padding:10px 4px}
+
+/* --- status reads at a glance --- */
+.status{padding:3px 10px 3px 8px;gap:6px;font-size:11px;letter-spacing:.01em}
+.status:before{content:"";width:6px;height:6px;flex:none;border-radius:50%;background:currentColor}
+.status.good{background:color-mix(in srgb,var(--st-good) 15%,#fff);color:#186b4c}
+.status.bad{background:color-mix(in srgb,var(--st-bad) 15%,#fff);color:#8f3520}
+.status.warn{background:color-mix(in srgb,var(--st-warn) 20%,#fff);color:#7a5410}
+.status.info,.status.purple{background:var(--accent-tint);color:var(--accent-ink)}
+.status.gray{background:rgba(26,28,40,.06);color:#5a5e70}
+.row-error td{background:color-mix(in srgb,var(--st-bad) 5%,#fff)}
+.row-error td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
+.row-alert td{background:color-mix(in srgb,var(--st-warn) 7%,#fff)}
+.row-alert td:first-child{box-shadow:inset 3px 0 0 var(--st-warn)}
+.cash-row-shortfall td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
+.cash-row-nodata td:first-child{box-shadow:inset 3px 0 0 var(--st-warn)}
+.cash-status-banner{padding:13px 16px;font-size:12px}
+td.cell-diff{background:color-mix(in srgb,var(--st-warn) 22%,#fff)!important}
+
+/* --- controls --- */
+.toolbar,.cash-toolbar{padding:16px 18px;gap:12px;margin-bottom:16px;border-radius:var(--radius)}
+.bulk-panel{padding:16px 18px;margin-bottom:18px;border-radius:var(--radius)}
+.field input,.field select,.cell-select,.date-input{padding:7px 10px}
+.btn{padding:8px 14px}
+.header-btn{height:36px;padding:0 12px}
+.upload-zone{padding:30px 22px}
+
+/* --- rail --- */
+.tabbar{padding:18px 12px;gap:3px}
+.tabbar>strong{padding:0 12px 12px;font-weight:500;line-height:1.25;letter-spacing:0}
+body.rail-mini .tabbar>strong{display:none}
+.tabbtn{padding:9px 12px}
+.rail-group{padding:18px 12px 5px}
+.rail-foot{padding:16px 12px 0;border-top:0;background-image:var(--rule);
+  background-repeat:no-repeat;background-position:top left;background-size:100% 1px}
+
+/* --- calendar --- */
+.rc-year{gap:14px;margin-bottom:20px}
+.rc-month{padding:14px 15px 16px;border-radius:var(--radius)}
+.rc-day{height:27px;font-size:11px;border-radius:8px}
+.rc-hero{gap:14px;margin-bottom:18px}
+.rc-hero .rc-next{padding:18px 20px}
+.rc-legend{gap:8px 20px;margin:4px 0 16px;font-size:11.2px}
+.rc-ccy{gap:14px;margin-bottom:20px}
+.rc-ccy .ccy-card{padding:16px 18px}
+.calendar-grid{gap:14px}
+
+/* --- audit --- */
+.audit-item{min-height:70px;grid-template-columns:120px 18px 1fr;gap:12px}
+.audit-dot:after{bottom:-58px}
+.audit-body{font-size:12px;line-height:1.5}
+
+/* --- last of the explainer prose, and the redundant footer, go --- */
+.wb-hint,footer,.card-sub,.page-head p{display:none}
+.wb-toolbar{margin-bottom:12px}
+
+/* --- issue summary box (Payment List) --- */
+.issue-box{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:15px 18px;margin-bottom:16px;
+  border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow),inset 3px 0 0 var(--st-bad);cursor:pointer}
+.issue-box:hover{box-shadow:var(--shadow-md),inset 3px 0 0 var(--st-bad)}
+.issue-box.clean{box-shadow:var(--shadow),inset 3px 0 0 var(--st-good);cursor:default}
+.issue-box .ib-count{font-size:27px;font-weight:500;letter-spacing:-.02em;color:var(--text);line-height:1;
+  font-variant-numeric:tabular-nums}
+.issue-box .ib-label{font-size:10px;font-weight:500;letter-spacing:.1em;color:#8b8fa3;text-transform:uppercase;
+  margin-bottom:7px}
+.issue-box .ib-lead{min-width:150px}
+.ib-chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.ib-chip{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;font-size:11.5px;
+  background:rgba(26,28,40,.05);color:#4a4e5e}
+.ib-chip:hover{background:var(--accent-tint);color:var(--accent-ink)}
+.ib-chip b{font-weight:500;font-variant-numeric:tabular-nums;color:var(--text)}
+.ib-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.ib-jump{display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;font-size:12px;font-weight:500;
+  background:transparent;border:1px solid var(--accent);color:var(--accent-ink);white-space:nowrap}
+.ib-jump:hover{background:var(--accent-tint)}
+.ib-ghost{padding:9px 12px;border-radius:9px;font-size:11.5px;color:#6a6e80;white-space:nowrap}
+.ib-ghost:hover{background:rgba(26,28,40,.05);color:var(--text)}
+tr.wb-issue td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
+tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25s}
+</style>
 </head>
 <body>
 <header>
@@ -752,7 +911,7 @@ body.rail-hidden header{padding-left:44px}
       <p>AP submission → Treasury enrichment → ERP CSV → bank creation → settlement and debit control</p>
     </div>
     <div class="header-actions">
-      <div class="batch-box"><small>Payment Batch</small><strong id="batchDateDisplay">–</strong></div>
+      <div class="batch-box"></div>
       <div class="batch-box" id="cutoffBox"><small>Next cut-off</small><strong id="cutoffCountdown">–</strong></div>
       <div class="batch-box"><small>Last Refresh</small><strong id="lastRefreshDisplay">–</strong></div>
       <button class="header-btn attn" id="attnBell" onclick="activateTab('exceptions')" aria-label="Items waiting on you" title="Items waiting on you">
@@ -779,10 +938,9 @@ body.rail-hidden header{padding-left:44px}
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 6 7.5 10l4 4"/></svg>
   </button>
   <div class="rail-brand">
-    <small>VNG Group Treasury</small>
-    <strong>Payment<br>Control Tower</strong>
+    <small style="font-size:13px">TREASURY</small>
   </div>
-  <div class="rail-group">Payment cycle</div>
+  <strong style="font-size:17px">Payment Control Tower</strong>
   <button class="tabbtn active" data-tab="overview">Overview</button>
   <button class="tabbtn" data-tab="workbench">Payment List</button>
   <button class="tabbtn" data-tab="erp">ERP Export</button>
@@ -828,8 +986,9 @@ body.rail-hidden header{padding-left:44px}
     <div class="inline-actions"><button class="btn" onclick="clearFilters()">Clear Filters</button><button class="btn primary" onclick="activateTab('erp')">Review ERP Export →</button></div>
   </div>
 
-  <div class="reference-kpi-grid" id="referenceKpis"></div>
-  <div id="wbActionList"></div>
+  <div id="wbIssueBox"></div>
+  <div class="reference-kpi-grid" id="referenceKpis" style="display:none"></div>
+  <div id="wbActionList" style="display:none"></div>
 
   <div class="toolbar">
     <div class="field"><label>Entity</label><select id="filterEntity" onchange="renderWorkbench()"><option value="">All</option></select></div>
@@ -1556,7 +1715,8 @@ function toggleKpiEntities(){window.kpiByEntity=!window.kpiByEntity;renderOvervi
 function currentFilters(){return{entity:document.getElementById("filterEntity").value,bank:document.getElementById("filterBank").value,currency:document.getElementById("filterCurrency").value,paymentDate:document.getElementById("filterPaymentDate").value,valueDate:document.getElementById("filterValueDate").value,timing:document.getElementById("filterTiming").value,citi:document.getElementById("filterCiti").value,search:document.getElementById("filterSearch").value.trim().toLowerCase()};}
 function filteredPayments(){const f=currentFilters();return payments.filter(p=>{
     if(window.wbFocus==="blocked"&&!p.referenceBlocked)return false;
-    if(window.wbFocus==="mapping"&&!missingMapping(p))return false;const timing=processingInfo(p);if(f.entity&&p.entity!==f.entity)return false;if(f.bank&&paymentBankLabel(p)!==f.bank)return false;if(f.currency&&p.currency!==f.currency)return false;const payKey=String(p.paymentDate||p.valueDate||"").slice(0,10);if(f.paymentDate&&payKey!==f.paymentDate)return false;if(f.valueDate&&String(p.valueDate||"").slice(0,10)!==f.valueDate)return false;if(f.timing&&timing.status!==f.timing)return false;if(f.citi&&p.citi!==f.citi)return false;const hay=`${p.entity} ${p.supplier} ${p.supplierNumber||""} ${p.invoice||p.invoiceNumber||""} ${p.beneficiary} ${p.beneName||""} ${p.paymentReference} ${p.baseReference} ${p.sourceEforms.join(" ")} ${p.invoiceLines.map(x=>x.invoice).join(" ")} ${p.detail||p.description||""} ${paymentBankLabel(p)} ${p.ordering}`.toLowerCase();if(f.search&&!hay.includes(f.search))return false;return true;});}
+    if(window.wbFocus==="mapping"&&!missingMapping(p))return false;
+    if(window.wbFocus==="issues"&&!paymentIssues(p).length)return false;const timing=processingInfo(p);if(f.entity&&p.entity!==f.entity)return false;if(f.bank&&paymentBankLabel(p)!==f.bank)return false;if(f.currency&&p.currency!==f.currency)return false;const payKey=String(p.paymentDate||p.valueDate||"").slice(0,10);if(f.paymentDate&&payKey!==f.paymentDate)return false;if(f.valueDate&&String(p.valueDate||"").slice(0,10)!==f.valueDate)return false;if(f.timing&&timing.status!==f.timing)return false;if(f.citi&&p.citi!==f.citi)return false;const hay=`${p.entity} ${p.supplier} ${p.supplierNumber||""} ${p.invoice||p.invoiceNumber||""} ${p.beneficiary} ${p.beneName||""} ${p.paymentReference} ${p.baseReference} ${p.sourceEforms.join(" ")} ${p.invoiceLines.map(x=>x.invoice).join(" ")} ${p.detail||p.description||""} ${paymentBankLabel(p)} ${p.ordering}`.toLowerCase();if(f.search&&!hay.includes(f.search))return false;return true;});}
 function initFilters(){const entities=[...new Set(payments.map(p=>p.entity))],currencies=[...new Set(payments.map(p=>p.currency))];document.getElementById("filterEntity").innerHTML='<option value="">All</option>'+entities.map(x=>`<option>${x}</option>`).join("");document.getElementById("filterBank").innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");document.getElementById("filterCurrency").innerHTML='<option value="">All</option>'+currencies.map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkMethod").innerHTML='<option value="">-- No change --</option>'+[...new Set([...methods, ...BANK_OPTIONS.map(x=>x.label)])].map(x=>`<option>${x}</option>`).join("");document.getElementById("bulkOrdering").innerHTML='<option value="">-- No change --</option>'+orderings.map(x=>`<option>${x}</option>`).join("");document.getElementById("reconBank").innerHTML='<option value="">All payment banks</option>'+optionHtmlPairs(BANK_OPTIONS,"");[["calendarEntity",entities],["calendarCurrency",currencies]].forEach(([id,vals])=>{const el=document.getElementById(id);if(el)el.innerHTML='<option value="">All</option>'+vals.map(x=>`<option>${x}</option>`).join("");});const calBank=document.getElementById("calendarBank");if(calBank)calBank.innerHTML='<option value="">All</option>'+optionHtmlPairs(BANK_OPTIONS,"");}
 function clearFilters(){["filterEntity","filterBank","filterCurrency","filterPaymentDate","filterValueDate","filterTiming","filterCiti","filterSearch"].forEach(id=>document.getElementById(id).value="");renderWorkbench();}
 
@@ -1571,7 +1731,60 @@ function renderReferenceKpis(){const items=[["Multi-invoice groups",payments.fil
     const focus=x[3];
     const on=focus&&window.wbFocus===focus;
     return `<div class="reference-kpi ${focus?"kpi-fixable":""} ${on?"on "+focus:""}" ${focus?`onclick="wbSetFocus('${focus}')" title="Show only the rows that need this fix"`:""}><div class="label">${x[0]}${focus?'<svg class="kpi-arrow" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11.5 6.5 15 10l-3.5 3.5"/></svg>':""}</div><div class="value">${x[1]}</div><div class="sub">${x[2]}</div></div>`;
-  }).join("");renderActionList();}
+  }).join("");renderActionList();renderIssueBox();}
+// One summary box for everything still needing a manual fix. Clicking it
+// filters the table to those rows and walks to the next one on each click.
+function renderIssueBox(){
+  const el=document.getElementById("wbIssueBox");if(!el)return;
+  const probs=payments.map(p=>({p,issues:paymentIssues(p)})).filter(x=>x.issues.length);
+  if(!probs.length){
+    el.innerHTML=`<div class="issue-box clean"><div class="ib-lead"><div class="ib-label">Cần sửa tay</div><div class="ib-count">0</div></div><span class="muted" style="font-size:12px">Không có lệnh nào bị chặn — sẵn sàng sang ERP Export.</span></div>`;
+    return;
+  }
+  const kinds=[["blocked","Reference bị chặn"],["mapping","Thiếu thông tin bắt buộc"]];
+  const chips=kinds.map(([k,label])=>{
+    const n=probs.filter(x=>x.issues.some(i=>i.kind===k)).length;
+    if(!n)return "";
+    return `<span class="ib-chip" onclick="event.stopPropagation();wbSetFocus('${k}')" title="Lọc bảng theo nhóm lỗi này"><b>${n}</b> ${label}</span>`;
+  }).join("");
+  const open=window.wbIssueOpen;
+  el.innerHTML=`<div class="issue-box" onclick="wbJumpNextIssue()" title="Bấm để nhảy tới lệnh cần sửa tiếp theo">
+    <div class="ib-lead"><div class="ib-label">Cần sửa tay</div><div class="ib-count">${probs.length}</div></div>
+    <div class="ib-chips">${chips}</div>
+    <div class="ib-actions">
+      <span class="ib-jump">Tới chỗ cần sửa
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11.5 6.5 15 10l-3.5 3.5"/></svg></span>
+      <span class="ib-ghost" onclick="event.stopPropagation();wbToggleIssueList()">${open?"Ẩn danh sách":"Xem danh sách"}</span>
+      ${window.wbFocus?'<span class="ib-ghost" onclick="event.stopPropagation();wbSetFocus(window.wbFocus)">Bỏ lọc</span>':""}
+    </div>
+  </div>`;
+  document.getElementById("wbActionList").style.display=open?"":"none";
+}
+function wbToggleIssueList(){window.wbIssueOpen=!window.wbIssueOpen;renderIssueBox();}
+// Walks the problem rows one by one: filters the table to issue rows, then
+// scrolls the table body to the next one and flashes it.
+function wbJumpNextIssue(){
+  const probs=payments.filter(p=>paymentIssues(p).length);
+  if(!probs.length)return;
+  if(window.wbFocus!=="issues"){
+    window.wbFocus="issues";window.wbIssueCursor=-1;
+    document.getElementById("filterSearch").value="";
+    renderWorkbench();renderReferenceKpis();
+  }
+  window.wbIssueCursor=((window.wbIssueCursor??-1)+1)%probs.length;
+  const target=probs[window.wbIssueCursor];
+  const row=document.getElementById("wbrow-"+target.id);
+  if(!row)return;
+  const wrap=row.closest(".table-wrap");
+  if(wrap)wrap.scrollTop=Math.max(0,row.offsetTop-wrap.clientHeight/3);
+  const shell=document.getElementById("wbShell");
+  const page=document.querySelector(".content")||document.querySelector("main")||document.scrollingElement;
+  if(shell&&page&&page.scrollTop!==undefined)page.scrollTop=Math.max(0,shell.offsetTop-24);
+  document.querySelectorAll("tr.wb-flash").forEach(r=>r.classList.remove("wb-flash"));
+  row.classList.add("wb-flash");
+  setTimeout(()=>row.classList.remove("wb-flash"),1400);
+  showToast(`Lệnh ${window.wbIssueCursor+1}/${probs.length} · ${paymentIssues(target).map(i=>i.label).join(" · ")}`);
+}
 function missingMapping(p){
   return paymentIssues(p).some(i=>i.kind==="mapping");
 }
@@ -1607,6 +1820,7 @@ function renderInvoiceDetails(p){const rows=p.invoiceLines.map((x,i)=>`<tr><td>$
 
 function renderWorkbench(){
   const rows=filteredPayments();
+  renderIssueBox();
   document.getElementById("visibleCount").textContent=rows.length;
   document.getElementById("selectedCount").textContent=0;
   document.getElementById("workbenchBody").innerHTML=rows.map((p,rowIdx)=>{
@@ -1618,7 +1832,7 @@ function renderWorkbench(){
     const methodLocked=!/^Citi/.test(String(bankValue||""));
     const methodValue=p.method||defaultMethodForBank(bankValue,p.currency,p.entity,p.swiftcode||p.swift);
     const chargeValue=p.charge||chargeCodeFromRaw(p.bankCharge)||defaultCharge(p.currency);
-    return `<tr>
+    return `<tr id="wbrow-${p.id}" class="${paymentIssues(p).length?"wb-issue":""}">
       <td class="num muted">${rowIdx+1}</td>
       <td>${dateLabel(p.paymentDate||p.valueDate||"")}</td>
       <td>${escapeHtml(p.supplierNumber||p.supplier||"")}</td>
