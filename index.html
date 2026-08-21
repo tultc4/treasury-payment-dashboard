@@ -77,8 +77,9 @@ header{
 .kpi-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.55px;font-weight:700}
 .kpi-value{font-size:25px;margin-top:8px;font-weight:760;color:var(--navy);font-variant-numeric:tabular-nums}
 .kpi-sub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.3}
-.grid-2{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:16px}
+.grid-2>*,.grid-3>*{min-width:0}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
 .card h3{margin:0 0 4px;font-size:14.5px;color:var(--navy)}
 .card-sub{font-size:11.5px;color:var(--muted);margin-bottom:13px}
@@ -233,7 +234,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 
 .reference-kpi-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:11px;margin-bottom:13px}
 .reference-kpi{background:white;border:1px solid var(--border);border-radius:10px;padding:12px 13px;box-shadow:var(--shadow)}
-.reference-kpi .label{font-size:9.8px;text-transform:uppercase;letter-spacing:.45px;color:var(--muted);font-weight:750}
+.reference-kpi .label{font-size:10px;text-transform:uppercase;letter-spacing:.45px;color:var(--muted);font-weight:750}
 .reference-kpi .value{font-size:21px;color:var(--navy);font-weight:780;margin-top:6px}
 .reference-kpi .sub{font-size:10.3px;color:var(--muted);margin-top:4px;line-height:1.35}
 .rule-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:13px}
@@ -249,7 +250,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 .invoice-lines-table th{position:static;background:#f3f4f6;color:#111827;font-weight:800;font-size:11px;padding:7px 8px}.invoice-lines-table td{padding:6px 8px;background:white!important;white-space:nowrap}
 .ref-input{width:100%;min-width:180px;border:1px solid #d1d5db;border-radius:6px;padding:5px 7px;margin-top:5px;font-size:10.5px;background:#fff}
 .ref-input.blocked{border-color:#df8b85;background:#fff8f7}
-.ref-meta{display:block;color:var(--muted);font-size:9.8px;margin-top:4px;line-height:1.35;white-space:normal}
+.ref-meta{display:block;color:var(--muted);font-size:10px;margin-top:4px;line-height:1.35;white-space:normal}
 .source-ref-list{display:flex;flex-wrap:wrap;gap:4px;max-width:245px;white-space:normal}
 .source-ref-chip{font-size:9px;color:#4b5563;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;padding:2px 5px}
 .reference-callout{background:#f9fafb;border:1px solid var(--border);color:#374151;border-radius:9px;padding:10px 12px;font-size:11.2px;margin:12px 0;line-height:1.45}
@@ -263,7 +264,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 .primary-bank-note strong{color:var(--navy)}
 .processing-cell{min-width:185px;white-space:normal;line-height:1.35}
 .processing-cell strong{display:block;color:var(--navy);font-size:10.8px}
-.processing-cell span{display:block;color:var(--muted);font-size:9.8px;margin-top:2px}
+.processing-cell span{display:block;color:var(--muted);font-size:10px;margin-top:2px}
 .timing-stack{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:126px}
 .date-input{border:1px solid #d1d5db;border-radius:6px;padding:5px 7px;background:#fff;font-size:10.8px;color:var(--text);min-width:124px}
 .calendar-kpis{display:grid;grid-template-columns:repeat(5,minmax(145px,1fr));gap:11px;margin-bottom:14px}
@@ -317,7 +318,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 /* Summary total payment (Bank Reconcile) */
 .bank-sum-chips{display:flex;gap:8px;flex-wrap:wrap}
 .bank-sum-chips .chip{background:#f9fafb;border:1px solid var(--border);border-radius:9px;padding:7px 12px;min-width:110px}
-.bank-sum-chips .chip .l{font-size:9.6px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:750}
+.bank-sum-chips .chip .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:750}
 .bank-sum-chips .chip .v{font-size:17px;color:var(--navy);font-weight:800;margin-top:2px;font-variant-numeric:tabular-nums}
 .bank-sum-chips .chip.dark{background:#1f2937;border-color:#1f2937}
 .bank-sum-chips .chip.go{cursor:pointer;transition:box-shadow .15s}.bank-sum-chips .chip.go:hover{box-shadow:0 0 0 1.5px var(--red) inset}.bank-sum-chips .chip.go .l::after{content:" 93";color:var(--red);font-weight:800}
@@ -326,7 +327,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
 #citiPaymentSummary tr.ccy-total td{background:#f9fafb;font-weight:750;border-top:1px solid var(--border)}
 .bank-master-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}
 .bank-tile{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:#fbfcfd}
-.bank-tile strong{display:block;color:var(--navy);font-size:11.5px}.bank-tile span{display:block;color:var(--muted);font-size:9.8px;margin-top:4px;line-height:1.35}
+.bank-tile strong{display:block;color:var(--navy);font-size:11.5px}.bank-tile span{display:block;color:var(--muted);font-size:10px;margin-top:4px;line-height:1.35}
 .forecast-bar{height:8px;background:#e7edf2;border-radius:10px;overflow:hidden;margin-top:7px}.forecast-bar span{display:block;height:100%;background:#374151}
 .buffer-note{font-size:9.7px;color:var(--muted);display:block;margin-top:3px}
 .cash-kpi-grid{grid-template-columns:repeat(5,minmax(150px,1fr))}
@@ -551,7 +552,7 @@ tbody tr:hover td{background:#fafbff}
 .bank-tile{background:var(--surface-2);border:0;border-radius:10px;padding:12px 13px}
 .bank-tile strong{color:var(--text);font-weight:500;font-size:12px}
 .bank-sum-chips .chip{background:var(--surface-2);border:0;border-radius:9px;padding:8px 13px}
-.bank-sum-chips .chip .l{color:#8b8fa3;font-weight:500;letter-spacing:.1em;font-size:9.6px}
+.bank-sum-chips .chip .l{color:#8b8fa3;font-weight:500;letter-spacing:.1em;font-size:10px}
 .bank-sum-chips .chip .v{color:var(--text);font-weight:500;font-size:18px}
 .bank-sum-chips .chip.dark{background:color-mix(in srgb,var(--accent) 22%,transparent);border:0}
 .bank-sum-chips .chip.dark .l{color:var(--accent-ink)}
@@ -636,7 +637,7 @@ footer{color:#9296aa;font-size:10.5px;padding:22px}
   font-size:11px;color:var(--muted)}
 .wb-filter-row{display:grid;grid-template-columns:104px 1fr;align-items:center;gap:8px;margin-bottom:7px}
 .wb-filter-row span{font-size:10.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wb-filter-row input{border:1px solid #cfd3e5;border-radius:7px;padding:4px 8px;font-size:11.5px;background:#fff;color:var(--text)}
+.wb-filter-row input{border:1px solid #cfd3e5;border-radius:8px;padding:4px 8px;font-size:11.5px;background:#fff;color:var(--text)}
 .wb-filter-foot{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;
   box-shadow:inset 0 1px 0 var(--divider);font-size:11px;color:var(--muted)}
 .wb-filter-foot span{flex:1}
@@ -901,7 +902,7 @@ body.rail-mini .tabbar>strong{display:none}
 .ib-jump{display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:9px;font-size:12px;font-weight:500;
   background:transparent;border:1px solid var(--accent);color:var(--accent-ink);white-space:nowrap}
 .ib-jump:hover{background:var(--accent-tint)}
-.ib-ghost{padding:9px 12px;border-radius:9px;font-size:11.5px;color:#6a6e80;white-space:nowrap}
+.ib-ghost{padding:9px 12px;border-radius:9px;font-size:11.5px;color:var(--muted);white-space:nowrap}
 .ib-ghost:hover{background:rgba(26,28,40,.05);color:var(--text)}
 tr.wb-issue td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
 tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25s}
@@ -928,11 +929,11 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 </header>
 <div class="demo-ribbon">INTERACTIVE UI DRAFT v0.4 · AP upload = select one AP summary workbook · Bank Result = upload the bank creation / payment result workbook · Statement = upload the transaction-level bank statement detail file.</div>
 <button class="rail-show" id="railShow" onclick="toggleRail()" title="Show the rail" aria-label="Show the rail">
-  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6l4 4-4 4"/></svg>
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6l4 4-4 4"/></svg>
 </button>
 <nav class="tabbar" id="tabbar">
   <button class="rail-toggle" onclick="toggleRail()" title="Hide the rail" aria-label="Hide the rail">
-    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 6 7.5 10l4 4"/></svg>
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 6 7.5 10l4 4"/></svg>
   </button>
   <div class="rail-brand">
     <small style="font-size:13px">TREASURY</small>
@@ -1150,7 +1151,7 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
 </section>
 
 </main>
-<div class="ap-mail-overlay" id="apMailOverlay" onclick="if(event.target===this)closeApprovalEmail()">
+<div class="ap-mail-overlay" id="apMailOverlay" role="dialog" aria-modal="true" aria-label="Approval email composer" onclick="if(event.target===this)closeApprovalEmail()">
   <div class="ap-mail">
     <h3>Approval email</h3>
     <div class="sub">Pre-drafted approval email for the payments ticked on Bank Reconcile — edit anything before sending.</div>
@@ -1175,7 +1176,7 @@ tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25
     <div class="hint"><strong>Note:</strong> mail apps cannot attach files automatically — click <strong>Download attachment</strong> first, then drag the .xlsx into the draft after "Open in mail app" (or copy subject/body into Outlook). The attachment holds a <strong>PAYMENT LIST</strong> sheet (every order) and a <strong>SUMMARY</strong> sheet (payment count + totals per currency, by entity). To/Cc addresses are remembered per bank.</div>
   </div>
 </div>
-<div class="xls-overlay" id="xlsOverlay" onclick="if(event.target===this)closeAttachmentPreview()">
+<div class="xls-overlay" id="xlsOverlay" role="dialog" aria-modal="true" aria-label="Attachment preview" onclick="if(event.target===this)closeAttachmentPreview()">
   <div class="xls-win">
     <div class="xls-head">
       <div>
@@ -2061,7 +2062,46 @@ function tblExportCsv(tableId,name){
   if(window.showToast)showToast("Exported "+Math.max(0,data.length-1)+" row(s) to CSV.");
 }
 window.tblExportCsv=tblExportCsv;
+// Accessibility pass, re-applied with the table toolkit: column-header
+// scope, and accessible names for every control that only had a visual
+// context (row selects/inputs take their column header; toolbar fields
+// take their .field label). Idempotent — skips anything already named.
+function a11yPass(){
+  document.querySelectorAll("thead th:not([scope])").forEach(th=>th.setAttribute("scope","col"));
+  document.querySelectorAll("table").forEach(t=>{
+    const heads=[...t.querySelectorAll("thead th")].map(th=>th.textContent.trim());
+    if(!heads.length)return;
+    t.querySelectorAll("tbody td select:not([aria-label]), tbody td input:not([aria-label]):not([type=checkbox])").forEach(el=>{
+      const td=el.closest("td");if(!td)return;
+      const row=td.parentElement,i=[...row.children].indexOf(td);
+      if(row.children.length!==heads.length)return;
+      const ref=(row.querySelector(".payment-ref")||{}).textContent||"";
+      el.setAttribute("aria-label",(heads[i]||"Value")+(ref?" — "+ref.trim():""));
+    });
+    t.querySelectorAll("tbody td input[type=checkbox]:not([aria-label])").forEach(el=>{
+      const ref=(el.closest("tr")?.querySelector(".payment-ref")||{}).textContent||"";
+      el.setAttribute("aria-label","Select row"+(ref?" "+ref.trim():""));
+    });
+  });
+  document.querySelectorAll(".field").forEach(f=>{
+    const lab=f.querySelector("label"),ctl=f.querySelector("select,input");
+    if(!lab||!ctl)return;
+    if(ctl.id){if(!lab.htmlFor)lab.htmlFor=ctl.id;}
+    else if(!ctl.getAttribute("aria-label"))ctl.setAttribute("aria-label",lab.textContent.trim());
+  });
+  // label immediately before a control with an id (modal fields) -> link it
+  document.querySelectorAll("select[id],input[id]").forEach(ctl=>{
+    if(ctl.getAttribute("aria-label")||document.querySelector('label[for="'+ctl.id+'"]'))return;
+    const prev=ctl.previousElementSibling;
+    if(prev&&prev.tagName==="LABEL")prev.htmlFor=ctl.id;
+  });
+  document.querySelectorAll("select:not([aria-label]):not([id]),input[type=text]:not([aria-label]):not([id]):not([placeholder])").forEach(el=>{
+    if(el.closest("table")||el.closest(".field"))return;
+    if(el.title)el.setAttribute("aria-label",el.title);
+  });
+}
 function enhanceTables(){
+  a11yPass();
   document.querySelectorAll(".table-wrap>table").forEach(t=>{
     if(!t.id)return;
     const wrap=t.parentElement;
@@ -2112,6 +2152,15 @@ new MutationObserver(()=>{clearTimeout(window._tblEnhT);window._tblEnhT=setTimeo
   .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
 setTimeout(enhanceTables,250);
 
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  const mail=document.getElementById("apMailOverlay");
+  if(mail&&mail.classList.contains("open")){window.closeApprovalEmail&&closeApprovalEmail();return;}
+  const xls=document.getElementById("xlsOverlay");
+  if(xls&&xls.classList.contains("open")){window.closeAttachmentPreview&&closeAttachmentPreview();return;}
+  const pop=document.getElementById("wbFilterPop");
+  if(pop&&pop.classList.contains("open"))pop.classList.remove("open");
+});
 document.addEventListener("click",e=>{
   const pop=document.getElementById("wbFilterPop");
   if(pop&&pop.classList.contains("open")&&!pop.contains(e.target)&&!e.target.closest("#wbFilterBtn"))pop.classList.remove("open");
