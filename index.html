@@ -388,7 +388,7 @@ input,select,textarea,button{font-family:inherit}
 .tabbtn:before{content:none}
 .tabbtn:hover{background:var(--surface-2);color:var(--text)}
 .tabbtn.active{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent-ink);
-  font-weight:500;border-bottom-color:transparent;box-shadow:inset 2px 0 0 var(--accent)}
+  font-weight:500;border-bottom-color:transparent;box-shadow:none}
 .rail-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--divider)}
 .rail-foot small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8b8fa3}
 .rail-foot strong{display:block;margin-top:3px;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
@@ -1707,7 +1707,6 @@ function showToast(msg){const t=document.getElementById("toast");t.textContent=m
 function activateTab(id){
   document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
   document.querySelectorAll(".tabpanel").forEach(p=>p.classList.toggle("active",p.id===id));
-  location.hash=id;
   const crumbNow=document.querySelector("#crumb .crumb-now");
   const railBtn=document.querySelector('.tabbtn[data-tab="'+id+'"]');
   if(crumbNow&&railBtn)crumbNow.textContent=railBtn.textContent.trim();
@@ -2834,7 +2833,8 @@ function renderCash(){
 
 
 preparePaymentData();initFilters();renderOverview();renderWorkbench();renderErp();renderCiti();renderDebit();renderCalendar();renderExceptions();renderCash();renderMasterTables();
-const startTab=location.hash.replace("#","");if(startTab&&document.getElementById(startTab))activateTab(startTab);
+activateTab("overview"); // landing page is Overview; the old #hash deep-link no longer sticks
+if(location.hash)history.replaceState(null,"",location.pathname+location.search);
 </script>
 
 <input type="file" id="apImportInput" class="hidden" accept=".xlsx,.xlsm,.csv" />
