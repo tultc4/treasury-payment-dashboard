@@ -393,6 +393,7 @@ input,select,textarea,button{font-family:inherit}
 .rail-foot small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8b8fa3}
 .rail-foot strong{display:block;margin-top:3px;font-size:14px;font-weight:500;font-variant-numeric:tabular-nums}
 .rail-foot span{display:block;margin-top:2px;font-size:11px;color:var(--muted)}
+.rail-ava{width:28px;height:28px;border-radius:50%;background:var(--accent-tint);color:var(--accent-ink);display:grid;place-items:center;font-weight:600;font-size:12.5px;flex:none}
 
 /* --- header --- */
 header{position:sticky;top:0;z-index:40;padding:12px 22px;border-bottom:0;
@@ -990,7 +991,6 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 <body>
 <header>
   <div class="header-row">
-    <div class="crumb" id="crumb"><span>Oversea Treasury</span><span class="crumb-sep">/</span><span class="crumb-now">Overview</span></div>
     <div class="brand">
       <h1>Treasury Payment Control Tower</h1>
       <p>AP submission → Treasury enrichment → ERP CSV → bank creation → settlement and debit control</p>
@@ -1033,9 +1033,10 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   <button class="tabbtn" data-tab="exceptions">Exceptions</button>
   <button class="tabbtn" data-tab="master">Master Data &amp; Audit</button>
   <div class="rail-foot">
-    <small>Next run day</small>
-    <strong id="railRunDay">–</strong>
-    <span id="railRunNote">Wednesdays · cut-off 14:00 ICT</span>
+    <div style="display:flex;align-items:center;gap:9px">
+      <span class="rail-ava">S</span>
+      <div><strong style="margin-top:0">Stella</strong><span>Oversea Treasury</span></div>
+    </div>
   </div>
 </nav>
 
@@ -1695,9 +1696,6 @@ function showToast(msg){const t=document.getElementById("toast");t.textContent=m
 function activateTab(id){
   document.querySelectorAll(".tabbtn").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));
   document.querySelectorAll(".tabpanel").forEach(p=>p.classList.toggle("active",p.id===id));
-  const crumbNow=document.querySelector("#crumb .crumb-now");
-  const railBtn=document.querySelector('.tabbtn[data-tab="'+id+'"]');
-  if(crumbNow&&railBtn)crumbNow.textContent=railBtn.textContent.trim();
   if(id==="overview")renderOverview();
   if(id==="workbench")renderWorkbench();
   if(id==="erp")renderErp();
@@ -1714,7 +1712,7 @@ document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>activateTab(b.data
 function renderOverview(){
   const total=payments.length,multi=payments.filter(p=>p.invoiceCount>1).length,refBlocks=payments.filter(p=>p.referenceBlocked).length;
   const ready=payments.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=payments.filter(p=>p.exported).length,created=payments.filter(p=>p.citi==="CREATED").length,debited=payments.filter(p=>p.debit==="DEBIT_CONFIRMED").length,overdue=payments.filter(p=>processingInfo(p).status==="OVERDUE").length,ex=exceptions().length,complete=payments.filter(isComplete).length;
-  const kpis=[["Payment groups",total,"Parsed AP payment groups",""],["Multi-invoice groups",multi,"One bank payment, multiple ERP lines","purple"],["Reference blocked",refBlocks,"Manual action required",refBlocks?"bad":"good"],["ERP ready",ready,`${pct(ready,payments.filter(p=>p.include).length)}% of selected`,"good"],["ERP exported",exported,`${pct(exported,payments.filter(p=>p.include).length)}% of selected`,"good"],["Bank created",created,`${pct(created,exported)}% of exported`,"good"],["Debit confirmed",debited,`${pct(debited,created)}% of created`,"good"],["Settlement overdue",overdue,`${ex} open exceptions`,overdue?"bad":"good"]];
+  const kpis=[["Payment groups",total,"Parsed AP payment groups",""],["Reference blocked",refBlocks,"Manual action required",refBlocks?"bad":"good"],["ERP ready",ready,`${pct(ready,payments.filter(p=>p.include).length)}% of selected`,"good"],["ERP exported",exported,`${pct(exported,payments.filter(p=>p.include).length)}% of selected`,"good"],["Bank created",created,`${pct(created,exported)}% of exported`,"good"],["Debit confirmed",debited,`${pct(debited,created)}% of created`,"good"],["Settlement overdue",overdue,"Expected completion passed",overdue?"bad":"good"]];
   const entityCounts=[...new Set(payments.map(p=>p.entity))]
     .map(e=>({e,n:payments.filter(p=>p.entity===e).length,blocked:payments.filter(p=>p.entity===e&&p.referenceBlocked).length}))
     .sort((a,b)=>b.n-a.n);
@@ -3594,8 +3592,6 @@ function openApImport(){ document.getElementById('apImportInput').click(); }
     var box = document.getElementById("cutoffBox");
     if (box) box.querySelector("small").textContent =
       "Cut-off Wed " + target.getUTCDate() + " " + MON[target.getUTCMonth()] + " 14:00 ICT";
-    var rail = document.getElementById("railRunDay");
-    if (rail) rail.textContent = "Wed " + target.getUTCDate() + " " + MON[target.getUTCMonth()] + " " + target.getUTCFullYear();
   }
   tick();
   setInterval(tick, 30000);
