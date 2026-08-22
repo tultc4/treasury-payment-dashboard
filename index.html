@@ -340,7 +340,7 @@ footer{text-align:center;color:var(--muted);font-size:10.5px;padding:18px}
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("tctTheme")||"light");}catch(e){}</script>
 <style>
 /* ---- Nocturne light reskin layer (v0.6) ---------------------------------
@@ -910,6 +910,20 @@ body.rail-mini .tabbar>strong{display:none}
 .ib-ghost:hover{background:rgba(26,28,40,.05);color:var(--text)}
 tr.wb-issue td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
 tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25s}
+
+/* ---- Heading emphasis + table type uniformity (2026-08-22) --------------
+   Headings were weight 500 across the board and read washed-out; only
+   loaded weights are used (no faux bold). Inside any one table, primary
+   cell text and in-cell controls share one size (12.5px); small sub-labels
+   stay a deliberate step down. ------------------------------------------ */
+.page-head h2{font-weight:700}
+.brand h1{font-weight:700;letter-spacing:-.01em}
+.card h3,.wb-toolbar strong{font-weight:600}
+.bulk-head strong{font-weight:600}
+td{font-size:12.5px}
+.cell-select,.ref-input,.eform-override,.date-input{font-size:12.5px}
+.field select,.field input{font-size:12.5px}
+.payment-ref{font-size:12px}
 
 /* ---- Dark theme (user-selectable; light remains the default) ----------- */
 html{color-scheme:light}
