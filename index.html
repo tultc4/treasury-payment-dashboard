@@ -747,7 +747,7 @@ body.rail-hidden header{padding-left:44px}
   body{padding-left:0}
   .tabbar{position:static;width:auto;flex-direction:row;height:auto;bottom:auto;
     overflow-x:auto;box-shadow:inset 0 -1px 0 var(--divider);padding:0 12px;background:#fff}
-  .rail-brand,.rail-group,.rail-foot{display:none}
+  .rail-brand,.rail-group,.rail-foot,.rail-toggle,.rail-show{display:none}
   .tabbtn{width:auto;box-shadow:none}
   .tabbtn.active{box-shadow:none}
 }
@@ -911,6 +911,23 @@ body.rail-mini .tabbar>strong{display:none}
 tr.wb-issue td:first-child{box-shadow:inset 3px 0 0 var(--st-bad)}
 tr.wb-flash td{background:var(--accent-tint)!important;transition:background .25s}
 
+/* ---- Attention panel + V2 KPI extras + compact workbench columns ------- */
+.attn-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:6px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.attn-head{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 0 4px}
+.attn-row{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--divider);font-size:13px}
+.attn-row:last-child{border-bottom:0}
+.attn-dot{width:9px;height:9px;border-radius:50%;flex:none}
+.attn-crit .attn-dot{background:#c9563a}
+.attn-warn .attn-dot{background:#d5a63a}
+.attn-act .attn-dot{background:var(--accent)}
+.attn-info .attn-dot{background:#5fbf8f}
+.attn-row .btn{margin-left:auto;padding:3px 10px;font-size:11.5px;white-space:nowrap}
+.kpi-bar{height:5px;border-radius:99px;background:var(--surface-2);margin-top:6px;overflow:hidden}
+.kpi-bar span{display:block;height:100%;background:var(--accent);border-radius:99px}
+.kpi-card .kpi-value{font-weight:600}
+#wbTable.cols-compact th:nth-child(n+12),#wbTable.cols-compact td:nth-child(n+12){display:none}
+#wbTable.cols-compact tr.lines-row td{display:table-cell}
+
 /* ---- Heading emphasis + table type uniformity (2026-08-22) --------------
    Headings were weight 500 across the board and read washed-out; only
    loaded weights are used (no faux bold). Inside any one table, primary
@@ -1044,17 +1061,19 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
     <small style="font-size:13px">TREASURY</small>
   </div>
   <strong style="font-size:17px">Payment Control Tower</strong>
-  <button class="tabbtn active" data-tab="overview">Overview</button>
+  <button class="tabbtn active" data-tab="overview">Control Tower</button>
+  <div class="rail-group">Payments</div>
   <button class="tabbtn" data-tab="workbench">Payment List</button>
   <button class="tabbtn" data-tab="erp">ERP Export</button>
-  <button class="tabbtn" data-tab="citi">Bank Reconcile</button>
-  <button class="tabbtn" data-tab="statement">Bank Debit</button>
-  <div class="rail-group">Position</div>
-  <button class="tabbtn" data-tab="cash">Cash Position</button>
   <button class="tabbtn" data-tab="calendar">Processing Calendar</button>
+  <div class="rail-group">Reconciliation</div>
+  <button class="tabbtn" data-tab="citi">Bank Creation</button>
+  <button class="tabbtn" data-tab="statement">Bank Debit</button>
+  <div class="rail-group">Liquidity</div>
+  <button class="tabbtn" data-tab="cash">Cash Position</button>
   <div class="rail-group">Control</div>
   <button class="tabbtn" data-tab="exceptions">Exceptions</button>
-  <button class="tabbtn" data-tab="master">Master Data &amp; Audit</button>
+  <button class="tabbtn" data-tab="master">Admin</button>
   <div class="rail-foot">
     <div style="display:flex;align-items:center;gap:9px">
       <span class="rail-ava">S</span>
@@ -1066,9 +1085,10 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 <main class="container">
 <section id="overview" class="tabpanel active">
   <div class="page-head">
-    <div><h2>Payment Batch Overview</h2></div>
+    <div><h2>Control Tower</h2></div>
     <div class="inline-actions"><button class="btn primary" onclick="activateTab('workbench')">Open Payment List →</button></div>
   </div>
+  <div class="attn-panel" id="attentionPanel"></div>
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="section-title">Management view</div>
   <div class="card"><h3>Entity status</h3><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
@@ -1108,7 +1128,7 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
         <div class="field"><label>Set Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
         <div class="field"><label>Set Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
         <div class="field"><label>Set Value Date</label><input type="date" id="bulkValueDate"></div>
-        <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
+        <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button><button class="btn" id="bulkUndoBtn" style="display:none" onclick="undoBulk()">↩ Undo last bulk</button>
       </div>
     </div>
   </div>
@@ -1119,6 +1139,7 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
     <div class="wb-tools">
       <button class="btn icon" onclick="openApImport()" title="Import AP payment list (.xlsx, .xls or .csv)"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.5V3.4m0 0L6.8 6.6M10 3.4l3.2 3.2M4 15.5h12"/></svg></button>
       <button class="btn icon" onclick="downloadWorkbenchCsv()" title="Export the visible rows to CSV"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M10 3v9m0 0 3.2-3.2M10 12 6.8 8.8M4 15.5h12"/></svg></button>
+      <button class="btn icon" onclick="wbToggleCols()" id="wbColsBtn" title="Show all columns (Charges, Bank charge, Detail, Account, Swift are hidden by default)"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 10s2.6-4.8 7-4.8S17 10 17 10s-2.6 4.8-7 4.8S3 10 3 10z"/><circle cx="10" cy="10" r="2.1"/></svg></button>
       <button class="btn icon" onclick="wbToggleFilter()" id="wbFilterBtn" title="Filter columns"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 4.6h13.2l-5.1 6v5.2l-3-1.6v-3.6z"/></svg></button>
       <button class="btn icon" onclick="tblOpenWindow('wbTable')" id="wbExpandBtn" title="Open this table in a new window"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 4h4v4M8 16H4v-4M16 4l-5 5M4 16l5-5"/></svg></button>
     </div>
@@ -1220,7 +1241,7 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 
 
 <section id="master" class="tabpanel">
-  <div class="page-head"><div><h2>Master Data & Audit</h2></div></div>
+  <div class="page-head"><div><h2>Admin — Master Data & Audit</h2></div></div>
   <div class="grid-3">
     <div class="card"><h3>Account master</h3><div class="validation-list"><div class="validation-item"><span>Active bank accounts</span><strong>49</strong></div><div class="validation-item"><span>Entity coverage</span><strong>8</strong></div><div class="validation-item"><span>Unmapped statement accounts</span><strong>0</strong></div></div></div>
     <div class="card"><h3>Payment-reference control</h3><div class="validation-list"><div class="validation-item"><span>PAYMENT_GROUP_ID</span><span class="status good">Required</span></div><div class="validation-item"><span>SOURCE_FILE / SOURCE_ROW</span><span class="status good">Required</span></div><div class="validation-item"><span>ORIGINAL_EFORM</span><span class="status good">Required</span></div><div class="validation-item"><span>MANUAL_REFERENCE_OVERRIDE</span><span class="status info">Optional</span></div></div></div>
@@ -1236,14 +1257,14 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   </div></div>
   <div class="section-title">Processing SLA & Holiday Calendar</div>
   <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
-  <div class="section-title">Audit timeline</div>
-  <div><div class="card"><div class="audit-timeline">
-    <div class="audit-item"><div class="audit-time">22 Jul · 09:18</div><div class="audit-dot"></div><div class="audit-body"><strong>AP batch refreshed</strong><br><span class="muted">7 entities · parser contract passed · user: CM01</span></div></div>
-    <div class="audit-item"><div class="audit-time">22 Jul · 09:19</div><div class="audit-dot"></div><div class="audit-body"><strong>Payment references derived</strong><br><span class="muted">Last-E-form rule applied · repeated bases suffixed · prior bank history checked</span></div></div>
-    <div class="audit-item"><div class="audit-time">22 Jul · 09:20</div><div class="audit-dot"></div><div class="audit-body"><strong>Settlement forecast calculated</strong><br><span class="muted">Value Date + SLA business days + weekend / holiday adjustments</span></div></div>
-    <div class="audit-item"><div class="audit-time">22 Jul · 09:34</div><div class="audit-dot"></div><div class="audit-body"><strong>Bulk payment setup applied</strong><br><span class="muted">ZPI · SGD · 3 payment groups · method, charge and bank account updated</span></div></div>
-    <div class="audit-item"><div class="audit-time">22 Jul · 10:05</div><div class="audit-dot"></div><div class="audit-body"><strong>ERP CSV exported</strong><br><span class="muted">6 entities · validation passed</span></div></div>
-  </div></div></div>
+  <div class="section-title">Settings</div>
+  <div class="card"><div class="bulk-fields" style="grid-template-columns:1.4fr 1.4fr auto;max-width:640px">
+    <div class="field"><label>Operator name (badge & audit log)</label><input id="operatorNameInput" type="text"></div>
+    <div class="field"><label>ERP CREATED_BY (export column)</label><input id="erpCreatedByInput" type="text"></div>
+    <button class="btn primary" onclick="saveOperatorName(document.getElementById('operatorNameInput').value);localStorage.setItem('tctErpCreatedBy',document.getElementById('erpCreatedByInput').value.trim()||'Tultc4');showToast('Settings saved.')">Save</button>
+  </div></div>
+  <div class="section-title">Audit log</div>
+  <div><div class="card"><div class="audit-timeline" id="auditLogList"></div></div></div>
 </section>
 
 </main>
@@ -1678,6 +1699,7 @@ function derivePaymentReferences(){
 }
 function erpStatus(p){
   if(!p.include)return "EXCLUDED";
+  if(!(Number(p.amount)>0))return "INVALID_AMOUNT";
   if(p.referenceBlocked)return "REFERENCE_BLOCKED";
   if(!p.method||!p.charge||!p.ordering||!p.valueDate)return "CM_INPUT_REQUIRED";
   if(!p.approved)return "CM_APPROVAL_PENDING";
@@ -1688,7 +1710,7 @@ function isComplete(p){return p.exported&&p.citi==="CREATED"&&p.debit==="DEBIT_C
 function statusPill(text){
   let cls="gray";
   if(["READY","EXPORTED","CREATED","DEBIT_CONFIRMED","PASS","FRESH","SUFFICIENT","UNIQUE","AUTO_SUFFIXED","MANUAL_OVERRIDE","ON_TRACK","COMPLETED"].includes(text))cls="good";
-  else if(["CM_INPUT_REQUIRED","NOT_CREATED","DEBIT_AMOUNT_DIFF","BLOCKER","FAIL","SHORTFALL","REFERENCE_BLOCKED","DUPLICATE_IN_BANK","DUPLICATE_IN_BATCH","MISSING_REFERENCE"].includes(text))cls="bad";
+  else if(["CM_INPUT_REQUIRED","NOT_CREATED","DEBIT_AMOUNT_DIFF","BLOCKER","FAIL","SHORTFALL","REFERENCE_BLOCKED","DUPLICATE_IN_BANK","DUPLICATE_IN_BATCH","MISSING_REFERENCE","INVALID_AMOUNT"].includes(text))cls="bad";
   else if(["CM_APPROVAL_PENDING","PENDING_DEBIT","DIFF","STALE","HIGH","NO_BALANCE_DATA","DUE_TODAY","HOLIDAY_ADJUSTED"].includes(text))cls="warn";
   else if(["NOT_CHECKED","EXCLUDED","MEDIUM","NO_DATA","NO PAYMENT"].includes(text))cls="gray";
   else cls="info";
@@ -1703,6 +1725,7 @@ function exceptions(){
     if(p.referenceStatus==="DUPLICATE_IN_BANK")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Reference already exists in prior bank history",action:"Enter a unique manual reference override"});
     if(p.referenceStatus==="DUPLICATE_IN_BATCH")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Final Payment Reference is duplicated within the current batch",action:"Review grouping or enter a unique manual override"});
     if(p.referenceStatus==="MISSING_REFERENCE")list.push({stage:"REFERENCE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"No E-form is available in the payment group",action:"Enter a manual Payment Reference"});
+    if(e==="INVALID_AMOUNT")list.push({stage:"AP / CM",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment amount is zero or negative",action:"Correct the amount in the source AP file"});
     if(e==="CM_INPUT_REQUIRED")list.push({stage:"AP / CM",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Method, Bank Charge, Bank Account or Value Date is missing",action:"Complete the payment setup"});
     if(e==="CM_APPROVAL_PENDING")list.push({stage:"AP / CM",severity:"HIGH",entity:p.entity,eform:ref,issue:"Payment setup is available but CM approval is pending",action:"Review and tick CM Approved"});
     if(p.exported&&p.citi==="NOT_CREATED")list.push({stage:"BANK CREATE",severity:"BLOCKER",entity:p.entity,eform:ref,issue:"Payment Reference was not found in the payment-bank result",action:"Check ERP and bank creation"});
@@ -1734,17 +1757,50 @@ document.querySelectorAll(".tabbtn").forEach(b=>b.onclick=()=>activateTab(b.data
 
 function renderOverview(){
   const total=payments.length,multi=payments.filter(p=>p.invoiceCount>1).length,refBlocks=payments.filter(p=>p.referenceBlocked).length;
-  const ready=payments.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=payments.filter(p=>p.exported).length,created=payments.filter(p=>p.citi==="CREATED").length,debited=payments.filter(p=>p.debit==="DEBIT_CONFIRMED").length,overdue=payments.filter(p=>processingInfo(p).status==="OVERDUE").length,ex=exceptions().length,complete=payments.filter(isComplete).length;
-  const kpis=[["Payment groups",total,"Parsed AP payment groups",""],["Reference blocked",refBlocks,"Manual action required",refBlocks?"bad":"good"],["ERP ready",ready,`${pct(ready,payments.filter(p=>p.include).length)}% of selected`,"good"],["ERP exported",exported,`${pct(exported,payments.filter(p=>p.include).length)}% of selected`,"good"],["Bank created",created,`${pct(created,exported)}% of exported`,"good"],["Debit confirmed",debited,`${pct(debited,created)}% of created`,"good"],["Settlement overdue",overdue,"Expected completion passed",overdue?"bad":"good"]];
+  const ready=payments.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=payments.filter(p=>p.exported).length,created=payments.filter(p=>p.citi==="CREATED").length,debited=payments.filter(p=>p.debit==="DEBIT_CONFIRMED").length,overdue=payments.filter(p=>processingInfo(p).status==="OVERDUE").length,ex=(window.openExceptions?openExceptions():exceptions()).length,complete=payments.filter(isComplete).length;
+  // ---- review-board V2 KPI row: value, funding gap, risk, cut-off, progress, exceptions ----
+  const byCcy={};payments.forEach(p=>{byCcy[p.currency]=(byCcy[p.currency]||0)+Number(p.amount||0);});
+  // indicative weights ONLY for ordering the currency list (never displayed
+  // as converted amounts) — otherwise VND/IDR always outrank USD numerically
+  const ORDER_FX={USD:1,SGD:.78,CNY:.14,MYR:.21,THB:.028,PHP:.017,KRW:.00072,IDR:.00006,VND:.00004};
+  const ccyList=Object.entries(byCcy).sort((a,b)=>(b[1]*(ORDER_FX[b[0]]||.01))-(a[1]*(ORDER_FX[a[0]]||.01)));
+  const fmtC=n=>n>=1e9?(n/1e9).toFixed(1)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(0)+"k":String(Math.round(n));
+  const shortfalls=(typeof accounts!=="undefined"?accounts:[]).map(a=>({a,f:accountFunding(a)})).filter(x=>x.f.fundingStatus==="SHORTFALL");
+  const diffN=payments.filter(p=>p.exported&&p.citi==="DIFF").length,notCreated=payments.filter(p=>p.exported&&p.citi==="NOT_CREATED").length;
+  const atRisk=diffN+notCreated+overdue;
+  const toExport=payments.filter(p=>p.include&&!p.exported&&erpStatus(p)!=="EXCLUDED").length;
+  let nextRun=null;{const d=new Date();for(let i=0;i<45;i++){const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()+i);if(typeof isRunDay==="function"&&isRunDay(t)){nextRun=t;break;}}}
+  const nextRunLabel=nextRun?nextRun.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}):"—";
+  const openEx=(window.openExceptions?openExceptions():exceptions());
+  const oldestEx=openEx.reduce((mx,x)=>Math.max(mx,(window.exAge&&window.exMeta)?exAge(exKey(x)):0),0);
+  const issues=payments.filter(p=>paymentIssues(p).length).length;
+  const kpis=[
+    ["Total run value",ccyList.length?`${fmtC(ccyList[0][1])} ${ccyList[0][0]}`:"—",ccyList.length>1?ccyList.slice(1,3).map(([c,v])=>`${fmtC(v)} ${c}`).join(" · ")+(ccyList.length>3?` · +${ccyList.length-3} more`:""):`${total} payment groups`,""],
+    ["Funding gap",shortfalls.length?shortfalls.length:"0",shortfalls.length?shortfalls.slice(0,2).map(x=>`${x.a.entity} ${fmtC(x.f.fundingRequired)} ${x.a.currency}`).join(" · "):"All allocated accounts funded",shortfalls.length?"bad":"good"],
+    ["Payments at risk",atRisk,`${diffN} DIFF · ${notCreated} not created · ${overdue} overdue`,atRisk?"bad":"good"],
+    ["Due at cut-off",toExport,`to export before ${nextRunLabel}`,toExport?"warn":"good"],
+    ["Batch complete",`${pct(complete,total)}%`,`${complete}/${total} debited & confirmed<div class="kpi-bar"><span style="width:${pct(complete,total)}%"></span></div>`,"good"],
+    ["Open exceptions",openEx.length,openEx.length?`oldest ${oldestEx} day(s)`:"nothing open",openEx.length?"warn":"good"]];
+  // ---- attention panel ----
+  const attn=[];
+  shortfalls.forEach(x=>attn.push(["crit",`Funding shortfall — ${x.a.entity} ${x.a.currency}: ${fmtC(x.f.fundingRequired)} ${x.a.currency} required`,"Open Liquidity","cash"]));
+  if(notCreated)attn.push(["crit",`${notCreated} exported payment(s) not found in the bank result`,"Open Reconciliation","citi"]);
+  if(refBlocks)attn.push(["crit",`${refBlocks} payment reference(s) blocked`,"Fix references","workbench"]);
+  if(diffN)attn.push(["warn",`${diffN} bank DIFF(s) awaiting review`,"Review DIFFs","citi"]);
+  if(overdue)attn.push(["warn",`${overdue} settlement(s) overdue`,"Open Calendar","calendar"]);
+  if(toExport)attn.push(["warn",`${toExport} payment(s) still to export before ${nextRunLabel} cut-off`,"Open Payments","workbench"]);
+  if(issues)attn.push(["act",`${issues} payment(s) missing enrichment`,"Fix now","workbench"]);
+  const attnEl=document.getElementById("attentionPanel");
+  if(attnEl)attnEl.innerHTML=`<div class="attn-head">What needs my attention</div>`+(attn.length
+    ?attn.map(a=>`<div class="attn-row attn-${a[0]}"><span class="attn-dot"></span><span>${a[1]}</span><button class="btn" onclick="activateTab('${a[3]}')">${a[2]} →</button></div>`).join("")
+    :`<div class="attn-row attn-info"><span class="attn-dot"></span><span>All clear — ${created} at bank, ${complete}/${total} fully complete.</span></div>`);
   const entityCounts=[...new Set(payments.map(p=>p.entity))]
     .map(e=>({e,n:payments.filter(p=>p.entity===e).length,blocked:payments.filter(p=>p.entity===e&&p.referenceBlocked).length}))
     .sort((a,b)=>b.n-a.n);
   const chipRow=window.kpiByEntity
     ?`<div class="kpi-split">${entityCounts.map(x=>`<span class="kpi-chip ${x.blocked?"bad":""}" title="${escapeHtml(x.e)} · ${x.n} payment groups${x.blocked?" · "+x.blocked+" reference blocked":""}">${escapeHtml(x.e)}<b>${x.n}</b></span>`).join("")}</div>`
     :"";
-  document.getElementById("kpiGrid").innerHTML=kpis.map((k,i)=>i===0
-    ?`<div class="kpi-card ${k[3]} kpi-expandable" onclick="toggleKpiEntities()" title="${window.kpiByEntity?"Hide":"Show"} the split by entity"><div class="kpi-label">${k[0]}<svg class="kpi-caret ${window.kpiByEntity?"open":""}" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6.5 8.2 10 11.8l3.5-3.6"/></svg></div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div>${chipRow}</div>`
-    :`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
+  document.getElementById("kpiGrid").innerHTML=kpis.map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
   const stages=[["AP groups",total,100],["Valid references",payments.filter(p=>!p.referenceBlocked).length,pct(payments.filter(p=>!p.referenceBlocked).length,total)],["ERP exported",exported,pct(exported,total)],["Bank created",created,pct(created,total)],["Debit confirmed",debited,pct(debited,total)]];
   const pipeEl=document.getElementById("pipeline");
   if(pipeEl)pipeEl.innerHTML=stages.map(s=>`<div class="stage"><div class="stage-name">${s[0]}</div><div class="stage-num">${s[1]}</div><div class="stage-rate">${s[2]}% of AP groups</div><div class="mini-progress"><span style="width:${s[2]}%"></span></div></div>`).join("");
@@ -2132,6 +2188,31 @@ function tblOpenWindow(t){
   w.document.close();
 }
 window.tblOpenWindow=tblOpenWindow;
+/* ---- Real audit log + operator identity (review-board P0) ----------- */
+window.auditLog=(function(){try{return JSON.parse(localStorage.getItem("tctAudit")||"[]");}catch(e){return[];}})();
+function operatorName(){return localStorage.getItem("tctOperator")||"Stella";}
+function logEvent(type,detail){
+  auditLog.unshift({at:new Date().toISOString().slice(0,16).replace("T"," "),by:operatorName(),type,detail:String(detail)});
+  if(auditLog.length>400)auditLog.length=400;
+  try{localStorage.setItem("tctAudit",JSON.stringify(auditLog));}catch(e){}
+  if(window.renderAuditLog)renderAuditLog();
+}
+window.operatorName=operatorName;window.logEvent=logEvent;
+function renderAuditLog(){
+  const el=document.getElementById("auditLogList");if(!el)return;
+  el.innerHTML=auditLog.length?auditLog.slice(0,60).map(e=>`<div class="audit-item"><div class="audit-time">${e.at}</div><div class="audit-dot"></div><div class="audit-body"><strong>${e.type}</strong><span>${String(e.detail).replace(/&/g,"&amp;").replace(/</g,"&lt;")} · by ${String(e.by).replace(/</g,"&lt;")}</span></div></div>`).join("")
+    :'<div class="audit-item"><div class="audit-time">—</div><div class="audit-dot"></div><div class="audit-body"><strong>No events yet</strong><span>Imports, bulk updates, overrides, exports and approval emails are recorded here.</span></div></div>';
+}
+window.renderAuditLog=renderAuditLog;
+function saveOperatorName(v){
+  const name=String(v||"").trim()||"Stella";
+  localStorage.setItem("tctOperator",name);
+  const st=document.querySelector(".rail-foot strong"),av=document.querySelector(".rail-ava");
+  if(st)st.textContent=name;if(av)av.textContent=name.charAt(0).toUpperCase();
+  if(window.showToast)showToast("Operator name saved: "+name);
+}
+window.saveOperatorName=saveOperatorName;
+document.addEventListener("DOMContentLoaded",()=>{const st=document.querySelector(".rail-foot strong"),av=document.querySelector(".rail-ava");const n=operatorName();if(st)st.textContent=n;if(av)av.textContent=n.charAt(0).toUpperCase();});
 function applyTheme(t){
   document.documentElement.setAttribute("data-theme",t);
   try{localStorage.setItem("tctTheme",t);}catch(e){}
@@ -2153,7 +2234,7 @@ function tblExportCsv(tableId,name){
     return String(v||"").replace(/\s+/g," ").trim();
   }));
   if(!data.length||data.every(r=>!r.length)){if(window.showToast)showToast("Nothing to export.");return;}
-  const esc=v=>'"'+String(v??"").replaceAll('"','""')+'"';
+  const esc=v=>{let sv=String(v??"");if(/^[=+@\t\r]/.test(sv)||(/^-/.test(sv)&&!/^-?[\d.,]+$/.test(sv)))sv="'"+sv;return '"'+sv.replaceAll('"','""')+'"';};
   const csv=data.map(r=>r.map(esc).join(",")).join("\r\n");
   const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
   const d=new Date(),ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");
@@ -2203,6 +2284,7 @@ function a11yPass(){
 }
 function enhanceTables(){
   a11yPass();
+  if(window.wbApplyCols)wbApplyCols();
   document.querySelectorAll(".table-wrap>table").forEach(t=>{
     if(!t.id)return;
     const wrap=t.parentElement;
@@ -2252,6 +2334,13 @@ function enhanceTables(){
   });
 }
 window.enhanceTables=enhanceTables;
+function wbApplyCols(){const t=document.getElementById("wbTable");if(t)t.classList.toggle("cols-compact",localStorage.getItem("tctWbCols")!=="all");}
+function wbToggleCols(){
+  localStorage.setItem("tctWbCols",localStorage.getItem("tctWbCols")==="all"?"compact":"all");
+  wbApplyCols();
+  if(window.showToast)showToast(localStorage.getItem("tctWbCols")==="all"?"Showing all 16 columns.":"Compact view — Charges, Bank charge, Detail, Account and Swift hidden.");
+}
+window.wbToggleCols=wbToggleCols;window.wbApplyCols=wbApplyCols;
 new MutationObserver(()=>{clearTimeout(window._tblEnhT);window._tblEnhT=setTimeout(()=>{try{enhanceTables();}catch(_){}},140);})
   .observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
 setTimeout(enhanceTables,250);
@@ -2294,12 +2383,37 @@ function updatePaymentBank(id,value){
 
 // CM Approved / Include ERP were dropped from the bulk panel (not needed as
 // bulk fields) — both remain editable per row on the Payment List table.
-function applyBulk(filtered){const targets=filtered?filteredPayments():payments.filter(p=>selected.has(p.id));if(!targets.length){showToast("No payment group is available for this update.");return;}const method=document.getElementById("bulkMethod").value,ordering=document.getElementById("bulkOrdering").value,valueDate=document.getElementById("bulkValueDate").value;targets.forEach(p=>{if(method)p.method=method;if(ordering)p.ordering=ordering;if(valueDate)p.valueDate=valueDate;if(method||ordering)p.mapping="CM";if(p.exported&&(method||ordering||valueDate)){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}});showToast(`Updated ${targets.length} payment group(s).`);renderWorkbench();renderOverview();renderErp();renderCalendar();}
+function applyBulk(filtered){
+  const targets=filtered?filteredPayments():payments.filter(p=>selected.has(p.id));
+  if(!targets.length){showToast("No payment group is available for this update.");return;}
+  const method=document.getElementById("bulkMethod").value,ordering=document.getElementById("bulkOrdering").value,valueDate=document.getElementById("bulkValueDate").value;
+  if(!method&&!ordering&&!valueDate){showToast("Choose a value to set first — all three fields are on -- No change --.");return;}
+  const willReset=targets.filter(p=>p.exported).length;
+  const what=[method&&"Payment Method",ordering&&"Bank Account",valueDate&&"Value Date"].filter(Boolean).join(", ");
+  if(!confirm(`Set ${what} on ${targets.length} payment group(s) (${filtered?"ALL FILTERED":"selected"})${willReset?`.\n\n${willReset} already-exported group(s) will be reset to NOT EXPORTED and must be re-exported`:""}.\n\nContinue?`))return;
+  window.lastBulkSnapshot=targets.map(p=>({id:p.id,method:p.method,ordering:p.ordering,valueDate:p.valueDate,mapping:p.mapping,exported:p.exported,citi:p.citi,debit:p.debit}));
+  targets.forEach(p=>{if(method)p.method=method;if(ordering)p.ordering=ordering;if(valueDate)p.valueDate=valueDate;if(method||ordering)p.mapping="CM";if(p.exported&&(method||ordering||valueDate)){p.exported=false;p.citi="NOT_CHECKED";p.debit="NOT_CHECKED";}});
+  if(window.logEvent)logEvent("BULK UPDATE",`${what} set on ${targets.length} group(s)${willReset?`, ${willReset} export reset`:""}`);
+  const ub=document.getElementById("bulkUndoBtn");if(ub)ub.style.display="";
+  showToast(`Updated ${targets.length} payment group(s).`);
+  renderWorkbench();renderOverview();renderErp();renderCalendar();
+}
+function undoBulk(){
+  const snap=window.lastBulkSnapshot;if(!snap||!snap.length){showToast("Nothing to undo.");return;}
+  snap.forEach(sn=>{const p=payments.find(x=>x.id===sn.id);if(p)Object.assign(p,sn);});
+  window.lastBulkSnapshot=null;
+  const ub=document.getElementById("bulkUndoBtn");if(ub)ub.style.display="none";
+  if(window.logEvent)logEvent("BULK UNDO",`${snap.length} group(s) restored`);
+  showToast(`Restored ${snap.length} payment group(s).`);
+  renderWorkbench();renderOverview();renderErp();renderCalendar();
+}
+window.undoBulk=undoBulk;
 function entityExportData(){const entities=[...new Set(payments.map(p=>p.entity))];return entities.map(entity=>{const arr=payments.filter(p=>p.entity===entity&&p.include);const ready=arr.filter(p=>["READY","EXPORTED"].includes(erpStatus(p)));const blocked=arr.filter(p=>!["READY","EXPORTED"].includes(erpStatus(p)));const exported=arr.filter(p=>p.exported);const detailRows=ready.reduce((s,p)=>s+p.invoiceCount,0);return{entity,arr,ready,blocked,exported,detailRows};});}
-function blockReason(p){const s=erpStatus(p);if(s==="REFERENCE_BLOCKED")return `Payment Reference blocked: ${p.referenceStatus.replaceAll("_"," ")}`;if(s==="CM_INPUT_REQUIRED")return "Payment Method, Bank Charge, Bank Account or Value Date is missing";if(s==="CM_APPROVAL_PENDING")return "CM approval is pending";return s;}
+function blockReason(p){const s=erpStatus(p);if(s==="INVALID_AMOUNT")return "Payment amount is zero or negative — correct the source data";if(s==="REFERENCE_BLOCKED")return `Payment Reference blocked: ${p.referenceStatus.replaceAll("_"," ")}`;if(s==="CM_INPUT_REQUIRED")return "Payment Method, Bank Charge, Bank Account or Value Date is missing";if(s==="CM_APPROVAL_PENDING")return "CM approval is pending";return s;}
 function renderErp(){derivePaymentReferences();document.getElementById("entityExportCards").innerHTML=entityExportData().map(g=>{const state=g.blocked.length?"BLOCKED":(g.arr.length?"READY":"NO DATA");return `<div class="entity-card"><div class="entity-card-top"><div><h4>${g.entity}</h4><div class="small muted">${g.arr.length} selected payment groups</div></div>${statusPill(state)}</div><div class="metric"><span>Ready groups</span><strong>${g.ready.length}</strong></div><div class="metric"><span>ERP detail rows</span><strong>${g.detailRows}</strong></div><div class="metric"><span>Blocked groups</span><strong>${g.blocked.length}</strong></div><div class="metric"><span>Previously exported</span><strong>${g.exported.length}</strong></div><div class="entity-card-actions"><button class="btn primary" ${g.blocked.length||!g.arr.length?"disabled":""} onclick="downloadEntityCSV('${g.entity.replaceAll("'","\\'")}')">Download CSV</button><button class="btn" onclick="filterEntityWorkbench('${g.entity.replaceAll("'","\\'")}')">Review</button></div></div>`;}).join("");const blocked=payments.filter(p=>p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));document.getElementById("validationList").innerHTML=blocked.length?blocked.map(p=>`<div class="validation-item"><span><strong>${p.entity}</strong> · ${escapeHtml(p.paymentReference||p.baseReference||"Missing reference")}<br><span class="muted">${escapeHtml(blockReason(p))}</span></span>${statusPill(erpStatus(p))}</div>`).join(""):`<div class="validation-item"><span>No blocking validation issues.</span>${statusPill("PASS")}</div>`;}
 function filterEntityWorkbench(entity){activateTab("workbench");document.getElementById("filterEntity").value=entity;renderWorkbench();}
 const CREATED_BY_DEFAULT = "Tultc4";
+function erpCreatedBy(){return localStorage.getItem("tctErpCreatedBy")||CREATED_BY_DEFAULT;}
 
 // ORDERING_PARTY on the real ERP upload template is the company's OWN
 // paying account for that entity+currency (e.g. VNGSING/USD -> 0863645018,
@@ -2325,8 +2439,8 @@ function csvDate(v){
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(v || "");
 }
 
-function csvRows(entity){derivePaymentReferences();const cols=["ORG_ID","SUPPLIER_NUM","AP_INVOICE_NUMBER","EFORM_NUMBER","PAYMENT_AMOUNT","DESCRIPTION","PAYMENT_METHOD","CHARGES_INDICATOR","ORDERING_PARTY","PURPOSE_CODE","","Value date","CREATED_BY"];const groups=payments.filter(p=>p.entity===entity&&p.include&&p.approved&&p.method&&p.charge&&p.ordering&&!p.referenceBlocked);const rows=groups.flatMap(p=>p.invoiceLines.map(line=>[p.org,p.supplier,line.invoice,p.paymentReference,line.amount,line.description||p.description,p.method,p.charge,orderingAccountFor(p.entity,p.currency),p.purpose||"",p.vendorAccount||"",csvDate(p.valueDate),p.createdBy||CREATED_BY_DEFAULT]));return{cols,rows,groups};}
-function downloadEntityCSV(entity){const data=csvRows(entity);if(!data.rows.length){showToast("No ready ERP detail row is available for export.");return;}const entityBlocked=payments.some(p=>p.entity===entity&&p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));if(entityBlocked){showToast(`${entity} is blocked. Resolve all selected payment groups before export.`);return;}const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;const csv=[data.cols.map(esc).join(","),...data.rows.map(r=>r.map(esc).join(","))].join("\r\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ERP_UPLOAD_${entity.replace(/[^A-Za-z0-9]+/g,"_")}_2207.csv`;a.click();URL.revokeObjectURL(a.href);data.groups.forEach(p=>p.exported=true);showToast(`Created ${data.rows.length} ERP detail row(s) for ${entity}.`);renderErp();renderOverview();}
+function csvRows(entity){derivePaymentReferences();const cols=["ORG_ID","SUPPLIER_NUM","AP_INVOICE_NUMBER","EFORM_NUMBER","PAYMENT_AMOUNT","DESCRIPTION","PAYMENT_METHOD","CHARGES_INDICATOR","ORDERING_PARTY","PURPOSE_CODE","","Value date","CREATED_BY"];const groups=payments.filter(p=>p.entity===entity&&p.include&&p.approved&&p.method&&p.charge&&p.ordering&&!p.referenceBlocked);const rows=groups.flatMap(p=>p.invoiceLines.map(line=>[p.org,p.supplier,line.invoice,p.paymentReference,line.amount,line.description||p.description,p.method,p.charge,orderingAccountFor(p.entity,p.currency),p.purpose||"",p.vendorAccount||"",csvDate(p.valueDate),p.createdBy||erpCreatedBy()]));return{cols,rows,groups};}
+function downloadEntityCSV(entity){const data=csvRows(entity);if(!data.rows.length){showToast("No ready ERP detail row is available for export.");return;}const entityBlocked=payments.some(p=>p.entity===entity&&p.include&&!["READY","EXPORTED"].includes(erpStatus(p)));if(entityBlocked){showToast(`${entity} is blocked. Resolve all selected payment groups before export.`);return;}const esc=v=>{let sv=String(v??"");if(/^[=+@\t\r]/.test(sv)||(/^-/.test(sv)&&!/^-?[\d.,]+$/.test(sv)))sv="'"+sv;return `"${sv.replaceAll('"','""')}"`;};const csv=[data.cols.map(esc).join(","),...data.rows.map(r=>r.map(esc).join(","))].join("\r\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ERP_UPLOAD_${entity.replace(/[^A-Za-z0-9]+/g,"_")}_2207.csv`;a.click();URL.revokeObjectURL(a.href);data.groups.forEach(p=>p.exported=true);showToast(`Created ${data.rows.length} ERP detail row(s) for ${entity}.`);if(window.logEvent)logEvent("ERP EXPORT",`${entity} — ${data.rows.length} row(s)`);renderErp();renderOverview();}
 function downloadAllReady(){const groups=entityExportData().filter(g=>g.arr.length&&!g.blocked.length);groups.forEach((g,i)=>setTimeout(()=>downloadEntityCSV(g.entity),i*250));if(!groups.length)showToast("No entity currently passes all export controls.");}
 
 function renderCiti(){
@@ -2453,7 +2567,7 @@ function updateReconField(id,field,value){
   if(field==="beneficiary"){p.beneName=v;p.beneficiary=v;}
   else p[field]=v;
   if(window.recomputeBankCheck)window.recomputeBankCheck(p);
-  showToast(`${field==="beneficiary"?"Beneficiary":field==="vendorAccount"?"Vendor Bank Account":"SWIFT"} updated for ${p.paymentReference} — match recomputed: ${p.bankMatched?"TRUE":"still FALSE"}.`);
+  showToast(`${field==="beneficiary"?"Beneficiary":field==="vendorAccount"?"Vendor Bank Account":"SWIFT"} updated for ${p.paymentReference} — match recomputed: ${p.bankMatched?"TRUE":"still FALSE"}.`);if(window.logEvent)logEvent("FIELD EDIT",`${p.paymentReference}: ${field} "${before}" → "${v}"`);
   window.refreshAll();
 }
 function reconFieldTitle(p,field){
@@ -2473,7 +2587,7 @@ function overrideBankMatch(id){
   p.bankOverride={reason:String(reason).trim(),at:new Date().toISOString().slice(0,16).replace("T"," ")};
   p.citi="CREATED";
   citiSelected.add(p.id);
-  showToast(`Match manually overridden for ${p.paymentReference}.`);
+  showToast(`Match manually overridden for ${p.paymentReference}.`);if(window.logEvent)logEvent("MATCH OVERRIDE",`${p.paymentReference} — ${reason}`);
   window.refreshAll();
 }
 function undoBankOverride(id){
@@ -2481,7 +2595,7 @@ function undoBankOverride(id){
   delete p.bankOverride;
   p.citi=p.bankMatched?"CREATED":"DIFF";
   if(!p.bankMatched){citiSelected.delete(p.id);p.debit="NOT_CHECKED";}
-  showToast(`Override removed for ${p.paymentReference}.`);
+  showToast(`Override removed for ${p.paymentReference}.`);if(window.logEvent)logEvent("OVERRIDE REMOVED",p.paymentReference);
   window.refreshAll();
 }
 function toggleAllCitiVisible(select){const selectedBank=document.getElementById("reconBank")?document.getElementById("reconBank").value:"";const rows=payments.filter(p=>p.exported&&(!selectedBank||paymentBankLabel(p)===selectedBank));rows.forEach(p=>{if(!select){citiSelected.delete(p.id);return;}if(p.bankMatched||p.bankOverride)citiSelected.add(p.id);});renderCiti();}
@@ -2643,7 +2757,7 @@ function openApprovalMailApp(){
   const subject = encodeURIComponent(document.getElementById("apMailSubject").value);
   const body = encodeURIComponent(document.getElementById("apMailBody").value);
   window.location.href = `mailto:${to}?${cc ? "cc=" + encodeURIComponent(cc) + "&" : ""}subject=${subject}&body=${body}`;
-  showToast("Draft opened in your mail app — remember to attach the downloaded .xlsx.");
+  showToast("Draft opened in your mail app — remember to attach the downloaded .xlsx.");if(window.logEvent)logEvent("APPROVAL EMAIL",document.getElementById("apMailBank")?document.getElementById("apMailBank").selectedOptions[0].textContent:"");
 }
 
 function downloadCitiSelection(){
@@ -2651,7 +2765,7 @@ function downloadCitiSelection(){
   if(!rows.length){showToast("No reconciled row selected.");return;}
   const cols=["Entity","Payment Reference","Currency","Amount","Beneficiary Name","Bank Account","SWIFT","Amount Match","Beneficiary Match","Account Match","SWIFT Match","SWIFT Branch Note","Overall Match","Manual Override","Bank Status"];
   const body=rows.map(p=>{const c=p.bankCheck||{};return[p.entity,p.paymentReference,p.currency,p.amount,p.beneName||p.beneficiary,p.vendorAccount||"",p.swift||"",c.amountOK?"TRUE":"FALSE",c.beneficiaryOK?"TRUE":"FALSE",c.accountOK?"TRUE":"FALSE",c.swiftOK?"TRUE":"FALSE",c.swiftBranchWarn||c.swiftNote||"",p.bankMatched?"TRUE":p.bankOverride?"TRUE (manual)":"FALSE",p.bankOverride?`${p.bankOverride.reason} (${p.bankOverride.at})`:"",p.bankStatusRaw||""];});
-  const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+  const esc=v=>{let sv=String(v??"");if(/^[=+@\t\r]/.test(sv)||(/^-/.test(sv)&&!/^-?[\d.,]+$/.test(sv)))sv="'"+sv;return `"${sv.replaceAll('"','""')}"`;};
   const csv=[cols.map(esc).join(","),...body.map(r=>r.map(esc).join(","))].join("\r\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`BANK_RECONCILE_${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href);
@@ -2683,7 +2797,19 @@ function renderDebit(){
   document.getElementById("debitTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Bank Account</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th class="num">Statement Amount</th><th>Value Date</th><th>Expected Completion</th><th>Statement Match</th><th>Debit Status</th><th>Action</th></tr></thead><tbody>${rows||'<tr><td colspan="14">No bank-created payment data yet — payments appear here once a bank result marks them CREATED, or automatically when a statement reference matches them.</td></tr>'}</tbody>`;
 }
 
-function renderExceptions(){const ex=exceptions(),stage=document.getElementById("exStage").value,sev=document.getElementById("exSeverity").value,q=document.getElementById("exSearch").value.toLowerCase();const filtered=ex.filter(e=>(!stage||e.stage===stage)&&(!sev||e.severity===sev)&&(!q||`${e.stage} ${e.severity} ${e.entity} ${e.eform} ${e.issue}`.toLowerCase().includes(q)));const cats=["REFERENCE","AP / CM","ERP","BANK CREATE","BANK DEBIT","SETTLEMENT"];document.getElementById("exceptionCards").innerHTML=cats.map(c=>`<div class="exception-card" onclick="document.getElementById('exStage').value='${c}';renderExceptions()"><span class="muted small">${c}</span><strong>${ex.filter(e=>e.stage===c).length}</strong><span class="small muted">open items</span></div>`).join("");const rows=filtered.map(e=>`<tr><td>${statusPill(e.severity)}</td><td>${e.stage}</td><td class="entity-name">${e.entity}</td><td><span class="payment-ref">${escapeHtml(e.eform)}</span></td><td>${e.issue}</td><td>${e.action}</td><td><select class="cell-select"><option>New</option><option>In Progress</option><option>Resolved</option></select></td><td><input class="cell-select" placeholder="CM note"></td></tr>`).join("");document.getElementById("exceptionTable").innerHTML=`<thead><tr><th>Severity</th><th>Stage</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Required Action</th><th>Status</th><th>CM Note</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No exception matches the current filters.</td></tr>'}</tbody>`;}
+window.exMeta=(function(){try{return JSON.parse(localStorage.getItem("tctExMeta")||"{}");}catch(e){return{}}})();
+function exKey(x){return (x.stage+"|"+x.eform+"|"+x.issue.slice(0,28)).replace(/\s+/g," ");}
+function saveExMeta(){try{localStorage.setItem("tctExMeta",JSON.stringify(exMeta));}catch(e){}}
+function setExMeta(k,f,v){exMeta[k]=exMeta[k]||{firstSeen:new Date().toISOString().slice(0,10)};exMeta[k][f]=v;saveExMeta();
+  if(f==="status"&&window.logEvent)logEvent("EXCEPTION "+String(v).toUpperCase(),k.split("|")[1]+" — "+k.split("|")[0]);
+  renderExceptions();renderOverview();}
+window.setExMeta=setExMeta;
+function exAge(k){const m=exMeta[k];if(!m||!m.firstSeen)return 0;return Math.max(0,Math.round((Date.now()-new Date(m.firstSeen+"T00:00:00"))/86400000));}
+function openExceptions(){return exceptions().filter(x=>((exMeta[exKey(x)]||{}).status||"Open")!=="Resolved");}
+window.openExceptions=openExceptions;
+function renderExceptions(){const ex=exceptions(),stage=document.getElementById("exStage").value,sev=document.getElementById("exSeverity").value,q=document.getElementById("exSearch").value.toLowerCase();const filtered=ex.filter(e=>(!stage||e.stage===stage)&&(!sev||e.severity===sev)&&(!q||`${e.stage} ${e.severity} ${e.entity} ${e.eform} ${e.issue}`.toLowerCase().includes(q)));const cats=["REFERENCE","AP / CM","ERP","BANK CREATE","BANK DEBIT","SETTLEMENT"];document.getElementById("exceptionCards").innerHTML=cats.map(c=>`<div class="exception-card" onclick="document.getElementById('exStage').value='${c}';renderExceptions()"><span class="muted small">${c}</span><strong>${ex.filter(e=>e.stage===c&&((exMeta[exKey(e)]||{}).status||"Open")!=="Resolved").length}</strong><span class="small muted">open items</span></div>`).join("");const rows=filtered.map(e=>{const k=exKey(e),meta=exMeta[k]||{};if(!meta.firstSeen){exMeta[k]={...meta,firstSeen:new Date().toISOString().slice(0,10)};saveExMeta();}
+    const st=meta.status||"Open",age=exAge(k);
+    return `<tr${st==="Resolved"?' style="opacity:.55"':''}><td>${statusPill(e.severity)}</td><td>${e.stage}</td><td class="entity-name">${e.entity}</td><td><span class="payment-ref">${escapeHtml(e.eform)}</span></td><td>${e.issue}</td><td>${e.action}</td><td><input class="cell-select" style="min-width:90px" value="${escapeHtml(meta.owner||"")}" placeholder="Owner" aria-label="Exception owner" onchange="setExMeta('${escapeHtml(k).replaceAll("'","\\'")}','owner',this.value)"></td><td class="num">${age}d</td><td><select class="cell-select" aria-label="Exception status" onchange="setExMeta('${escapeHtml(k).replaceAll("'","\\'")}','status',this.value)"><option${st==="Open"?" selected":""}>Open</option><option${st==="Investigating"?" selected":""}>Investigating</option><option${st==="Resolved"?" selected":""}>Resolved</option></select></td><td><input class="cell-select" value="${escapeHtml(meta.note||"")}" placeholder="Resolution note" aria-label="Resolution note" onchange="setExMeta('${escapeHtml(k).replaceAll("'","\\'")}','note',this.value)"></td></tr>`;}).join("");document.getElementById("exceptionTable").innerHTML=`<thead><tr><th>Severity</th><th>Stage</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Required Action</th><th>Owner</th><th class="num">Age</th><th>Status</th><th>Note</th></tr></thead><tbody>${rows||'<tr><td colspan="10">No exception matches the current filters.</td></tr>'}</tbody>`;}
 
 function filteredCalendarPayments(){
   const entity=document.getElementById("calendarEntity")?.value||"",bank=document.getElementById("calendarBank")?.value||"",currency=document.getElementById("calendarCurrency")?.value||"",status=document.getElementById("calendarStatus")?.value||"";
@@ -2786,8 +2912,8 @@ function renderRunCalendar(){
   }).join("");
   document.getElementById("rcCcyRules").innerHTML=`
     <div class="ccy-card rule2"><div class="lead">Value Date + 2 working days</div><div class="ccys"><span>IDR</span><span>THB</span><span>MYR</span></div><div class="note">E.g. Value Date 01 Aug (Sat) → Mon 03 Aug is WD 1, Tue 04 Aug is WD 2 → <strong>expected done 04 Aug</strong>. Weekends are skipped; destination holiday calendar applies when configured.</div></div>
-    <div class="ccy-card"><div class="lead">Value Date + 1 working day</div><div class="ccys"><span>SGD</span><span>CNY</span><span>VND</span><span>KRW</span><span>PHP</span><span>other</span></div><div class="note">Assumed default for currencies without a confirmed SLA — replace with the bank's official figure per currency (see Master Data → Processing Rules).</div></div>
-    <div class="ccy-card"><div class="lead">Value Date + 2 working days</div><div class="ccys"><span>USD cross-border</span></div><div class="note">Existing UAT SLA for USD cross-border legs out of Citi Singapore.</div></div>`;
+    <div class="ccy-card"><div class="lead">Value Date + 1 working day</div><div class="ccys"><span>SGD</span><span>CNY</span><span>VND</span><span>KRW</span><span>PHP</span><span>other</span></div><div class="note">Default rule where no bank SLA is confirmed. Per-currency SLAs live in Admin → Bank processing rules.</div></div>
+    <div class="ccy-card"><div class="lead">Value Date + 2 working days</div><div class="ccys"><span>USD cross-border</span></div><div class="note">Bank SLA — USD cross-border out of Citi Singapore.</div></div>`;
 }
 
 function renderCalendar(){
@@ -2795,10 +2921,14 @@ function renderCalendar(){
   const all=payments.map(p=>({p,info:processingInfo(p)})),rows=filteredCalendarPayments().map(p=>({p,info:processingInfo(p)}));
   const counts={scheduled:all.filter(x=>["ON_TRACK","DUE_TODAY"].includes(x.info.status)).length,holiday:all.filter(x=>x.info.holidayAdjusted).length,overdue:all.filter(x=>x.info.status==="OVERDUE").length,complete:all.filter(x=>x.info.status==="COMPLETED").length,missing:all.filter(x=>["RULE_MISSING","NO_VALUE_DATE"].includes(x.info.status)).length};
   document.getElementById("calendarKpis").innerHTML=[["Scheduled",counts.scheduled,"On track or due today","good"],["Holiday adjusted",counts.holiday,"Destination calendar changed ETA","warn"],["Overdue",counts.overdue,"Expected completion passed","bad"],["Completed",counts.complete,"Debit confirmed","good"],["Rule / date missing",counts.missing,"No SLA rule, or source row has no value date","bad"]].map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
-  document.getElementById("settlementAlerts").innerHTML=`<div class="alert-box ${counts.overdue?"bad":"good"}"><strong>${counts.overdue} overdue payment(s)</strong>${counts.overdue?"Expected completion has passed without debit confirmation.":"No settlement overdue item in the UAT view."}</div><div class="alert-box ${counts.holiday?"warn":"good"}"><strong>${counts.holiday} holiday-adjusted payment(s)</strong>Holiday notes remain visible in Payment List, calendar and audit detail.</div><div class="alert-box good"><strong>Citi Singapore primary · multi-bank ready</strong>Future bank SLAs use the same configurable rule contract.</div>`;
+  document.getElementById("settlementAlerts").innerHTML=`<div class="alert-box ${counts.overdue?"bad":"good"}"><strong>${counts.overdue} overdue payment(s)</strong>${counts.overdue?"Expected completion has passed without debit confirmation.":"No settlement overdue."}</div><div class="alert-box ${counts.holiday?"warn":"good"}"><strong>${counts.holiday} holiday-adjusted payment(s)</strong>Holiday notes remain visible in Payment List, calendar and audit detail.</div>`;
   document.getElementById("processingTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Currency</th><th class="num">Amount</th><th>Value Date</th><th>Processing Rule</th><th>Calendar</th><th>Adjustment Note</th><th>Expected Completion</th><th>Timing Status</th><th>Debit Status</th></tr></thead><tbody>${rows.map(({p,info})=>`<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${p.currency}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${escapeHtml(info.ruleLabel)}</td><td>${escapeHtml(info.calendarName||"-")}</td><td>${escapeHtml(info.adjustmentNote)}</td><td>${dateLabel(info.expected)}</td><td>${timingHtml(info)}</td><td>${statusPill(p.debit)}</td></tr>`).join("")||'<tr><td colspan="12">No payment matches the selected filters.</td></tr>'}</tbody>`;
 }
 function renderMasterTables(){
+  if(window.renderAuditLog)renderAuditLog();
+  const opI=document.getElementById("operatorNameInput"),cbI=document.getElementById("erpCreatedByInput");
+  if(opI&&!opI.value)opI.value=window.operatorName?operatorName():"Stella";
+  if(cbI&&!cbI.value)cbI.value=localStorage.getItem("tctErpCreatedBy")||CREATED_BY_DEFAULT;
   const activeRules=bankProcessingRules;document.getElementById("processingRuleTable").innerHTML=`<thead><tr><th>Bank</th><th>Currency</th><th>Destination</th><th>Processing</th><th>Calendar</th><th>Status</th><th>Source</th></tr></thead><tbody>${activeRules.map(r=>`<tr><td>${r.bank}</td><td>${r.currency}</td><td>${r.destination}</td><td>${r.days===null?"To configure":`T+${r.days} business day${r.days===1?"":"s"}`}</td><td>${r.calendar}</td><td>${statusPill(r.status==="ACTIVE"?"PASS":"NOT_CHECKED")}</td><td>${r.source}</td></tr>`).join("")}</tbody>`;
   const h=[];Object.entries(holidayCalendar).forEach(([country,arr])=>arr.forEach(x=>h.push({country,...x})));document.getElementById("holidayTable").innerHTML=`<thead><tr><th>Country</th><th>Date</th><th>Description</th><th>Source</th></tr></thead><tbody>${h.map(x=>`<tr><td>${x.country}</td><td>${dateLabel(x.date)}</td><td>${x.name}</td><td>${x.source}</td></tr>`).join("")||'<tr><td colspan="4">No UAT holiday example configured.</td></tr>'}</tbody>`;
 }
@@ -3188,7 +3318,7 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
     state.lastRefresh = new Date();
     state.audit = state.audit || [];
     state.audit.unshift(`AP imported: ${file.name} · ${newRows.length} payment line(s) (${payments.length} total)`);
-    showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)`);
+    showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)`);if(window.logEvent)logEvent("AP IMPORT",`${file.name} — ${payments.length} payment line(s)`);
     refreshAll();
   }
   // Loose match for account numbers / SWIFT codes: strips punctuation and
@@ -3365,7 +3495,7 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
     state.audit = state.audit || [];
     state.audit.unshift(`Bank result imported: ${files.length} file(s)`);
     refreshAll();
-    showToast(`Imported ${files.length} bank result file(s).`);
+    showToast(`Imported ${files.length} bank result file(s).`);if(window.logEvent)logEvent("BANK RESULT IMPORT",`${files.length} file(s)`);
   }
 
   async function importStatements(fileList){
@@ -3516,7 +3646,7 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
     state.audit = state.audit || [];
     state.audit.unshift(`Statement imported: ${files.length} file(s)`);
     refreshAll();
-    showToast(`Imported ${files.length} statement file(s) · ${rowsAll.length} transaction(s) · ${state.balanceImportNote || 'no balance rows'}.`);
+    if(window.logEvent)logEvent("STATEMENT IMPORT",`${files.length} file(s) · ${rowsAll.length} transaction(s)`);showToast(`Imported ${files.length} statement file(s) · ${rowsAll.length} transaction(s) · ${state.balanceImportNote || 'no balance rows'}.`);
   }
 
   function refreshAll(){
