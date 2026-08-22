@@ -780,7 +780,7 @@ header{
   box-shadow:none;border-bottom:0;
   background-image:var(--rule);background-repeat:no-repeat;
   background-position:bottom left;background-size:100% 1px;
-  margin:34px 0 15px;padding-bottom:10px;font-size:13.5px;letter-spacing:.005em}
+  margin:34px 0 15px;padding-bottom:10px;font-size:14.5px;font-weight:600;letter-spacing:.005em;color:var(--navy)}
 
 /* --- more air in the frame --- */
 .container{max-width:1680px;padding:26px 32px 72px}
@@ -996,7 +996,6 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
       <p>AP submission → Treasury enrichment → ERP CSV → bank creation → settlement and debit control</p>
     </div>
     <div class="header-actions">
-      <div class="batch-box"></div>
       <div class="batch-box" id="cutoffBox"><small>Next cut-off</small><strong id="cutoffCountdown">–</strong></div>
       <div class="batch-box"><small>Last Refresh</small><strong id="lastRefreshDisplay">–</strong></div>
       <button class="header-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Switch between light and dark theme" title="Switch between light and dark theme">
@@ -1044,20 +1043,19 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 <section id="overview" class="tabpanel active">
   <div class="page-head">
     <div><h2>Payment Batch Overview</h2></div>
-    <div class="inline-actions"><button class="btn" onclick="demoAction('Refresh dashboard')">↻ Refresh</button><button class="btn primary" onclick="activateTab('workbench')">Open Payment List →</button></div>
+    <div class="inline-actions"><button class="btn primary" onclick="activateTab('workbench')">Open Payment List →</button></div>
   </div>
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="section-title">Management view</div>
-  <div class="grid-2">
-    <div class="card"><h3>Entity status</h3><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
-    <div class="card">
+  <div class="card"><h3>Entity status</h3><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
+  <div class="card hidden">
       <h3>Batch completion</h3>
       <div class="donut-wrap"><div class="donut" id="completionDonut"><span id="completionPct">0%<small>Fully completed</small></span></div><div class="legend" id="completionLegend"></div></div>
       <div class="note">Balance movement alone is never used to confirm a specific payment. Debit confirmation requires transaction-level statement data.</div>
     </div>
-  </div>
   <div class="section-title">Outstanding actions</div>
   <div class="table-wrap"><table id="topExceptions"></table></div>
+  <div class="inline-actions" style="margin-top:10px"><button class="btn" id="topExceptionsMore" onclick="activateTab('exceptions')">Open Exception Center →</button></div>
 </section>
 
 
@@ -1118,17 +1116,11 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 
 
 <section id="erp" class="tabpanel">
-  <div class="page-head"><div><h2>ERP CSV Export</h2></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button><button class="btn primary" onclick="demoAction('Commit export batch')">Commit Export Batch</button></div></div>
+  <div class="page-head"><div><h2>ERP CSV Export</h2></div><div class="inline-actions"><button class="btn" onclick="downloadAllReady()">Download All Ready CSVs</button></div></div>
   <div class="entity-cards" id="entityExportCards"></div>
   <div class="section-title">Validation report</div>
   <div class="grid-2">
     <div class="card"><div class="validation-list" id="validationList"></div></div>
-    <div class="card"><h3>ERP output schema</h3><div class="table-wrap" style="max-height:350px"><table><thead><tr><th>#</th><th>Column</th><th>Source</th></tr></thead><tbody>
-      <tr><td>1</td><td>ORG_ID</td><td>Entity master</td></tr><tr><td>2</td><td>SUPPLIER_NUM</td><td>AP file</td></tr><tr><td>3</td><td>AP_INVOICE_NUMBER</td><td>AP invoice line</td></tr>
-      <tr><td>4</td><td>EFORM_NUMBER</td><td>Final group payment reference: last E-form / auto suffix / manual override</td></tr><tr><td>5</td><td>PAYMENT_AMOUNT</td><td>AP invoice-line amount</td></tr><tr><td>6</td><td>DESCRIPTION</td><td>AP invoice-line description</td></tr>
-      <tr><td>7</td><td>PAYMENT_METHOD</td><td>Treasury selection / bank master mapping</td></tr><tr><td>8</td><td>CHARGES_INDICATOR</td><td>Treasury selection / AP charge mapping</td></tr><tr><td>9</td><td>ORDERING_PARTY</td><td>Company's own paying account (entity + currency, from the account master) — not the vendor's account</td></tr>
-      <tr><td>10</td><td>PURPOSE_CODE</td><td>Blank unless a purpose-code master rule is supplied</td></tr><tr><td>11</td><td>(unlabeled column)</td><td>Vendor bank account, when available from the AP file</td></tr><tr><td>12–13</td><td>Value date (DD/MM/YYYY) · CREATED_BY</td><td>AP + Tultc4 default</td></tr>
-    </tbody></table></div></div>
   </div>
 </section>
 
@@ -1181,13 +1173,11 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
     <div class="field"><label>Currency</label><select id="calendarCurrency" onchange="renderCalendar()"><option value="">All</option></select></div>
     <div class="field"><label>Timing Status</label><select id="calendarStatus" onchange="renderCalendar()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option><option>NO_VALUE_DATE</option></select></div>
   </div>
-  <div class="card" style="margin-bottom:14px"><h3>Illustrative IDR case</h3><div id="idrExample"></div></div>
-  <div class="section-title">Expected completion calendar</div><div class="calendar-grid" id="processingCalendar"></div>
-  <div class="section-title">Settlement control detail</div><div class="table-wrap"><table id="processingTable"></table></div>
+  <div class="section-title">Settlement forecast — expected completion per payment</div><div class="table-wrap"><table id="processingTable"></table></div>
 </section>
 
 <section id="exceptions" class="tabpanel">
-  <div class="page-head"><div><h2>Exception Center</h2></div><button class="btn" onclick="demoAction('Export exception list')">⇩ Export Exceptions</button></div>
+  <div class="page-head"><div><h2>Exception Center</h2></div><button class="btn" onclick="tblExportCsv('exceptionTable','exceptions')">⇩ Export Exceptions</button></div>
   <div class="exception-grid" id="exceptionCards"></div>
   <div class="toolbar"><div class="field"><label>Stage</label><select id="exStage" onchange="renderExceptions()"><option value="">All</option><option>REFERENCE</option><option>AP / CM</option><option>ERP</option><option>BANK CREATE</option><option>BANK DEBIT</option><option>SETTLEMENT</option></select></div><div class="field"><label>Severity</label><select id="exSeverity" onchange="renderExceptions()"><option value="">All</option><option>BLOCKER</option><option>HIGH</option><option>MEDIUM</option></select></div><div class="field search"><label>Search</label><input id="exSearch" oninput="renderExceptions()" placeholder="Reference, entity or issue"></div></div>
   <div class="table-wrap"><table id="exceptionTable"></table></div>
@@ -1195,19 +1185,19 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 
 
 <section id="cash" class="tabpanel">
-  <div class="page-head"><div><h2>Cash Sufficiency & Funding Forecast</h2></div><button class="btn" onclick="demoAction('Refresh balance summary')">↻ Refresh Balance</button></div>
+  <div class="page-head"><div><h2>Cash Sufficiency & Funding Forecast</h2></div></div>
   <div class="cash-toolbar"><div class="field"><label>Entity</label><select id="cashEntity" onchange="cashEntityChanged()"></select></div><div class="field"><label>Currency</label><select id="cashCurrency" onchange="cashCurrencyChanged()"></select></div><div class="field" style="min-width:280px"><label>Bank Account</label><select id="cashAccount" onchange="cashAccountChanged()"></select></div><div class="small muted" style="margin-left:auto;padding-bottom:8px">Selected Payments = payment groups with INCLUDE_ERP = Y</div></div>
   <div class="cash-entity-cards" id="cashEntityCards"></div><div id="cashStatusBanner"></div><div class="cash-kpi-grid" id="cashKpiGrid"></div>
   <div class="grid-2"><div class="card"><h3>Entity funding by currency</h3><table class="entity-currency-table"><tbody id="entityCurrencySummary"></tbody></table></div><div class="card"><h3>Statement coverage</h3><div class="validation-list" id="coverageSummary"></div><div class="note" style="margin-top:10px">A balance summary supports liquidity planning but does not prove that a specific payment was debited.</div></div></div>
   <div class="section-title">Bank account funding control <small id="cashTableScope">All entities</small></div><div class="table-wrap"><table id="cashTable"></table></div>
-  <div class="section-title">Expected debit schedule for the selected account</div><div class="table-wrap"><table id="cashForecastTable"></table></div>
-  <div class="section-title">Payments allocated to the selected account</div><div class="table-wrap"><table id="cashPaymentTable"></table></div>
+  <div class="section-title">Selected account — expected debits & projected balance</div><div class="table-wrap"><table id="cashForecastTable"></table></div>
+
 </section>
 
 
 
 <section id="master" class="tabpanel">
-  <div class="page-head"><div><h2>Master Data & Audit</h2></div><button class="btn" onclick="demoAction('Open settings')">⚙ Settings</button></div>
+  <div class="page-head"><div><h2>Master Data & Audit</h2></div></div>
   <div class="grid-3">
     <div class="card"><h3>Account master</h3><div class="validation-list"><div class="validation-item"><span>Active bank accounts</span><strong>49</strong></div><div class="validation-item"><span>Entity coverage</span><strong>8</strong></div><div class="validation-item"><span>Unmapped statement accounts</span><strong>0</strong></div></div></div>
     <div class="card"><h3>Payment-reference control</h3><div class="validation-list"><div class="validation-item"><span>PAYMENT_GROUP_ID</span><span class="status good">Required</span></div><div class="validation-item"><span>SOURCE_FILE / SOURCE_ROW</span><span class="status good">Required</span></div><div class="validation-item"><span>ORIGINAL_EFORM</span><span class="status good">Required</span></div><div class="validation-item"><span>MANUAL_REFERENCE_OVERRIDE</span><span class="status info">Optional</span></div></div></div>
@@ -1701,7 +1691,6 @@ function exceptions(){
   });return list;
 }
 
-function demoAction(label){showToast(label+" · simulated action in this UI draft.");}
 function showToast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove("show"),2700);}
 
 function activateTab(id){
@@ -1742,10 +1731,11 @@ function renderOverview(){
   const entities=[...new Set(payments.map(p=>p.entity))];
   const rows=entities.map(entity=>{const arr=payments.filter(p=>p.entity===entity),selected=arr.filter(p=>p.include).length,refs=arr.filter(p=>p.referenceBlocked).length,ready=arr.filter(p=>["READY","EXPORTED"].includes(erpStatus(p))).length,exported=arr.filter(p=>p.exported).length,bank=arr.filter(p=>p.citi==="CREATED").length,debit=arr.filter(p=>p.debit==="DEBIT_CONFIRMED").length,settlement=arr.filter(p=>processingInfo(p).status==="OVERDUE").length,exCount=exceptions().filter(e=>e.entity===entity).length;return `<tr><td class="entity-name">${entity}</td><td class="num">${arr.length}</td><td class="num">${selected}</td><td class="num">${refs}</td><td class="num">${ready}</td><td class="num">${exported}</td><td class="num">${bank}</td><td class="num">${debit}</td><td class="num">${settlement}</td><td class="num">${exCount}</td></tr>`;}).join("");
   document.getElementById("entitySummary").innerHTML=`<thead><tr><th>Entity</th><th class="num">Groups</th><th class="num">Selected</th><th class="num">Ref Blocks</th><th class="num">ERP Ready</th><th class="num">Exported</th><th class="num">Bank Created</th><th class="num">Debited</th><th class="num">Overdue</th><th class="num">Exceptions</th></tr></thead><tbody>${rows}</tbody>`;
-  const completion=total?pct(complete,total):0;const donut=document.getElementById("completionDonut");donut.style.setProperty("--p",completion);donut.style.setProperty("--c",completion>=80?"var(--green)":completion>=50?"#d4962a":"var(--red)");document.getElementById("completionPct").innerHTML=`${completion}%<small>Fully completed</small>`;document.getElementById("completionLegend").innerHTML=`<div class="legend-row"><span class="legend-label"><span class="dot" style="background:var(--green)"></span>Complete</span><strong>${complete}</strong></div><div class="legend-row"><span class="legend-label"><span class="dot" style="background:#d4962a"></span>In progress</span><strong>${total-complete-refBlocks}</strong></div><div class="legend-row"><span class="legend-label"><span class="dot" style="background:var(--red)"></span>Reference blocked</span><strong>${refBlocks}</strong></div>`;
   const bell=document.getElementById("attnCount");
   if(bell){bell.textContent=ex;bell.style.display=ex?"grid":"none";}
-  const top=exceptions().slice(0,8);document.getElementById("topExceptions").innerHTML=`<thead><tr><th>Stage</th><th>Severity</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Action</th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.stage}</td><td>${statusPill(x.severity)}</td><td class="entity-name">${x.entity}</td><td><span class="payment-ref">${escapeHtml(x.eform)}</span></td><td>${escapeHtml(x.issue)}</td><td>${escapeHtml(x.action)}</td></tr>`).join("")||'<tr><td colspan="6">No open exception.</td></tr>'}</tbody>`;
+  const allEx=exceptions();const top=allEx.slice(0,5);document.getElementById("topExceptions").innerHTML=`<thead><tr><th>Stage</th><th>Severity</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Action</th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.stage}</td><td>${statusPill(x.severity)}</td><td class="entity-name">${x.entity}</td><td><span class="payment-ref">${escapeHtml(x.eform)}</span></td><td>${escapeHtml(x.issue)}</td><td>${escapeHtml(x.action)}</td></tr>`).join("")||'<tr><td colspan="6">No open exception.</td></tr>'}</tbody>`;
+  const moreEl=document.getElementById("topExceptionsMore");
+  if(moreEl)moreEl.textContent=allEx.length>top.length?`Open Exception Center — ${allEx.length-top.length} more →`:"Open Exception Center →";
 }
 
 function openEformEditor(el){
@@ -2771,6 +2761,7 @@ function renderRunCalendar(){
       cells+=`<div class="${cls.join(" ")}"${title?` title="${title}"`:""}>${day}</div>`;
     }
     const isCur=today.slice(0,7)===`${RUN_CAL_YEAR}-${String(m+1).padStart(2,"0")}`;
+    if(!isCur&&`${RUN_CAL_YEAR}-${String(m+1).padStart(2,"0")}`<today.slice(0,7))return""; // past months hidden — run history lives in the audit table
     return `<div class="rc-month${isCur?" current":""}"><h4>${name} <small>${mRuns.length} run${mRuns.length===1?"":"s"}${mBlocked.length?` · ${mBlocked.length} blocked`:""}</small></h4><div class="rc-grid">${cells}</div></div>`;
   }).join("");
   document.getElementById("rcCcyRules").innerHTML=`
@@ -2785,9 +2776,6 @@ function renderCalendar(){
   const counts={scheduled:all.filter(x=>["ON_TRACK","DUE_TODAY"].includes(x.info.status)).length,holiday:all.filter(x=>x.info.holidayAdjusted).length,overdue:all.filter(x=>x.info.status==="OVERDUE").length,complete:all.filter(x=>x.info.status==="COMPLETED").length,missing:all.filter(x=>["RULE_MISSING","NO_VALUE_DATE"].includes(x.info.status)).length};
   document.getElementById("calendarKpis").innerHTML=[["Scheduled",counts.scheduled,"On track or due today","good"],["Holiday adjusted",counts.holiday,"Destination calendar changed ETA","warn"],["Overdue",counts.overdue,"Expected completion passed","bad"],["Completed",counts.complete,"Debit confirmed","good"],["Rule / date missing",counts.missing,"No SLA rule, or source row has no value date","bad"]].map(k=>`<div class="kpi-card ${k[3]}"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></div>`).join("");
   document.getElementById("settlementAlerts").innerHTML=`<div class="alert-box ${counts.overdue?"bad":"good"}"><strong>${counts.overdue} overdue payment(s)</strong>${counts.overdue?"Expected completion has passed without debit confirmation.":"No settlement overdue item in the UAT view."}</div><div class="alert-box ${counts.holiday?"warn":"good"}"><strong>${counts.holiday} holiday-adjusted payment(s)</strong>Holiday notes remain visible in Payment List, calendar and audit detail.</div><div class="alert-box good"><strong>Citi Singapore primary · multi-bank ready</strong>Future bank SLAs use the same configurable rule contract.</div>`;
-  const idrCalc=calculateExpectedCompletion(idrProcessingExample.valueDate,idrProcessingExample.days,idrProcessingExample.calendar);document.getElementById("idrExample").innerHTML=`<div class="grid-3"><div class="validation-item"><span>Payment Reference</span><strong>${idrProcessingExample.reference}</strong></div><div class="validation-item"><span>Value Date</span><strong>${dateLabel(idrProcessingExample.valueDate)}</strong></div><div class="validation-item"><span>Processing Rule</span><strong>T+${idrProcessingExample.days} business days</strong></div><div class="validation-item"><span>Calendar</span><strong>${idrProcessingExample.calendar}</strong></div><div class="validation-item"><span>Expected Completion</span><strong>${dateLabel(idrCalc.expected)}</strong></div><div class="validation-item"><span>Adjustment Note</span><strong>${escapeHtml(idrCalc.notes.join(" · ")||"No adjustment")}</strong></div></div>`;
-  const groups=new Map();rows.forEach(x=>{const key=x.info.expected||"RULE MISSING";if(!groups.has(key))groups.set(key,[]);groups.get(key).push(x);});
-  document.getElementById("processingCalendar").innerHTML=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([date,items])=>`<div class="calendar-day"><div class="calendar-day-head"><span>${date==="RULE MISSING"?date:dateLabel(date)}</span><span>${items.length} payment(s)</span></div><div class="calendar-day-body">${items.map(({p,info})=>`<div class="calendar-payment ${info.status==="OVERDUE"?"overdue":info.status==="COMPLETED"?"complete":info.holidayAdjusted?"holiday":""}"><strong>${escapeHtml(p.paymentReference||p.baseReference||"Missing reference")}</strong> · ${p.entity}<div class="meta">${escapeHtml(paymentBankLabel(p))} · ${fmt(p.amount,p.currency)}<br>${escapeHtml(info.adjustmentNote)}</div></div>`).join("")}</div></div>`).join("")||'<div class="card">No payment matches the selected filters.</div>';
   document.getElementById("processingTable").innerHTML=`<thead><tr><th>Entity</th><th>Payment Bank</th><th>Payment Reference</th><th>Currency</th><th class="num">Amount</th><th>Value Date</th><th>Processing Rule</th><th>Calendar</th><th>Adjustment Note</th><th>Expected Completion</th><th>Timing Status</th><th>Debit Status</th></tr></thead><tbody>${rows.map(({p,info})=>`<tr><td class="entity-name">${p.entity}</td><td>${escapeHtml(paymentBankLabel(p))}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${p.currency}</td><td class="num">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${escapeHtml(info.ruleLabel)}</td><td>${escapeHtml(info.calendarName||"-")}</td><td>${escapeHtml(info.adjustmentNote)}</td><td>${dateLabel(info.expected)}</td><td>${timingHtml(info)}</td><td>${statusPill(p.debit)}</td></tr>`).join("")||'<tr><td colspan="12">No payment matches the selected filters.</td></tr>'}</tbody>`;
 }
 function renderMasterTables(){
@@ -2827,8 +2815,7 @@ function renderCash(){
   const currencyRows=cashSelectedEntity?currencies.map(cur=>{const arr=entityAccounts.filter(a=>a.currency===cur),balance=arr.reduce((s,a)=>s+(a.balance===null?0:Number(a.balance)),0),required=arr.reduce((s,a)=>s+accountFunding(a).required,0),buffer=arr.reduce((s,a)=>s+accountFunding(a).buffer,0),missing=arr.some(a=>accountFunding(a).required>0&&a.balance===null),projected=missing?null:balance-required,state=missing?"NO_BALANCE_DATA":projected<buffer?"SHORTFALL":required>0?"SUFFICIENT":"NO PAYMENT";return `<tr><td><strong>${cur}</strong></td><td>Latest balance</td><td>${fmt(balance,cur)}</td></tr><tr><td></td><td>Selected payments / buffer</td><td>${fmt(required,cur)} / ${fmt(buffer,cur)}</td></tr><tr><td></td><td>Projected / Status</td><td>${projected===null?"NO DATA":fmt(projected,cur)} &nbsp; ${statusPill(state)}</td></tr>`;}).join(""):"";document.getElementById("entityCurrencySummary").innerHTML=cashSelectedEntity?(currencyRows||'<tr><td>No currency data.</td></tr>'):'<tr><td>Select one entity above to see its currency-level rollup (not netted across entities — see the per-account table below for the all-entities view).</td></tr>';
   const fresh=entityAccounts.filter(a=>a.fresh==="FRESH").length,stale=entityAccounts.filter(a=>a.fresh==="STALE").length,noData=entityAccounts.filter(a=>a.fresh==="NO_DATA").length,breaks=entityAccounts.filter(a=>a.continuity!=="PASS"&&a.continuity!=="NO_DATA").length;document.getElementById("coverageSummary").innerHTML=`<div class="validation-item"><span>Accounts in master</span><strong>${entityAccounts.length}</strong></div><div class="validation-item"><span>Fresh statements</span><strong>${fresh}</strong></div><div class="validation-item"><span>Stale statements</span><strong>${stale}</strong></div><div class="validation-item"><span>No balance data</span><strong>${noData}</strong></div><div class="validation-item"><span>Continuity breaks</span><strong>${breaks}</strong></div>`;
   const rows=accountChoices.map(a=>{const af=accountFunding(a),key=accountKey(a),rowClass=key===cashSelectedAccountKey?"cash-row-selected":af.fundingStatus==="SHORTFALL"?"cash-row-shortfall":af.fundingStatus==="NO_BALANCE_DATA"?"cash-row-nodata":"";return `<tr class="${rowClass}" onclick="setCashAccount('${key.replaceAll("'","\'")}')" style="cursor:pointer"><td class="entity-name">${a.entity}</td><td>${a.bank}</td><td><strong>${a.account}</strong><span class="vendor-sub">${a.accountName}</span></td><td>${a.currency}</td><td>${a.date||"-"}</td><td class="num amount">${af.hasBalance?fmt(a.balance,a.currency):"-"}</td><td class="num amount">${fmt(af.required,a.currency)}</td><td class="num amount">${fmt(af.buffer,a.currency)}</td><td class="num amount">${af.projected===null?"-":fmt(af.projected,a.currency)}</td><td class="num amount">${fmt(af.fundingRequired,a.currency)}</td><td>${statusPill(af.fundingStatus)}</td><td>${statusPill(a.fresh)}</td></tr>`;}).join("");document.getElementById("cashTable").innerHTML=`<thead><tr><th>Entity</th><th>Bank</th><th>Account / Account Name</th><th>Currency</th><th>Latest Statement</th><th class="num">Latest Balance</th><th class="num">Selected Payments</th><th class="num">Minimum Buffer</th><th class="num">Projected Balance</th><th class="num">Funding Required</th><th>Funding Status</th><th>Freshness</th></tr></thead><tbody>${rows||'<tr><td colspan="12">No account data.</td></tr>'}</tbody>`;
-  const payRows=selectedAccount?paymentsForAccount(selectedAccount):[],sorted=[...payRows].sort((a,b)=>(processingInfo(a).expected||"").localeCompare(processingInfo(b).expected||""));let running=selectedAccount&&selectedAccount.balance!==null?Number(selectedAccount.balance):null;const forecast=sorted.map(p=>{const info=processingInfo(p);if(running!==null)running-=Number(p.amount||0);const afterBuffer=running===null?null:running-minimumBuffer(selectedAccount);return `<tr><td>${dateLabel(info.expected)}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(p.beneficiary)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td class="num">${running===null?"-":fmt(running,selectedAccount.currency)}</td><td class="num">${afterBuffer===null?"-":fmt(afterBuffer,selectedAccount.currency)}</td><td>${timingHtml(info)}</td></tr>`;}).join("");document.getElementById("cashForecastTable").innerHTML=`<thead><tr><th>Expected Debit Date</th><th>Payment Reference</th><th>Beneficiary</th><th class="num">Expected Debit</th><th class="num">Projected Balance</th><th class="num">Balance Above / (Below) Buffer</th><th>Timing</th></tr></thead><tbody>${forecast||'<tr><td colspan="7">No selected payment is allocated to this account.</td></tr>'}</tbody>`;
-  const payHtml=payRows.map(p=>{const info=processingInfo(p);return `<tr><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span><span class="vendor-sub">${p.invoiceCount} ERP invoice line(s)</span></td><td>${escapeHtml(paymentBankLabel(p))}</td><td>${escapeHtml(p.beneficiary)}</td><td>${escapeHtml(p.vendorAccount||"-")}</td><td>${escapeHtml(p.swift||"-")}</td><td class="num amount">${fmt(p.amount,p.currency)}</td><td>${dateLabel(p.valueDate)}</td><td>${dateLabel(info.expected)}</td><td>${statusPill(p.referenceStatus)}</td><td>${statusPill(erpStatus(p))}</td><td>${statusPill(p.citi)}</td><td>${escapeHtml(p.description)}</td></tr>`;}).join("");document.getElementById("cashPaymentTable").innerHTML=`<thead><tr><th>Payment Reference</th><th>Payment Bank</th><th>Beneficiary</th><th>Vendor Account</th><th>SWIFT</th><th class="num">Payment Amount</th><th>Value Date</th><th>Expected Completion</th><th>Reference Status</th><th>ERP Status</th><th>Bank Status</th><th>Description</th></tr></thead><tbody>${payHtml||'<tr><td colspan="12">No INCLUDE_ERP payment is allocated to this account.</td></tr>'}</tbody>`;
+  const payRows=selectedAccount?paymentsForAccount(selectedAccount):[],sorted=[...payRows].sort((a,b)=>(processingInfo(a).expected||"").localeCompare(processingInfo(b).expected||""));let running=selectedAccount&&selectedAccount.balance!==null?Number(selectedAccount.balance):null;const forecast=sorted.map(p=>{const info=processingInfo(p);if(running!==null)running-=Number(p.amount||0);const afterBuffer=running===null?null:running-minimumBuffer(selectedAccount);return `<tr><td>${dateLabel(info.expected)}</td><td><span class="payment-ref">${escapeHtml(p.paymentReference)}</span></td><td>${escapeHtml(paymentBankLabel(p))}</td><td>${escapeHtml(p.beneficiary)}</td><td class="num">${fmt(p.amount,p.currency)}</td><td class="num">${running===null?"-":fmt(running,selectedAccount.currency)}</td><td class="num">${afterBuffer===null?"-":fmt(afterBuffer,selectedAccount.currency)}</td><td>${timingHtml(info)}</td><td>${statusPill(p.citi)}</td></tr>`;}).join("");document.getElementById("cashForecastTable").innerHTML=`<thead><tr><th>Expected Debit Date</th><th>Payment Reference</th><th>Payment Bank</th><th>Beneficiary</th><th class="num">Expected Debit</th><th class="num">Projected Balance</th><th class="num">Above / (Below) Buffer</th><th>Timing</th><th>Bank Status</th></tr></thead><tbody>${forecast||'<tr><td colspan="9">No selected payment is allocated to this account.</td></tr>'}</tbody>`;
 }
 
 
