@@ -1078,15 +1078,14 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
     <div class="field"><label>Timing Status</label><select id="filterTiming" onchange="renderWorkbench()"><option value="">All</option><option>ON_TRACK</option><option>DUE_TODAY</option><option>OVERDUE</option><option>COMPLETED</option><option>RULE_MISSING</option><option>NO_VALUE_DATE</option></select></div>
     <div class="field"><label>Bank Status</label><select id="filterCiti" onchange="renderWorkbench()"><option value="">All</option><option>CREATED</option><option>NOT_CREATED</option><option>DIFF</option><option>NOT_CHECKED</option></select></div>
     <div class="field search"><label>Search supplier / invoice / reference</label><input id="filterSearch" placeholder="Example: FA-PM260708106" oninput="renderWorkbench()"></div>
-  </div>
-
-  <div class="bulk-panel">
-    <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong></div>
-    <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr auto auto">
-      <div class="field"><label>Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
-      <div class="field"><label>Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
-      <div class="field"><label>Value Date</label><input type="date" id="bulkValueDate"></div>
-      <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
+    <div style="width:100%;border-top:1px solid var(--divider);padding-top:10px;margin-top:4px">
+      <div class="bulk-head"><strong>Bulk update payment settings · <span id="selectedCount">0</span> selected · <span id="visibleCount">0</span> visible</strong></div>
+      <div class="bulk-fields" style="grid-template-columns:2.2fr 1.5fr 1.2fr auto auto">
+        <div class="field"><label>Set Payment Method</label><select id="bulkMethod"><option value="">-- No change --</option></select></div>
+        <div class="field"><label>Set Bank Account</label><select id="bulkOrdering"><option value="">-- No change --</option></select></div>
+        <div class="field"><label>Set Value Date</label><input type="date" id="bulkValueDate"></div>
+        <button class="btn primary" onclick="applyBulk(false)">Apply Selected</button><button class="btn" onclick="applyBulk(true)">Apply Filtered</button>
+      </div>
     </div>
   </div>
   <div class="wb-shell" id="wbShell">
