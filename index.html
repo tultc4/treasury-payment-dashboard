@@ -925,6 +925,15 @@ td{font-size:12.5px}
 .field select,.field input{font-size:12.5px}
 .payment-ref{font-size:12px}
 
+/* Denser rows (designer pass 2026-08-22): financial data tables sit at
+   ~7px vertical padding; in-cell controls and the two-line reference cell
+   compress to match. Header stays a touch taller than data rows. */
+th{padding:9px 12px}
+td{padding:7px 12px}
+.cell-select,.ref-input,.date-input,.eform-override{padding:4px 8px}
+.payment-ref{padding:2px 7px;line-height:16px}
+.ref-meta{margin-top:2px}
+
 /* ---- Dark theme (user-selectable; light remains the default) ----------- */
 html{color-scheme:light}
 html[data-theme="dark"]{color-scheme:dark;
