@@ -1257,6 +1257,8 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   </div></div>
   <div class="section-title">Processing SLA & Holiday Calendar</div>
   <div class="grid-2"><div class="card"><h3>Bank processing rules</h3><div class="table-wrap" style="max-height:340px"><table id="processingRuleTable"></table></div></div><div class="card"><h3>Holiday calendar control</h3><div class="table-wrap" style="max-height:340px"><table id="holidayTable"></table></div></div></div>
+  <div class="section-title">Parse completeness control</div>
+  <div class="card"><div class="table-wrap" style="max-height:320px"><table id="parseControlTable"></table></div></div>
   <div class="section-title">Settings</div>
   <div class="card"><div class="bulk-fields" style="grid-template-columns:1.4fr 1.4fr auto;max-width:640px">
     <div class="field"><label>Operator name (badge & audit log)</label><input id="operatorNameInput" type="text"></div>
@@ -1783,6 +1785,9 @@ function renderOverview(){
     ["Open exceptions",openEx.length,openEx.length?`oldest ${oldestEx} day(s)`:"nothing open",openEx.length?"warn":"good"]];
   // ---- attention panel ----
   const attn=[];
+  {const pc=window.parseControl;
+   if(pc&&pc.files){const badf=pc.files.filter(c=>c.status!=="RECONCILED");
+     if(badf.length)attn.push(["crit",`Parse control: ${badf.length} source file(s) NOT reconciled — re-parse before using this batch`,"Open Admin","master"]);}}
   shortfalls.forEach(x=>attn.push(["crit",`Funding shortfall — ${x.a.entity} ${x.a.currency}: ${fmtC(x.f.fundingRequired)} ${x.a.currency} required`,"Open Liquidity","cash"]));
   if(notCreated)attn.push(["crit",`${notCreated} exported payment(s) not found in the bank result`,"Open Reconciliation","citi"]);
   if(refBlocks)attn.push(["crit",`${refBlocks} payment reference(s) blocked`,"Fix references","workbench"]);
@@ -2190,9 +2195,23 @@ function tblOpenWindow(t){
 window.tblOpenWindow=tblOpenWindow;
 /* ---- Real audit log + operator identity (review-board P0) ----------- */
 window.auditLog=(function(){try{return JSON.parse(localStorage.getItem("tctAudit")||"[]");}catch(e){return[];}})();
+window.parseControl=(function(){try{return JSON.parse(localStorage.getItem("tctParseControl")||"null");}catch(e){return null;}})();
+function renderParseControl(){
+  const t=document.getElementById("parseControlTable");if(!t)return;
+  const pc=window.parseControl;
+  const head=`<thead><tr><th>Source File</th><th>Entity</th><th class="num">Candidates</th><th class="num">Kept</th><th class="num">Out of window</th><th class="num">Restated</th><th class="num">Summary</th><th class="num">No amount</th><th class="num">No ref</th><th>Kept amount</th><th>Status</th></tr></thead>`;
+  if(!pc||!pc.files||!pc.files.length){
+    t.innerHTML=head+`<tbody><tr><td colspan="11">No parse control yet — import a parser output that carries the PARSE_CONTROL sheet. Rule: candidate rows = kept + every excluded-by-reason count; a file that does not close is flagged CHECK.</td></tr></tbody>`;
+    return;
+  }
+  const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  t.innerHTML=head+`<tbody>${pc.files.map(c=>`<tr><td>${esc(c.file)}</td><td class="entity-name">${esc(c.entity)}</td><td class="num">${c.candidates}</td><td class="num" style="font-weight:700">${c.kept}</td><td class="num">${c.window}</td><td class="num">${c.dedup||"-"}</td><td class="num">${c.summary||"-"}</td><td class="num">${c.noAmount||"-"}</td><td class="num">${c.noRef||"-"}</td><td>${esc(c.ccy)}</td><td>${statusPill(c.status==="RECONCILED"?"PASS":"FAIL")}</td></tr>`).join("")}
+  <tr><td colspan="11" style="color:var(--muted);font-size:11px">Imported ${esc(pc.at)} from ${esc(pc.source)} · rule: candidates = kept + out-of-window + restated + summary + no-amount + no-reference (+ headers/period). CHECK ⇒ re-parse before using the batch.</td></tr></tbody>`;
+}
+window.renderParseControl=renderParseControl;
 function operatorName(){return localStorage.getItem("tctOperator")||"Stella";}
 function logEvent(type,detail){
-  auditLog.unshift({at:new Date().toISOString().slice(0,16).replace("T"," "),by:operatorName(),type,detail:String(detail)});
+  auditLog.unshift({at:(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`)(new Date()),by:operatorName(),type,detail:String(detail)});
   if(auditLog.length>400)auditLog.length=400;
   try{localStorage.setItem("tctAudit",JSON.stringify(auditLog));}catch(e){}
   if(window.renderAuditLog)renderAuditLog();
@@ -2200,7 +2219,7 @@ function logEvent(type,detail){
 window.operatorName=operatorName;window.logEvent=logEvent;
 function renderAuditLog(){
   const el=document.getElementById("auditLogList");if(!el)return;
-  el.innerHTML=auditLog.length?auditLog.slice(0,60).map(e=>`<div class="audit-item"><div class="audit-time">${e.at}</div><div class="audit-dot"></div><div class="audit-body"><strong>${e.type}</strong><span>${String(e.detail).replace(/&/g,"&amp;").replace(/</g,"&lt;")} · by ${String(e.by).replace(/</g,"&lt;")}</span></div></div>`).join("")
+  el.innerHTML=auditLog.length?auditLog.slice(0,60).map(e=>`<div class="audit-item"><div class="audit-time">${e.at}</div><div class="audit-dot"></div><div class="audit-body"><strong>${e.type}</strong><span> — ${String(e.detail).replace(/&/g,"&amp;").replace(/</g,"&lt;")} · by ${String(e.by).replace(/</g,"&lt;")}</span></div></div>`).join("")
     :'<div class="audit-item"><div class="audit-time">—</div><div class="audit-dot"></div><div class="audit-body"><strong>No events yet</strong><span>Imports, bulk updates, overrides, exports and approval emails are recorded here.</span></div></div>';
 }
 window.renderAuditLog=renderAuditLog;
@@ -2926,6 +2945,7 @@ function renderCalendar(){
 }
 function renderMasterTables(){
   if(window.renderAuditLog)renderAuditLog();
+  if(window.renderParseControl)renderParseControl();
   const opI=document.getElementById("operatorNameInput"),cbI=document.getElementById("erpCreatedByInput");
   if(opI&&!opI.value)opI.value=window.operatorName?operatorName():"Stella";
   if(cbI&&!cbI.value)cbI.value=localStorage.getItem("tctErpCreatedBy")||CREATED_BY_DEFAULT;
@@ -3170,6 +3190,31 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
     const rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
     if (!rows.length) { showToast('PAYMENT_LIST sheet is empty.'); return; }
 
+    // Parse-completeness control: the parser writes a PARSE_CONTROL sheet
+    // reconciling every candidate source row (kept + excluded-by-reason =
+    // scanned). Surface it so a parsing gap can never be silent.
+    let parseCtl = null;
+    if (wb.SheetNames.includes('PARSE_CONTROL')) {
+      const craw = XLSX.utils.sheet_to_json(wb.Sheets['PARSE_CONTROL'], { defval:'' });
+      const cfiles = craw.filter(c => c['Source File'] && c['Status']).map(c => ({
+        file: String(c['Source File']), entity: String(c['Entity'] || ''),
+        candidates: Number(c['Candidate rows'] || 0), kept: Number(c['Kept (this run)'] || 0),
+        window: Number(c['Outside run window'] || 0), dedup: Number(c['Restated on other sheet'] || 0),
+        summary: Number(c['Summary/total rows'] || 0), noAmount: Number(c['No positive amount'] || 0),
+        noRef: Number(c['No reference'] || 0), headers: Number(c['Repeated headers'] || 0),
+        period: Number(c['Period-filtered'] || 0), ccy: String(c['Kept amount by currency'] || ''),
+        status: String(c['Status'])
+      }));
+      if (cfiles.length) {
+        parseCtl = { at: new Date().toISOString().slice(0,16).replace('T',' '), source: file.name, files: cfiles };
+        try { localStorage.setItem('tctParseControl', JSON.stringify(parseCtl)); } catch(e) {}
+        window.parseControl = parseCtl;
+      }
+    } else {
+      window.parseControl = null;
+      try { localStorage.removeItem('tctParseControl'); } catch(e) {}
+    }
+
     const groups = [];
     const pending = [];
     const entityFromName = guessEntity(file.name) || guessEntity(file.webkitRelativePath || '');
@@ -3318,7 +3363,16 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
     state.lastRefresh = new Date();
     state.audit = state.audit || [];
     state.audit.unshift(`AP imported: ${file.name} · ${newRows.length} payment line(s) (${payments.length} total)`);
-    showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)`);if(window.logEvent)logEvent("AP IMPORT",`${file.name} — ${payments.length} payment line(s)`);
+    {
+      let ctlNote = '';
+      if (window.parseControl) {
+        const ok = parseControl.files.filter(c => c.status === 'RECONCILED').length;
+        ctlNote = ` · parse control ${ok}/${parseControl.files.length} file(s) reconciled`;
+        if (window.logEvent) logEvent('PARSE CONTROL', `${ok}/${parseControl.files.length} source file(s) reconciled — kept + excluded = scanned`);
+      }
+      showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)${ctlNote}`);
+      if (window.logEvent) logEvent('AP IMPORT', `${file.name} — ${payments.length} payment line(s)`);
+    }
     refreshAll();
   }
   // Loose match for account numbers / SWIFT codes: strips punctuation and
