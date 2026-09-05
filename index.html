@@ -1270,6 +1270,8 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   </div>
   <div class="section-title">Parse completeness control</div>
   <div class="card"><div class="table-wrap" style="max-height:320px"><table id="parseControlTable"></table></div></div>
+  <div class="section-title">AP source emails (Outlook fetch)</div>
+  <div class="card"><div class="table-wrap" style="max-height:320px"><table id="emailSourcesTable"></table></div></div>
   <div class="section-title">Settings</div>
   <div class="card"><div class="bulk-fields" style="grid-template-columns:1.4fr 1.4fr auto;max-width:640px">
     <div class="field"><label>Operator name (badge & audit log)</label><input id="operatorNameInput" type="text"></div>
@@ -1561,7 +1563,7 @@ const idrProcessingExample = {
 window.refHistory = window.refHistory || new Set();
 
 // ---- App version: bump on every release; shown in the rail + Admin ----
-window.APP_VERSION = "1.0.0";
+window.APP_VERSION = "1.1.0";
 window.APP_BUILD   = "2026-09-05";
 
 // Additional UAT groups demonstrating the newly approved payment-reference rules.
@@ -1804,6 +1806,9 @@ function renderOverview(){
   {const pc=window.parseControl;
    if(pc&&pc.files){const badf=pc.files.filter(c=>c.status!=="RECONCILED");
      if(badf.length)attn.push(["crit",`Parse control: ${badf.length} source file(s) NOT reconciled — re-parse before using this batch`,"Open Admin","master"]);}}
+  {const em=window.emailSources;
+   if(em&&em.records){const dup=em.records.filter(r=>r.status!=="NEW").length;
+     if(dup)attn.push(["warn",`Outlook fetch: ${dup} attachment(s) refused as duplicate of a previous batch — verify with the sender`,"Open Admin","master"]);}}
   shortfalls.forEach(x=>attn.push(["crit",`Funding shortfall — ${x.a.entity} ${x.a.currency}: ${fmtC(x.f.fundingRequired)} ${x.a.currency} required`,"Open Liquidity","cash"]));
   if(notCreated)attn.push(["crit",`${notCreated} exported payment(s) not found in the bank result`,"Open Reconciliation","citi"]);
   if(refBlocks)attn.push(["crit",`${refBlocks} payment reference(s) blocked`,"Fix references","workbench"]);
@@ -2225,6 +2230,24 @@ function renderParseControl(){
   <tr><td colspan="11" style="color:var(--muted);font-size:11px">Imported ${esc(pc.at)} from ${esc(pc.source)} · rule: candidates = kept + out-of-window + restated + summary + no-amount + no-reference (+ headers/period). CHECK ⇒ re-parse before using the batch.</td></tr></tbody>`;
 }
 window.renderParseControl=renderParseControl;
+/* ---- AP source emails: sender + file provenance from the Outlook fetch.
+   The fetch's SHA-256 register blocks a re-processed file BEFORE it reaches
+   input_ap; this card is the on-dashboard evidence of who sent what, when,
+   and which attachments were rejected as duplicates. -------------------- */
+window.emailSources=(function(){try{return JSON.parse(localStorage.getItem("tctEmailSources")||"null");}catch(e){return null;}})();
+function renderEmailSources(){
+  const t=document.getElementById("emailSourcesTable");if(!t)return;
+  const em=window.emailSources;
+  const head=`<thead><tr><th>File</th><th>Entity</th><th>Sender</th><th>Email</th><th>Subject</th><th>Received</th><th>Content hash</th><th>Status</th></tr></thead>`;
+  if(!em||!em.records||!em.records.length){
+    t.innerHTML=head+`<tbody><tr><td colspan="8">No email provenance yet — run the Outlook fetch step (fetch_ap_from_outlook.py, or Run_Weekly.cmd) so the parser output carries the EMAIL_SOURCES sheet. Manually placed files are still parsed, just without sender evidence.</td></tr></tbody>`;
+    return;
+  }
+  const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  t.innerHTML=head+`<tbody>${em.records.map(r=>`<tr><td>${esc(r.file)}</td><td class="entity-name">${esc(r.entity)}</td><td>${esc(r.sender)}</td><td>${esc(r.email)}</td><td>${esc(r.subject)}</td><td>${esc(r.received)}</td><td style="font-family:var(--mono,monospace);font-size:11px">${esc(r.hash)}</td><td>${r.status==="NEW"?`<span class="status good">NEW</span>`:`<span class="status bad">DUPLICATE</span>`}</td></tr>`).join("")}
+  <tr><td colspan="8" style="color:var(--muted);font-size:11px">Fetched ${esc(em.fetchedAt||"?")} · imported ${esc(em.at)} from ${esc(em.source)} · duplicate = identical file content (SHA-256) already processed in a previous batch — the fetch refuses to save it into the input folder.</td></tr></tbody>`;
+}
+window.renderEmailSources=renderEmailSources;
 function renderRefHistory(){
   const el=document.getElementById("refHistCount");
   if(el)el.textContent=(window.refHistory?refHistory.size:0).toLocaleString();
@@ -3003,6 +3026,7 @@ function renderMasterTables(){
   const av2=document.getElementById("adminVersion");if(av2)av2.textContent=`Treasury Control Tower v${window.APP_VERSION} · build ${window.APP_BUILD}`;
   if(window.renderAuditLog)renderAuditLog();
   if(window.renderParseControl)renderParseControl();
+  if(window.renderEmailSources)renderEmailSources();
   if(window.renderRefHistory)renderRefHistory();
   const opI=document.getElementById("operatorNameInput"),cbI=document.getElementById("erpCreatedByInput");
   if(opI&&!opI.value)opI.value=window.operatorName?operatorName():"Stella";
@@ -3273,6 +3297,28 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
       try { localStorage.removeItem('tctParseControl'); } catch(e) {}
     }
 
+    // Email provenance: when the batch was fetched from Outlook, the parser
+    // carries an EMAIL_SOURCES sheet (sender, subject, received, SHA-256,
+    // NEW/DUPLICATE). Keep it so the dashboard can prove where each input
+    // file came from and which attachments were refused as duplicates.
+    if (wb.SheetNames.includes('EMAIL_SOURCES')) {
+      const eraw = XLSX.utils.sheet_to_json(wb.Sheets['EMAIL_SOURCES'], { defval:'' });
+      const erecs = eraw.filter(r => r['File'] && r['Status']).map(r => ({
+        file: String(r['File']), entity: String(r['Entity'] || ''),
+        sender: String(r['Sender'] || ''), email: String(r['Email'] || ''),
+        subject: String(r['Subject'] || ''), received: String(r['Received'] || ''),
+        hash: String(r['SHA-256 (first 12)'] || ''), status: String(r['Status']),
+        firstSeen: String(r['First seen'] || ''), fetchedAt: String(r['Fetched at'] || '')
+      }));
+      if (erecs.length) {
+        window.emailSources = {
+          at: new Date().toISOString().slice(0,16).replace('T',' '),
+          source: file.name, fetchedAt: erecs[0].fetchedAt, records: erecs
+        };
+        try { localStorage.setItem('tctEmailSources', JSON.stringify(window.emailSources)); } catch(e) {}
+      }
+    }
+
     const groups = [];
     const pending = [];
     const entityFromName = guessEntity(file.name) || guessEntity(file.webkitRelativePath || '');
@@ -3427,6 +3473,11 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
         const ok = parseControl.files.filter(c => c.status === 'RECONCILED').length;
         ctlNote = ` · parse control ${ok}/${parseControl.files.length} file(s) reconciled`;
         if (window.logEvent) logEvent('PARSE CONTROL', `${ok}/${parseControl.files.length} source file(s) reconciled — kept + excluded = scanned`);
+      }
+      if (window.emailSources && emailSources.records && emailSources.source === file.name) {
+        const dups = emailSources.records.filter(r => r.status !== 'NEW').length;
+        ctlNote += ` · ${emailSources.records.length} source email(s) on record${dups ? ` — ${dups} duplicate attachment(s) refused` : ''}`;
+        if (window.logEvent) logEvent('EMAIL SOURCES', `${emailSources.records.length} Outlook attachment(s): ${emailSources.records.filter(r=>r.status==='NEW').length} new, ${dups} duplicate — senders: ${[...new Set(emailSources.records.map(r=>r.email||r.sender))].join(', ')}`);
       }
       showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)${ctlNote}`);
       if (window.logEvent) logEvent('AP IMPORT', `${file.name} — ${payments.length} payment line(s)`);
