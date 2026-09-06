@@ -1030,6 +1030,10 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
 </style>
 </head>
 <body>
+<!-- Run-day auto-load: Run_Weekly writes autoload_batch.js (base64 of the
+     parser output) next to this file; when absent the tag 404s silently and
+     the manual ⬆ import flow is unchanged. -->
+<script src="autoload_batch.js"></script>
 <header>
   <div class="header-row">
     <div class="brand">
@@ -1093,6 +1097,8 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="section-title">Management view</div>
   <div class="card"><h3>Entity status</h3><div class="table-wrap" style="max-height:380px"><table id="entitySummary"></table></div></div>
+  <div class="section-title">Batch source evidence</div>
+  <div class="card"><div id="srcEvidence"></div></div>
   <div class="card hidden">
       <h3>Batch completion</h3>
       <div class="donut-wrap"><div class="donut" id="completionDonut"><span id="completionPct">0%<small>Fully completed</small></span></div><div class="legend" id="completionLegend"></div></div>
@@ -1271,7 +1277,13 @@ html[data-theme="dark"] .cash-status-banner.info{background:var(--blue-bg)}
   <div class="section-title">Parse completeness control</div>
   <div class="card"><div class="table-wrap" style="max-height:320px"><table id="parseControlTable"></table></div></div>
   <div class="section-title">AP source emails (Outlook fetch)</div>
-  <div class="card"><div class="table-wrap" style="max-height:320px"><table id="emailSourcesTable"></table></div></div>
+  <div class="card">
+    <div class="wb-tools" style="margin-bottom:8px;align-items:center">
+      <span class="muted" style="font-size:12px" id="emailEvidenceCount"></span>
+      <button class="btn" onclick="exportEmailEvidence()">⇩ Export evidence CSV</button>
+    </div>
+    <div class="table-wrap" style="max-height:320px"><table id="emailSourcesTable"></table></div>
+  </div>
   <div class="section-title">Settings</div>
   <div class="card"><div class="bulk-fields" style="grid-template-columns:1.4fr 1.4fr auto;max-width:640px">
     <div class="field"><label>Operator name (badge & audit log)</label><input id="operatorNameInput" type="text"></div>
@@ -1807,8 +1819,11 @@ function renderOverview(){
    if(pc&&pc.files){const badf=pc.files.filter(c=>c.status!=="RECONCILED");
      if(badf.length)attn.push(["crit",`Parse control: ${badf.length} source file(s) NOT reconciled — re-parse before using this batch`,"Open Admin","master"]);}}
   {const em=window.emailSources;
-   if(em&&em.records){const dup=em.records.filter(r=>r.status!=="NEW").length;
-     if(dup)attn.push(["warn",`Outlook fetch: ${dup} attachment(s) refused as duplicate of a previous batch — verify with the sender`,"Open Admin","master"]);}}
+   if(em&&em.records){
+     const dup=em.records.filter(r=>String(r.status).startsWith("DUPLICATE")).length;
+     const unexp=em.records.filter(r=>r.status==="UNEXPECTED_SENDER").length;
+     if(dup)attn.push(["warn",`Outlook fetch: ${dup} attachment(s) refused as duplicate of a previous batch — verify with the sender`,"Open Admin","master"]);
+     if(unexp)attn.push(["warn",`Outlook fetch: ${unexp} AP-looking file(s) from a sender NOT on the approved list — not saved, verify before trusting`,"Open Admin","master"]);}}
   shortfalls.forEach(x=>attn.push(["crit",`Funding shortfall — ${x.a.entity} ${x.a.currency}: ${fmtC(x.f.fundingRequired)} ${x.a.currency} required`,"Open Liquidity","cash"]));
   if(notCreated)attn.push(["crit",`${notCreated} exported payment(s) not found in the bank result`,"Open Reconciliation","citi"]);
   if(refBlocks)attn.push(["crit",`${refBlocks} payment reference(s) blocked`,"Fix references","workbench"]);
@@ -1838,6 +1853,22 @@ function renderOverview(){
   const allEx=exceptions();const top=allEx.slice(0,5);document.getElementById("topExceptions").innerHTML=`<thead><tr><th>Stage</th><th>Severity</th><th>Entity</th><th>Payment Reference</th><th>Issue</th><th>Action</th></tr></thead><tbody>${top.map(x=>`<tr><td>${x.stage}</td><td>${statusPill(x.severity)}</td><td class="entity-name">${x.entity}</td><td><span class="payment-ref">${escapeHtml(x.eform)}</span></td><td>${escapeHtml(x.issue)}</td><td>${escapeHtml(x.action)}</td></tr>`).join("")||'<tr><td colspan="6">No open exception.</td></tr>'}</tbody>`;
   const moreEl=document.getElementById("topExceptionsMore");
   if(moreEl)moreEl.textContent=allEx.length>top.length?`Open Exception Center — ${allEx.length-top.length} more →`:"Open Exception Center →";
+  // Batch source evidence corner: which email delivered each input file of
+  // the current batch — sender, time, content hash — plus the size of the
+  // permanent evidence register. Tracking proof, kept on screen.
+  const evEl=document.getElementById("srcEvidence");
+  if(evEl){
+    const em=window.emailSources,evReg=window.emailEvidence||{};
+    const regN=Object.keys(evReg).length;
+    if(em&&em.records&&em.records.length){
+      const pill=s=>s==="NEW"?'<span class="status good">IN BATCH</span>':s==="UNEXPECTED_SENDER"?'<span class="status warn">UNEXPECTED SENDER</span>':'<span class="status bad">DUPLICATE</span>';
+      evEl.innerHTML=`<div class="table-wrap" style="max-height:220px"><table><thead><tr><th>Entity</th><th>File</th><th>Sent by</th><th>Received</th><th>Hash</th><th>Status</th></tr></thead><tbody>${
+        em.records.map(r=>`<tr><td class="entity-name">${escapeHtml(r.entity)}</td><td>${escapeHtml(r.file)}</td><td>${escapeHtml(r.sender)} &lt;${escapeHtml(r.email)}&gt;</td><td>${escapeHtml(r.received)}</td><td style="font-family:var(--mono,monospace);font-size:11px">${escapeHtml(r.hash)}</td><td>${pill(r.status)}</td></tr>`).join("")
+      }</tbody></table></div><div style="margin-top:6px;font-size:11.5px;color:var(--muted)">Fetched from Outlook ${escapeHtml(em.fetchedAt||"–")} · evidence register: ${regN} email(s) on permanent record — full list &amp; CSV export in <a href="#" onclick="activateTab('master');return false">Admin</a>.</div>`;
+    }else{
+      evEl.innerHTML=`<div style="font-size:12.5px;color:var(--muted)">No source-email evidence for the current batch yet — it appears here automatically when the batch is fetched from Outlook. Evidence register so far: ${regN} email(s) (Admin → AP source emails).</div>`;
+    }
+  }
 }
 
 function openEformEditor(el){
@@ -2237,6 +2268,8 @@ window.renderParseControl=renderParseControl;
 window.emailSources=(function(){try{return JSON.parse(localStorage.getItem("tctEmailSources")||"null");}catch(e){return null;}})();
 function renderEmailSources(){
   const t=document.getElementById("emailSourcesTable");if(!t)return;
+  const cnt=document.getElementById("emailEvidenceCount");
+  if(cnt)cnt.textContent=`Evidence register: ${Object.keys(window.emailEvidence||{}).length} source email(s) on permanent record (survives new imports)`;
   const em=window.emailSources;
   const head=`<thead><tr><th>File</th><th>Entity</th><th>Sender</th><th>Email</th><th>Subject</th><th>Received</th><th>Content hash</th><th>Status</th></tr></thead>`;
   if(!em||!em.records||!em.records.length){
@@ -2244,10 +2277,41 @@ function renderEmailSources(){
     return;
   }
   const esc=v=>String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;");
-  t.innerHTML=head+`<tbody>${em.records.map(r=>`<tr><td>${esc(r.file)}</td><td class="entity-name">${esc(r.entity)}</td><td>${esc(r.sender)}</td><td>${esc(r.email)}</td><td>${esc(r.subject)}</td><td>${esc(r.received)}</td><td style="font-family:var(--mono,monospace);font-size:11px">${esc(r.hash)}</td><td>${r.status==="NEW"?`<span class="status good">NEW</span>`:`<span class="status bad">DUPLICATE</span>`}</td></tr>`).join("")}
+  t.innerHTML=head+`<tbody>${em.records.map(r=>`<tr><td>${esc(r.file)}</td><td class="entity-name">${esc(r.entity)}</td><td>${esc(r.sender)}</td><td>${esc(r.email)}</td><td>${esc(r.subject)}</td><td>${esc(r.received)}</td><td style="font-family:var(--mono,monospace);font-size:11px">${esc(r.hash)}</td><td>${r.status==="NEW"?`<span class="status good">NEW</span>`:r.status==="UNEXPECTED_SENDER"?`<span class="status warn">UNEXPECTED SENDER</span>`:`<span class="status bad">DUPLICATE</span>`}</td></tr>`).join("")}
   <tr><td colspan="8" style="color:var(--muted);font-size:11px">Fetched ${esc(em.fetchedAt||"?")} · imported ${esc(em.at)} from ${esc(em.source)} · duplicate = identical file content (SHA-256) already processed in a previous batch — the fetch refuses to save it into the input folder.</td></tr></tbody>`;
 }
 window.renderEmailSources=renderEmailSources;
+/* ---- Email evidence register: PERMANENT log of every source email across
+   batches (tctEmailSources only holds the latest batch). Keyed by content
+   hash so re-imports never duplicate an entry. Capped at 600 newest. ----- */
+window.emailEvidence=(function(){try{return JSON.parse(localStorage.getItem("tctEmailEvidence")||"{}")||{};}catch(e){return{};}})();
+function appendEmailEvidence(records,importedAt){
+  const reg=window.emailEvidence||{};
+  (records||[]).forEach(r=>{
+    const key=r.hash||`${r.file}|${r.received}`;
+    if(!reg[key])reg[key]={...r,importedAt:importedAt||new Date().toISOString().slice(0,16).replace("T"," ")};
+  });
+  const keys=Object.keys(reg);
+  if(keys.length>600)keys.sort((a,b)=>String(reg[a].importedAt).localeCompare(String(reg[b].importedAt)))
+    .slice(0,keys.length-600).forEach(k=>delete reg[k]);
+  window.emailEvidence=reg;
+  try{localStorage.setItem("tctEmailEvidence",JSON.stringify(reg));}catch(e){}
+}
+window.appendEmailEvidence=appendEmailEvidence;
+function exportEmailEvidence(){
+  const reg=window.emailEvidence||{};
+  const rows=Object.values(reg).sort((a,b)=>String(b.importedAt).localeCompare(String(a.importedAt)));
+  if(!rows.length){showToast("The evidence register is empty.");return;}
+  const esc=v=>{let s=String(v??"");if(/^[=+@-]/.test(s))s="'"+s;return `"${s.replace(/"/g,'""')}"`;};
+  const csv="imported_at,file,entity,sender,email,subject,received,sha256_12,status\r\n"
+    +rows.map(r=>[r.importedAt,r.file,r.entity,r.sender,r.email,r.subject,r.received,r.hash,r.status].map(esc).join(",")).join("\r\n");
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}));
+  const d=new Date();a.download=`email_evidence_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.csv`;
+  a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  showToast(`Exported ${rows.length} evidence row(s).`);
+}
+window.exportEmailEvidence=exportEmailEvidence;
 function renderRefHistory(){
   const el=document.getElementById("refHistCount");
   if(el)el.textContent=(window.refHistory?refHistory.size:0).toLocaleString();
@@ -3316,6 +3380,8 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
           source: file.name, fetchedAt: erecs[0].fetchedAt, records: erecs
         };
         try { localStorage.setItem('tctEmailSources', JSON.stringify(window.emailSources)); } catch(e) {}
+        // permanent evidence register — keyed by content hash, never cleared
+        if (window.appendEmailEvidence) appendEmailEvidence(erecs, window.emailSources.at);
       }
     }
 
@@ -3475,9 +3541,9 @@ if(location.hash)history.replaceState(null,"",location.pathname+location.search)
         if (window.logEvent) logEvent('PARSE CONTROL', `${ok}/${parseControl.files.length} source file(s) reconciled — kept + excluded = scanned`);
       }
       if (window.emailSources && emailSources.records && emailSources.source === file.name) {
-        const dups = emailSources.records.filter(r => r.status !== 'NEW').length;
-        ctlNote += ` · ${emailSources.records.length} source email(s) on record${dups ? ` — ${dups} duplicate attachment(s) refused` : ''}`;
-        if (window.logEvent) logEvent('EMAIL SOURCES', `${emailSources.records.length} Outlook attachment(s): ${emailSources.records.filter(r=>r.status==='NEW').length} new, ${dups} duplicate — senders: ${[...new Set(emailSources.records.map(r=>r.email||r.sender))].join(', ')}`);
+        const rejected = emailSources.records.filter(r => r.status !== 'NEW').length;
+        ctlNote += ` · ${emailSources.records.length} source email(s) on record${rejected ? ` — ${rejected} attachment(s) not accepted` : ''}`;
+        if (window.logEvent) logEvent('EMAIL SOURCES', `${emailSources.records.length} Outlook attachment(s): ${emailSources.records.filter(r=>r.status==='NEW').length} in batch, ${rejected} not accepted (duplicate/unexpected sender) — senders: ${[...new Set(emailSources.records.map(r=>r.email||r.sender))].join(', ')}`);
       }
       showToast(`Imported AP summary: ${file.name} (${payments.length} total payment lines)${ctlNote}`);
       if (window.logEvent) logEvent('AP IMPORT', `${file.name} — ${payments.length} payment line(s)`);
@@ -3852,6 +3918,29 @@ function openApImport(){ document.getElementById('apImportInput').click(); }
     state.audit.unshift('Browser import layer loaded.');
     refreshAll();
     if (state.restoredFromStorage) showToast('Restored previously uploaded data from this browser.');
+
+    // Run-day auto-load: if Run_Weekly left a fresh autoload_batch.js next to
+    // this file, import it exactly once per generated timestamp — the batch is
+    // ready on open with no manual file pick. Re-opening later the same week
+    // (timestamp already recorded) changes nothing.
+    (function(){
+      const auto = window.AUTOLOAD_BATCH;
+      if (!auto || !auto.b64 || !auto.generated) return;
+      let done = null; try { done = localStorage.getItem('tctAutoloadDone'); } catch(e) {}
+      if (done === auto.generated) return;
+      try {
+        const bin = atob(auto.b64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const f = new File([bytes], auto.name || 'AP_PAYMENT_TEMPLATE_OUTPUT.xlsx',
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        importApFiles([f]).then(() => {
+          try { localStorage.setItem('tctAutoloadDone', auto.generated); } catch(e) {}
+          if (window.logEvent) logEvent('AP IMPORT', `auto-loaded run-day batch ${f.name} (generated ${auto.generated})`);
+          refreshAll();
+          showToast(`Run-day batch auto-loaded — generated ${auto.generated}.`);
+        }).catch(err => showToast('Auto-load failed — import manually. ' + err.message));
+      } catch (err) { showToast('Auto-load failed — import manually. ' + err.message); }
+    })();
   }
 
   // Lets the Bank Creation Reconciliation drop-zone accept a drag-and-drop
